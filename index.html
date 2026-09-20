@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0797e6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Férias">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon.png">
+<title>Controle de Férias</title>
+<style>
+:root{--blue:#0797e6;--deep:#075da8;--ink:#12375d;--line:#d8e9f3;--red:#ef4444;--orange:#f39a19;--purple:#7355e8}
+*{box-sizing:border-box}body{margin:0;background:#eef9ff;color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+button,input{font:inherit}button{cursor:pointer}
+.hero{height:270px;position:relative;overflow:hidden;padding:24px 18px;color:#fff;background:linear-gradient(#46c8ff 0 46%,#18a9e8 46% 69%,#f8d79e 69%);border-radius:0 0 30px 30px}
+.hero:after{content:"";position:absolute;left:-10%;right:-10%;bottom:43px;height:45px;background:#fff9;border-radius:50%;transform:rotate(-2deg)}
+.sun{position:absolute;right:22px;top:24px;width:66px;height:66px;border-radius:50%;background:#ffd32f;box-shadow:0 0 28px #ffe98a}
+.palm{position:absolute;left:-22px;top:-12px;font-size:95px;transform:rotate(-7deg)}
+.board{display:inline-block;position:relative;z-index:2;background:linear-gradient(#8f5c2e,#c4873d);border:4px solid #dfa35d;border-radius:12px;padding:9px 15px;box-shadow:0 8px 15px #07508055;transform:rotate(-2deg)}
+.board h1{margin:0;font-size:28px;text-shadow:0 2px 2px #0005}
+.hero p{position:relative;z-index:3;font-weight:900;font-size:17px;margin:16px 0;text-shadow:0 2px 2px #075080}
+.chair{position:absolute;right:25px;bottom:28px;font-size:76px;z-index:3}
+.wrap{max-width:850px;margin:-40px auto 0;position:relative;z-index:5;padding:0 12px 110px}
+.card{background:#fffffff5;border:1px solid #fff;border-radius:22px;padding:16px;margin-bottom:14px;box-shadow:0 10px 28px #07508018}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}.field label{display:block;font-weight:900;font-size:13px;margin-bottom:7px}
+.input{width:100%;height:50px;border:1.5px solid var(--line);border-radius:13px;padding:0 13px;background:#fbfeff;color:var(--ink);outline:none}
+.input:focus{border-color:var(--blue);box-shadow:0 0 0 3px #0797e61a}
+.days{display:flex;align-items:center;gap:8px;margin-top:14px}.days label{font-weight:900;margin-right:auto}.num{width:75px;text-align:center;font-weight:900;font-size:20px}
+.round{width:44px;height:44px;border:0;border-radius:50%;background:var(--blue);color:#fff;font-size:25px;font-weight:900}
+.range{width:100%;accent-color:var(--blue);margin-top:8px}.scale{display:flex;justify-content:space-between;font-size:11px;font-weight:800;color:#70879a}
+.calc{width:100%;border:0;border-radius:15px;margin-top:12px;padding:14px;background:linear-gradient(135deg,#0ca7f3,#1976df);color:#fff;font-weight:900;font-size:17px}
+.results{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.result{padding:14px;border-radius:17px}.result small{display:block;font-size:10px;font-weight:900}.result strong{display:block;font-size:18px;margin-top:7px}.result span{display:block;font-size:12px;margin-top:3px;color:#61768a;font-weight:700}.start{background:#e8f8ee}.end{background:#fff3dc}.back{background:#e5f2ff}.back.red{outline:3px solid var(--red)}.back.orange{outline:3px solid var(--orange)}
+.notice{text-align:center;background:#eef8ff;border-radius:13px;padding:11px;margin-top:10px;font-weight:800}
+.actions{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:11px}.act{border:0;border-radius:13px;color:#fff;padding:13px 6px;font-weight:900}.save{background:#13a56a}.edit{background:#f2a20b}.delete{background:#ed4141}.share{background:var(--purple)}
+.head{display:flex;justify-content:space-between;align-items:center}.head h2{font-size:18px;margin:0}.count{font-size:11px;font-weight:900;color:#71879a}
+.record{border:1px solid var(--line);border-radius:15px;padding:12px;margin-top:9px;background:#fbfdff}.top{display:flex;justify-content:space-between;gap:8px}.name{font-weight:900}.badge{font-size:10px;font-weight:900;padding:5px 8px;border-radius:999px;background:#e4f1ff;color:#1666a9}.badge.r{background:#ffe5e5;color:#b42323}.badge.o{background:#fff0da;color:#9b5a0b}
+.info{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:9px}.info div{font-size:10px;color:#70859a;background:#f2f7fa;border-radius:9px;padding:7px}.info b{display:block;color:var(--ink);font-size:12px;margin-top:2px}
+.ra{display:flex;gap:7px;margin-top:9px}.ra button{border:0;border-radius:9px;padding:8px 11px;font-weight:800}
+.quote{background:linear-gradient(135deg,#c8f1ff,#eaf9ff);border-radius:17px;padding:16px;text-align:center;font-weight:900}.quote span{display:block;color:#6b8092;font-size:11px;margin-top:5px}
+.footer{text-align:center;color:#61798c;font-size:10px;margin-top:17px}
+.nav{position:fixed;z-index:20;bottom:0;left:0;right:0;background:linear-gradient(#079fe9,#0875c5);color:#fff;border-radius:24px 24px 0 0;padding:7px 8px calc(7px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(4,1fr);box-shadow:0 -8px 24px #0750802b}.nav button{background:transparent;border:0;color:#fff;font-size:10px;font-weight:800}.nav i{display:block;font-style:normal;font-size:22px}
+@media(max-width:650px){.grid{grid-template-columns:1fr}.results{grid-template-columns:1fr}.result{display:flex;align-items:center;justify-content:space-between}.result strong{margin:0}.actions{grid-template-columns:1fr 1fr}.info{grid-template-columns:1fr}.board h1{font-size:25px}.chair{font-size:60px;right:12px}}
+</style>
+</head>
+<body>
+<header class="hero">
+ <div class="palm">🌴</div><div class="sun"></div>
+ <div class="board"><h1>🏝️ Controle de Férias</h1></div>
+ <p>Planeje hoje, aproveite amanhã!</p>
+ <div class="chair">🏖️</div>
+</header>
+
+<main class="wrap">
+<section class="card">
+ <div class="grid">
+  <div class="field"><label>👤 Nome</label><input class="input" id="name" placeholder="Digite o nome"></div>
+  <div class="field"><label>📅 Data de início</label><input class="input" id="start" type="date"></div>
+ </div>
+ <div class="days">
+  <label>🏖️ Quantidade de dias</label>
+  <button class="round" id="minus">−</button>
+  <input class="input num" id="days" type="number" min="1" max="30" value="12">
+  <span style="font-weight:900">dias</span>
+  <button class="round" id="plus">+</button>
+ </div>
+ <input class="range" id="range" type="range" min="1" max="30" value="12">
+ <div class="scale"><span>1</span><span>30</span></div>
+ <button class="calc" id="calc">☀️ Calcular minhas férias</button>
+</section>
+
+<section class="card">
+ <div class="results">
+  <div class="result start"><small>🌴 INÍCIO</small><strong id="rs">—</strong><span id="ws">—</span></div>
+  <div class="result end"><small>☀️ ÚLTIMO DIA</small><strong id="re">—</strong><span id="we">—</span></div>
+  <div class="result back" id="rbx"><small>✈️ RETORNO</small><strong id="rb">—</strong><span id="wb">—</span></div>
+ </div>
+ <div class="notice" id="notice">Escolha uma data para calcular.</div>
+ <div class="actions">
+  <button class="act save" id="save">💾 Salvar</button>
+  <button class="act edit" id="edit">✏️ Editar</button>
+  <button class="act delete" id="del">🗑️ Apagar</button>
+  <button class="act share" id="share">📤 Compartilhar</button>
+ </div>
+</section>
+
+<section class="card">
+ <div class="head"><h2>📋 Registros salvos</h2><span class="count" id="count">0 registros</span></div>
+ <div id="records"><div style="text-align:center;color:#71879a;padding:14px">Nenhum registro salvo.</div></div>
+</section>
+<section class="card"><div class="quote">🌊 “Descanso hoje para voltar com mais energia amanhã!”<span>Férias fazem bem.</span></div></section>
+<div class="footer">© 2026 Luis Ricardo — Todos os direitos reservados</div>
+</main>
+
+<nav class="nav">
+ <button onclick="scrollTo({top:0,behavior:'smooth'})"><i>🏠</i>Início</button>
+ <button onclick="document.getElementById('records').scrollIntoView({behavior:'smooth'})"><i>📋</i>Registros</button>
+ <button onclick="document.querySelector('.quote').scrollIntoView({behavior:'smooth'})"><i>🌴</i>Frases</button>
+ <button onclick="alert('Configurações em breve.')"><i>⚙️</i>Configurações</button>
+</nav>
+
+<script>
+const $=id=>document.getElementById(id);let editId=null;
+function clamp(v){return Math.max(1,Math.min(30,Number(v)||1))}
+function sync(v){v=clamp(v);$('days').value=v;$('range').value=v}
+$('range').oninput=e=>{sync(e.target.value);calc()};$('days').oninput=e=>{sync(e.target.value);calc()};
+$('minus').onclick=()=>{sync(+$('days').value-1);calc()};$('plus').onclick=()=>{sync(+$('days').value+1);calc()};
+$('start').onchange=calc;$('calc').onclick=calc;
+function d(s){return new Date(s+'T00:00:00Z')}function f(x){return x.toLocaleDateString('pt-BR',{timeZone:'UTC'})}
+function w(x){return new Intl.DateTimeFormat('pt-BR',{weekday:'long',timeZone:'UTC'}).format(x)}
+function cap(x){return x[0].toUpperCase()+x.slice(1)}
+function calc(){
+ if(!$('start').value)return;
+ let n=clamp($('days').value);sync(n);let s=d($('start').value),e=new Date(s),b=new Date(s);
+ e.setUTCDate(e.getUTCDate()+n-1);b.setUTCDate(e.getUTCDate()+1);
+ $('rs').textContent=f(s);$('ws').textContent=cap(w(s));$('re').textContent=f(e);$('we').textContent=cap(w(e));$('rb').textContent=f(b);$('wb').textContent=cap(w(b));
+ let box=$('rbx');box.className='result back';let msg='🔵 Retorno em dia útil.';
+ if(b.getUTCDay()===0||b.getUTCDay()===6){box.classList.add('red');msg='🔴 Retorno no fim de semana.'}
+ else if(b.getUTCDay()===5){box.classList.add('orange');msg='🟠 Retorno na sexta-feira.'}
+ $('notice').textContent=msg+' Último dia: '+f(e)+' · Retorno: '+f(b)+'.';return{s,e,b,n}
+}
+function arr(){return JSON.parse(localStorage.getItem('ferias_app')||'[]')}function put(a){localStorage.setItem('ferias_app',JSON.stringify(a))}
+$('save').onclick=()=>{let c=calc(),name=$('name').value.trim();if(!name||!c){alert('Preencha o nome e a data de início.');return}let x={id:editId||Date.now(),name,start:$('start').value,days:c.n},a=arr(),i=a.findIndex(q=>q.id===x.id);if(i>=0)a[i]=x;else a.unshift(x);put(a);render();reset();alert('Salvo!')}
+$('edit').onclick=()=>{if(!arr().length){alert('Não há registros.');return}load(arr()[0])}
+$('del').onclick=()=>{if(editId){del(editId);return}reset()}
+function reset(){editId=null;$('name').value='';$('start').value='';sync(12);['rs','re','rb','ws','we','wb'].forEach(id=>$(id).textContent='—');$('notice').textContent='Escolha uma data para calcular.'}
+function load(x){editId=x.id;$('name').value=x.name;$('start').value=x.start;sync(x.days);calc();scrollTo({top:0,behavior:'smooth'})}
+function del(id){if(!confirm('Apagar este registro?'))return;put(arr().filter(x=>x.id!==id));render();if(editId===id)reset()}
+function esc(s){return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+function render(){
+ let a=arr();$('count').textContent=a.length+' '+(a.length===1?'registro':'registros');if(!a.length){$('records').innerHTML='<div style="text-align:center;color:#71879a;padding:14px">Nenhum registro salvo.</div>';return}
+ $('records').innerHTML=a.map(x=>{let s=d(x.start),e=new Date(s),b=new Date(s);e.setUTCDate(e.getUTCDate()+x.days-1);b.setUTCDate(e.getUTCDate()+1);let cls='',txt='Dia útil';if(b.getUTCDay()===0||b.getUTCDay()===6){cls='r';txt='Fim de semana'}else if(b.getUTCDay()===5){cls='o';txt='Sexta-feira'}return `<div class="record"><div class="top"><div class="name">👤 ${esc(x.name)}</div><span class="badge ${cls}">${txt}</span></div><div class="info"><div>🏖️ Início<b>${f(s)}</b></div><div>☀️ Último dia<b>${f(e)}</b></div><div>✈️ Retorno<b>${f(b)}</b></div></div><div class="ra"><button onclick="load(${x.id})">✏️ Editar</button><button onclick="del(${x.id})">🗑️ Apagar</button></div></div>`}).join('')
+}
+$('share').onclick=async()=>{let c=calc(),t='🏖️ Controle de Férias\\n'+($('name').value.trim()||'Minhas férias');if(c)t+='\\nInício: '+f(c.s)+'\\nÚltimo dia: '+f(c.e)+'\\nRetorno: '+f(c.b);if(navigator.share){try{await navigator.share({title:'Controle de Férias',text:t})}catch(e){}}else{await navigator.clipboard?.writeText(t);alert('Informações copiadas.')}}
+render();
+</script>
+</body>
+</html>
