@@ -209,7 +209,16 @@ function render(){
  let a=arr();$('count').textContent=a.length+' '+(a.length===1?'registro':'registros');if(!a.length){$('records').innerHTML='<div style="text-align:center;color:#71879a;padding:14px">Nenhum registro salvo.</div>';return}
  $('records').innerHTML=a.map(x=>{let s=d(x.start),e=new Date(s),b=new Date(s);e.setUTCDate(e.getUTCDate()+x.days-1);b.setUTCDate(e.getUTCDate()+1);let cls='',txt='Dia útil';if(b.getUTCDay()===0||b.getUTCDay()===6){cls='r';txt='Fim de semana'}else if(b.getUTCDay()===5){cls='o';txt='Sexta-feira'}return `<div class="record"><div class="top"><div class="name">👤 ${esc(x.name)}</div><span class="badge ${cls}">${txt}</span></div><div class="info"><div>🏖️ Início<b>${f(s)}</b></div><div>☀️ Último dia<b>${f(e)}</b></div><div>✈️ Retorno<b>${f(b)}</b></div></div><div class="ra"><button onclick="load(${x.id})">✏️ Editar</button><button onclick="del(${x.id})">🗑️ Apagar</button></div></div>`}).join('')
 }
-$('share').onclick=async()=>{let c=calc(),t='🏖️ Controle de Férias\\n'+($('name').value.trim()||'Minhas férias');if(c)t+='\\nInício: '+f(c.s)+'\\nÚltimo dia: '+f(c.e)+'\\nRetorno: '+f(c.b);if(navigator.share){try{await navigator.share({title:'Controle de Férias',text:t})}catch(e){}}else{await navigator.clipboard?.writeText(t);alert('Informações copiadas.')}}
+$('share').onclick=async()=>{
+ const appUrl=window.location.href;
+ const title='🏖️ Controle de Férias';
+ const text='Abra o aplicativo Controle de Férias:';
+ if(navigator.share){
+  try{await navigator.share({title,text,url:appUrl});return}catch(e){if(e&&e.name==='AbortError')return}
+ }
+ try{await navigator.clipboard.writeText(appUrl);alert('🔗 Link do aplicativo copiado! Agora é só colar no WhatsApp ou onde quiser.')}
+ catch(e){prompt('Copie o link do aplicativo:',appUrl)}
+}
 render();
 </script>
 </body>
