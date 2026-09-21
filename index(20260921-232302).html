@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<!-- APP_VERSION: 20260921195818 -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0797e6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Férias">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon.png">
+<title>Controle de Férias</title>
+<style>
+:root{--blue:#0797e6;--ink:#12375d;--line:#d8e9f3;--red:#e94141;--orange:#f39a19;--green:#13a56a;--purple:#7355e8}
+*{box-sizing:border-box}body{margin:0;background:#eef9ff;color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}button,input{font:inherit}button{cursor:pointer}
+.hero{height:270px;position:relative;overflow:hidden;padding:24px 18px;color:#fff;background:linear-gradient(#46c8ff 0 46%,#18a9e8 46% 69%,#f8d79e 69%);border-radius:0 0 30px 30px}.hero:after{content:"";position:absolute;left:-10%;right:-10%;bottom:43px;height:45px;background:#fff9;border-radius:50%;transform:rotate(-2deg)}.sun{position:absolute;right:22px;top:24px;width:66px;height:66px;border-radius:50%;background:#ffd32f;box-shadow:0 0 28px #ffe98a}.palm{position:absolute;left:-22px;top:-12px;font-size:95px;transform:rotate(-7deg)}.board{display:inline-block;position:relative;z-index:2;background:linear-gradient(#8f5c2e,#c4873d);border:4px solid #dfa35d;border-radius:12px;padding:9px 15px;box-shadow:0 8px 15px #07508055;transform:rotate(-2deg)}.board h1{margin:0;font-size:28px;text-shadow:0 2px 2px #0005}.hero p{position:relative;z-index:3;font-weight:900;font-size:17px;margin:16px 0;text-shadow:0 2px 2px #075080}.chair{position:absolute;right:25px;bottom:28px;font-size:76px;z-index:3}
+.wrap{max-width:850px;margin:-40px auto 0;position:relative;z-index:5;padding:0 12px 35px}.card{background:#fffffff5;border:1px solid #fff;border-radius:22px;padding:16px;margin-bottom:14px;box-shadow:0 10px 28px #07508018}.grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}.field label{display:block;font-weight:900;font-size:13px;margin-bottom:7px}.input{width:100%;height:50px;border:1.5px solid var(--line);border-radius:13px;padding:0 13px;background:#fbfeff;color:var(--ink);outline:none}.input:focus{border-color:var(--blue);box-shadow:0 0 0 3px #0797e61a}.days{display:flex;align-items:center;gap:8px;margin-top:14px}.days label{font-weight:900;margin-right:auto}.num{width:75px;text-align:center;font-weight:900;font-size:20px}.round{width:44px;height:44px;border:0;border-radius:50%;background:var(--blue);color:#fff;font-size:25px;font-weight:900}.range{width:100%;accent-color:var(--blue);margin-top:8px}.scale{display:flex;justify-content:space-between;font-size:11px;font-weight:800;color:#70879a}.calc{width:100%;border:0;border-radius:15px;margin-top:12px;padding:14px;background:linear-gradient(135deg,#0ca7f3,#1976df);color:#fff;font-weight:900;font-size:17px}.results{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.result{padding:14px;border-radius:17px}.result small{display:block;font-size:10px;font-weight:900}.result strong{display:block;font-size:18px;margin-top:7px}.result span{display:block;font-size:12px;margin-top:3px;color:#61768a;font-weight:700}.start{background:#e8f8ee}.end{background:#fff3dc}.back{background:#e5f2ff}.back.red{outline:3px solid var(--red)}.back.orange{outline:3px solid var(--orange)}.notice{text-align:center;background:#eef8ff;border-radius:13px;padding:11px;margin-top:10px;font-weight:800}.actions{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:11px}.act{border:0;border-radius:13px;color:#fff;padding:13px 6px;font-weight:900}.save{background:var(--green)}.edit{background:#f2a20b}.delete{background:var(--red)}.share{background:var(--purple)}
+.head{display:flex;justify-content:space-between;align-items:center}.head h2{font-size:18px;margin:0}.count{font-size:11px;font-weight:900;color:#71879a}.record{border:1px solid var(--line);border-radius:15px;padding:12px;margin-top:9px;background:#fbfdff}.top{display:flex;justify-content:space-between;gap:8px}.name{font-weight:900}.badge{font-size:10px;font-weight:900;padding:5px 8px;border-radius:999px;background:#e4f1ff;color:#1666a9}.badge.r{background:#ffe5e5;color:#b42323}.badge.o{background:#fff0da;color:#9b5a0b}.badge.g{background:#e4f8ed;color:#087446}.info{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:9px}.info div{font-size:10px;color:#70859a;background:#f2f7fa;border-radius:9px;padding:7px}.info b{display:block;color:var(--ink);font-size:12px;margin-top:2px}.ra{display:flex;gap:7px;margin-top:9px}.ra button{border:0;border-radius:9px;padding:8px 11px;font-weight:800}.quote{background:linear-gradient(135deg,#c8f1ff,#eaf9ff);border-radius:17px;padding:16px;text-align:center;font-weight:900}.quote span{display:block;color:#6b8092;font-size:11px;margin-top:5px}.footer{text-align:center;color:#61798c;font-size:10px;margin-top:17px}.status{margin-top:9px;padding:9px 11px;border-radius:10px;background:#fff7df;color:#7a5700;font-size:11px;font-weight:800}.status.ok{background:#e7f8ee;color:#087446}.status.err{background:#ffe8e8;color:#a52222}
+@media(max-width:650px){.grid{grid-template-columns:1fr}.results{grid-template-columns:1fr}.result{display:flex;align-items:center;justify-content:space-between}.result strong{margin:0}.actions{grid-template-columns:1fr 1fr}.info{grid-template-columns:1fr}.board h1{font-size:25px}.chair{font-size:60px;right:12px}}
+</style>
+
+<script>
+/* Atualização automática do index — não precisa abrir sw.js. */
+(function () {
+  const APP_VERSION = "20260921175216";
+  const KEY = "ferias_app_version";
+  const cleanUrl = window.location.href.split("#")[0];
+
+  async function atualizarSeHouverVersaoNova() {
+    try {
+      const sep = cleanUrl.includes("?") ? "&" : "?";
+      const resposta = await fetch(cleanUrl + sep + "atualizacao=" + Date.now(), {
+        cache: "no-store",
+        headers: { "Cache-Control": "no-cache" }
+      });
+      if (!resposta.ok) return;
+
+      const texto = await resposta.text();
+      const m = texto.match(/APP_VERSION:\s*([0-9]+)/);
+      const versaoRemota = m ? m[1] : null;
+
+      if (versaoRemota && versaoRemota !== APP_VERSION) {
+        localStorage.setItem(KEY, versaoRemota);
+        const urlNova = cleanUrl + (cleanUrl.includes("?") ? "&" : "?") + "versao=" + versaoRemota;
+        window.location.replace(urlNova);
+      } else {
+        localStorage.setItem(KEY, APP_VERSION);
+      }
+    } catch (e) {}
+  }
+
+  window.addEventListener("load", () => {
+    setTimeout(atualizarSeHouverVersaoNova, 700);
+  });
+})();
+</script>
+
+
+<style id="admin-style">
+</style>
+
+
+<style id="developer-style">
+.developer-area{
+  width:min(826px,calc(100% - 24px));
+  margin:14px auto 8px;
+  display:flex;
+  justify-content:flex-end;
+  position:relative;
+  z-index:30;
+}
+.developer-btn{
+  border:0;
+  border-radius:14px;
+  padding:11px 16px;
+  background:#075b8a;
+  color:#fff;
+  font-weight:800;
+  font-size:14px;
+  box-shadow:0 5px 14px rgba(0,0,0,.15);
+  cursor:pointer;
+}
+.developer-btn:active{transform:scale(.98)}
+.admin-panel{
+  display:none;
+  width:min(826px,calc(100% - 24px));
+  margin:10px auto 16px;
+  padding:18px;
+  box-sizing:border-box;
+  background:rgba(255,255,255,.98);
+  border-radius:22px;
+  box-shadow:0 12px 30px rgba(0,0,0,.14);
+  position:relative;
+  z-index:30;
+}
+.admin-panel.open{display:block}
+.admin-panel h2{margin:0 0 12px;color:#075b8a}
+@media(max-width:520px){
+  .developer-area{margin-top:10px}
+  .developer-btn{font-size:13px;padding:10px 14px}
+  .admin-panel{padding:15px}
+}
+</style>
+
+</head>
+<body>
+
+<header class="hero"><div class="palm">🌴</div><div class="sun"></div><div class="board"><h1>🏝️ Controle de Férias</h1></div><p>Planeje hoje, aproveite amanhã!</p><div class="chair">🏖️</div></header>
+<div class="developer-area">
+  <button type="button" id="developerBtn" class="developer-btn">👨‍💻 Desenvolvedor</button>
+</div>
+
+<div id="adminPanel" class="admin-panel">
+  <h2>👨‍💻 Área do Desenvolvedor</h2>
+  <div id="adminLogin">
+    <div class="admin-login">
+      <input id="adminPassword" type="password" placeholder="Senha do desenvolvedor" autocomplete="current-password">
+      <button class="admin-main" type="button" id="adminLoginBtn">Entrar</button>
+    </div>
+    <div class="admin-note">Você é o Desenvolvedor/Dono. A autenticação definitiva e as permissões reais serão ligadas ao Firebase.</div>
+  </div>
+
+  <div id="adminArea" style="display:none">
+    <div class="admin-grid">
+      <div class="admin-card">👥 Usuários<strong id="adminUsers">0</strong></div>
+      <div class="admin-card">🏖️ Registros de férias<strong id="adminVacations">0</strong></div>
+      <div class="admin-card">✅ Aprovados<strong id="adminApproved">0</strong></div>
+      <div class="admin-card">⏳ Pendentes<strong id="adminPending">0</strong></div>
+    </div>
+    <div class="admin-actions">
+      <button class="admin-main" type="button" id="adminExportBtn">💾 Exportar dados</button>
+      <button class="admin-close" type="button" id="adminCloseBtn">Fechar</button>
+    </div>
+    <div class="admin-note">Aqui ficará o controle do administrador operacional, permissões e demais funções quando conectarmos ao Firebase.</div>
+  </div>
+</div>
+
+<main class="wrap">
+<section class="card">
+ <div class="grid"><div class="field"><label>👤 Nome</label><input class="input" id="name" placeholder="Digite o nome"></div><div class="field"><label>📅 Data de início</label><input class="input" id="start" type="date"></div></div>
+ <div class="days"><label>🏖️ Quantidade de dias</label><button class="round" id="minus">−</button><input class="input num" id="days" type="number" min="1" max="30" value="12"><span style="font-weight:900">dias</span><button class="round" id="plus">+</button></div>
+ <input class="range" id="range" type="range" min="1" max="30" value="12"><div class="scale"><span>1</span><span>30</span></div><button class="calc" id="calc">☀️ Calcular minhas férias</button>
+</section>
+<section class="card">
+ <div class="results"><div class="result start"><small>🌴 INÍCIO</small><strong id="rs">—</strong><span id="ws">—</span></div><div class="result end"><small>☀️ ÚLTIMO DIA</small><strong id="re">—</strong><span id="we">—</span></div><div class="result back" id="rbx"><small>✈️ RETORNO</small><strong id="rb">—</strong><span id="wb">—</span></div></div>
+ <div class="notice" id="notice">Escolha uma data para calcular.</div><div class="status" id="syncStatus">☁️ Dados locais — Firebase ainda não configurado.</div>
+ <div class="actions"><button class="act save" id="save">💾 Salvar</button><button class="act edit" id="edit">✏️ Editar</button><button class="act delete" id="del">🗑️ Apagar</button><button class="act share" id="share">📤 Compartilhar</button></div>
+</section>
+<section class="card"><div class="head"><h2>📋 Férias cadastradas</h2><span class="count" id="count">0 registros</span></div><div id="records"><div style="text-align:center;color:#71879a;padding:14px">Nenhum registro.</div></div></section>
+<section class="card"><div class="quote">🌊 “Descanso hoje para voltar com mais energia amanhã!”<span>Férias fazem bem.</span></div></section>
+
+</main>
+
+<script type="module">
+/* ==========================================================
+   FIREBASE — DEIXADO PRONTO PARA CONEXÃO COMPARTILHADA
+   Cole aqui a configuração do seu projeto Firebase.
+   Depois de preenchida, os registros passam a ser salvos
+   no Firestore e todos os usuários autorizados enxergam os
+   mesmos dados.
+   ========================================================== */
+const firebaseConfig={
+  apiKey:"COLE_AQUI_API_KEY",
+  authDomain:"COLE_AQUI_AUTH_DOMAIN",
+  projectId:"COLE_AQUI_PROJECT_ID",
+  storageBucket:"COLE_AQUI_STORAGE_BUCKET",
+  messagingSenderId:"COLE_AQUI_MESSAGING_SENDER_ID",
+  appId:"COLE_AQUI_APP_ID"
+};
+
+import {initializeApp} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+import {getFirestore,collection,addDoc,doc,setDoc,deleteDoc,onSnapshot,query,orderBy,serverTimestamp} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+import {getAuth,signInAnonymously,onAuthStateChanged} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+
+const $=id=>document.getElementById(id);let editId=null;let shared=[];let db=null;let auth=null;let firebaseReady=false;let unsub=null;
+const localKey='ferias_app';
+function clamp(v){return Math.max(1,Math.min(30,Number(v)||1))}function sync(v){v=clamp(v);$('days').value=v;$('range').value=v}
+$('range').oninput=e=>{sync(e.target.value);calc()};$('days').oninput=e=>{sync(e.target.value);calc()};$('minus').onclick=()=>{sync(+$('days').value-1);calc()};$('plus').onclick=()=>{sync(+$('days').value+1);calc()};$('start').onchange=calc;$('calc').onclick=calc;
+function d(s){return new Date(s+'T00:00:00Z')}function f(x){return x.toLocaleDateString('pt-BR',{timeZone:'UTC'})}function w(x){return new Intl.DateTimeFormat('pt-BR',{weekday:'long',timeZone:'UTC'}).format(x)}function cap(x){return x[0].toUpperCase()+x.slice(1)}
+function calc(){if(!$('start').value)return;let n=clamp($('days').value);sync(n);let s=d($('start').value),e=new Date(s),b=new Date(s);e.setUTCDate(e.getUTCDate()+n-1);b.setUTCDate(e.getUTCDate()+1);$('rs').textContent=f(s);$('ws').textContent=cap(w(s));$('re').textContent=f(e);$('we').textContent=cap(w(e));$('rb').textContent=f(b);$('wb').textContent=cap(w(b));let box=$('rbx');box.className='result back';let msg='🔵 Retorno em dia útil.';if(b.getUTCDay()===0||b.getUTCDay()===6){box.classList.add('red');msg='🔴 Retorno no fim de semana.'}else if(b.getUTCDay()===5){box.classList.add('orange');msg='🟠 Retorno na sexta-feira.'}$('notice').textContent=msg+' Último dia: '+f(e)+' · Retorno: '+f(b)+'.';return{s,e,b,n}}
+function localArr(){return JSON.parse(localStorage.getItem(localKey)||'[]')}function localPut(a){localStorage.setItem(localKey,JSON.stringify(a))}
+function setStatus(t,kind=''){const e=$('syncStatus');e.textContent=t;e.className='status '+kind}
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+function conflictType(item){const others=shared.filter(x=>x.id!==item.id);const s=d(item.start),e=new Date(s);e.setUTCDate(e.getUTCDate()+item.days-1);let overlap=false,near=false;for(const x of others){const os=d(x.start),oe=new Date(os);oe.setUTCDate(oe.getUTCDate()+x.days-1);if(s<=oe&&e>=os)overlap=true;else{const gap=Math.min(Math.abs(s-oe),Math.abs(os-e))/86400000;if(gap<=7)near=true}}return overlap?'r':near?'o':'g'}
+function render(){const a=firebaseReady?shared:localArr();$('count').textContent=a.length+' '+(a.length===1?'registro':'registros');if(!a.length){$('records').innerHTML='<div style="text-align:center;color:#71879a;padding:14px">Nenhum registro.</div>';return}$('records').innerHTML=a.map(x=>{let s=d(x.start),e=new Date(s),b=new Date(s);e.setUTCDate(e.getUTCDate()+x.days-1);b.setUTCDate(e.getUTCDate()+1);let cls=conflictType(x),txt=cls==='r'?'Conflito de período':cls==='o'?'Período próximo':'Sem conflito';let status=x.status==='aprovada'?'g':x.status==='recusada'?'r':'';return `<div class="record"><div class="top"><div class="name">👤 ${esc(x.name)}</div><span class="badge ${cls}">${txt}</span></div><div class="info"><div>🏖️ Início<b>${f(s)}</b></div><div>☀️ Último dia<b>${f(e)}</b></div><div>✈️ Retorno<b>${f(b)}</b></div></div><div class="ra"><button onclick="window.loadRecord('${String(x.id).replace(/'/g,"\\'")}')">✏️ Editar</button><button onclick="window.deleteRecord('${String(x.id).replace(/'/g,"\\'")}')">🗑️ Apagar</button></div>${x.status?`<div class="status ${status}">${x.status==='aprovada'?'✅ Férias aprovadas':x.status==='recusada'?'❌ Não aprovada':'🟡 Aguardando aprovação'}</div>`:''}</div>`}).join('')}
+window.loadRecord=id=>{const x=(firebaseReady?shared:localArr()).find(q=>String(q.id)===String(id));if(!x)return;editId=x.id;$('name').value=x.name;$('start').value=x.start;sync(x.days);calc();scrollTo({top:0,behavior:'smooth'})};
+window.deleteRecord=async id=>{if(!confirm('Apagar este registro?'))return;if(firebaseReady){await deleteDoc(doc(db,'ferias',id))}else{localPut(localArr().filter(x=>String(x.id)!==String(id)));render()}if(String(editId)===String(id))reset()};
+$('save').onclick=async()=>{const c=calc(),name=$('name').value.trim();if(!name||!c){alert('Preencha o nome e a data de início.');return}const base={name,start:$('start').value,days:c.n,status:'pendente',updatedAt:serverTimestamp()};try{if(firebaseReady){if(editId){await setDoc(doc(db,'ferias',String(editId)),base,{merge:true})}else{await addDoc(collection(db,'ferias'),{...base,createdAt:serverTimestamp()})}}else{const x={id:editId||Date.now(),...base,updatedAt:Date.now()};const a=localArr(),i=a.findIndex(q=>String(q.id)===String(x.id));if(i>=0)a[i]=x;else a.unshift(x);localPut(a);render()}reset();alert(firebaseReady?'Férias salvas e compartilhadas.':'Salvo neste aparelho.')}catch(e){console.error(e);alert('Não foi possível salvar. Verifique a configuração do Firebase.')}};
+$('edit').onclick=()=>{const a=firebaseReady?shared:localArr();if(!a.length){alert('Não há registros.');return}window.loadRecord(a[0].id)};$('del').onclick=()=>{if(editId)window.deleteRecord(editId);else reset()};
+function reset(){editId=null;$('name').value='';$('start').value='';sync(12);['rs','re','rb','ws','we','wb'].forEach(id=>$(id).textContent='—');$('notice').textContent='Escolha uma data para calcular.'}
+$('share').onclick=async()=>{const url=window.location.href,title='🏖️ Controle de Férias',text='Abra o aplicativo Controle de Férias:';if(navigator.share){try{await navigator.share({title,text,url});return}catch(e){if(e&&e.name==='AbortError')return}}try{await navigator.clipboard.writeText(url);alert('🔗 Link do aplicativo copiado!')}catch(e){prompt('Copie o link do aplicativo:',url)}};
+function initFirebase(){const configured=!Object.values(firebaseConfig).some(v=>String(v).startsWith('COLE_AQUI_'));if(!configured){setStatus('☁️ Firebase preparado, mas ainda aguardando a configuração do projeto.','');render();return}try{const app=initializeApp(firebaseConfig);db=getFirestore(app);auth=getAuth(app);onAuthStateChanged(auth,u=>{if(u){firebaseReady=true;setStatus('☁️ Conectado — lançamentos compartilhados em tempo real.','ok');const q=query(collection(db,'ferias'),orderBy('createdAt','desc'));unsub=onSnapshot(q,snap=>{shared=snap.docs.map(x=>({id:x.id,...x.data()}));render()},err=>{console.error(err);setStatus('⚠️ Erro ao ler os dados do Firebase.','err')})}});signInAnonymously(auth).catch(e=>{console.error(e);setStatus('⚠️ Ative o login anônimo no Firebase Authentication.','err')})}catch(e){console.error(e);setStatus('⚠️ Configuração do Firebase inválida.','err');render()}}
+initFirebase();
+</script>
+
+<div style="text-align:center;padding:18px 10px 30px;color:#61798c;font-size:11px;">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.</div>
+
+
+<script id="admin-script">
+(function(){
+  const ADMIN_KEY = "ferias_admin_autenticado";
+  const SENHA_LOCAL = "admin123";
+
+  function el(id){ return document.getElementById(id); }
+
+  function atualizarPainel(){
+    let registros=[];
+    try{
+      const chaves=["ferias","feriasRecords","registrosFerias","vacations"];
+      for(const k of chaves){
+        const v=localStorage.getItem(k);
+        if(v){
+          const x=JSON.parse(v);
+          if(Array.isArray(x)) registros=x;
+        }
+      }
+    }catch(e){}
+    el("adminVacations").textContent=registros.length;
+    const aprovados=registros.filter(r=>String(r.status||r.situacao||"").toLowerCase().includes("aprov")).length;
+    el("adminApproved").textContent=aprovados;
+    el("adminPending").textContent=Math.max(0,registros.length-aprovados);
+    el("adminUsers").textContent="1";
+  }
+
+  function abrir(){
+    const panel=el("adminPanel");
+    panel.classList.toggle("open");
+    if(panel.classList.contains("open")){
+      if(localStorage.getItem(ADMIN_KEY)==="1") mostrarAdmin();
+      setTimeout(()=>el("adminPassword")?.focus(),80);
+    }
+  }
+
+  function mostrarAdmin(){
+    el("adminLogin").style.display="none";
+    el("adminArea").style.display="block";
+    atualizarPainel();
+  }
+
+  function entrar(){
+    const senha=el("adminPassword").value;
+    if(senha===SENHA_LOCAL){
+      localStorage.setItem(ADMIN_KEY,"1");
+      el("adminPassword").value="";
+      mostrarAdmin();
+    }else{
+      alert("Senha de desenvolvedor incorreta.");
+    }
+  }
+
+  function fechar(){ el("adminPanel").classList.remove("open"); }
+
+  function exportar(){
+    const dados={exportadoEm:new Date().toISOString(),localStorage:{}};
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      dados.localStorage[k]=localStorage.getItem(k);
+    }
+    const blob=new Blob([JSON.stringify(dados,null,2)],{type:"application/json"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url; a.download="backup-controle-ferias.json";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),500);
+  }
+
+  document.addEventListener("DOMContentLoaded",()=>{
+    el("developerBtn").addEventListener("click",abrir);
+    el("adminLoginBtn").addEventListener("click",entrar);
+    el("adminCloseBtn").addEventListener("click",fechar);
+    el("adminExportBtn").addEventListener("click",exportar);
+    el("adminPassword").addEventListener("keydown",e=>{if(e.key==="Enter")entrar();});
+  });
+})();
+</script>
+
+
+</body></html>
