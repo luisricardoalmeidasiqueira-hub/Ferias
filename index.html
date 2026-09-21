@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+<!-- APP_VERSION: 20260921175216 -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0797e6">
@@ -18,6 +19,43 @@
 .head{display:flex;justify-content:space-between;align-items:center}.head h2{font-size:18px;margin:0}.count{font-size:11px;font-weight:900;color:#71879a}.record{border:1px solid var(--line);border-radius:15px;padding:12px;margin-top:9px;background:#fbfdff}.top{display:flex;justify-content:space-between;gap:8px}.name{font-weight:900}.badge{font-size:10px;font-weight:900;padding:5px 8px;border-radius:999px;background:#e4f1ff;color:#1666a9}.badge.r{background:#ffe5e5;color:#b42323}.badge.o{background:#fff0da;color:#9b5a0b}.badge.g{background:#e4f8ed;color:#087446}.info{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:9px}.info div{font-size:10px;color:#70859a;background:#f2f7fa;border-radius:9px;padding:7px}.info b{display:block;color:var(--ink);font-size:12px;margin-top:2px}.ra{display:flex;gap:7px;margin-top:9px}.ra button{border:0;border-radius:9px;padding:8px 11px;font-weight:800}.quote{background:linear-gradient(135deg,#c8f1ff,#eaf9ff);border-radius:17px;padding:16px;text-align:center;font-weight:900}.quote span{display:block;color:#6b8092;font-size:11px;margin-top:5px}.footer{text-align:center;color:#61798c;font-size:10px;margin-top:17px}.status{margin-top:9px;padding:9px 11px;border-radius:10px;background:#fff7df;color:#7a5700;font-size:11px;font-weight:800}.status.ok{background:#e7f8ee;color:#087446}.status.err{background:#ffe8e8;color:#a52222}
 @media(max-width:650px){.grid{grid-template-columns:1fr}.results{grid-template-columns:1fr}.result{display:flex;align-items:center;justify-content:space-between}.result strong{margin:0}.actions{grid-template-columns:1fr 1fr}.info{grid-template-columns:1fr}.board h1{font-size:25px}.chair{font-size:60px;right:12px}}
 </style>
+
+<script>
+/* Atualização automática do index — não precisa abrir sw.js. */
+(function () {
+  const APP_VERSION = "20260921175216";
+  const KEY = "ferias_app_version";
+  const cleanUrl = window.location.href.split("#")[0];
+
+  async function atualizarSeHouverVersaoNova() {
+    try {
+      const sep = cleanUrl.includes("?") ? "&" : "?";
+      const resposta = await fetch(cleanUrl + sep + "atualizacao=" + Date.now(), {
+        cache: "no-store",
+        headers: { "Cache-Control": "no-cache" }
+      });
+      if (!resposta.ok) return;
+
+      const texto = await resposta.text();
+      const m = texto.match(/APP_VERSION:\s*([0-9]+)/);
+      const versaoRemota = m ? m[1] : null;
+
+      if (versaoRemota && versaoRemota !== APP_VERSION) {
+        localStorage.setItem(KEY, versaoRemota);
+        const urlNova = cleanUrl + (cleanUrl.includes("?") ? "&" : "?") + "versao=" + versaoRemota;
+        window.location.replace(urlNova);
+      } else {
+        localStorage.setItem(KEY, APP_VERSION);
+      }
+    } catch (e) {}
+  }
+
+  window.addEventListener("load", () => {
+    setTimeout(atualizarSeHouverVersaoNova, 700);
+  });
+})();
+</script>
+
 </head>
 <body>
 <header class="hero"><div class="palm">🌴</div><div class="sun"></div><div class="board"><h1>🏝️ Controle de Férias</h1></div><p>Planeje hoje, aproveite amanhã!</p><div class="chair">🏖️</div></header>
@@ -34,7 +72,7 @@
 </section>
 <section class="card"><div class="head"><h2>📋 Férias cadastradas</h2><span class="count" id="count">0 registros</span></div><div id="records"><div style="text-align:center;color:#71879a;padding:14px">Nenhum registro.</div></div></section>
 <section class="card"><div class="quote">🌊 “Descanso hoje para voltar com mais energia amanhã!”<span>Férias fazem bem.</span></div></section>
-<div class="footer">© 2026 Luis Ricardo — Todos os direitos reservados</div>
+
 </main>
 
 <script type="module">
@@ -78,4 +116,6 @@ $('share').onclick=async()=>{const url=window.location.href,title='🏖️ Contr
 function initFirebase(){const configured=!Object.values(firebaseConfig).some(v=>String(v).startsWith('COLE_AQUI_'));if(!configured){setStatus('☁️ Firebase preparado, mas ainda aguardando a configuração do projeto.','');render();return}try{const app=initializeApp(firebaseConfig);db=getFirestore(app);auth=getAuth(app);onAuthStateChanged(auth,u=>{if(u){firebaseReady=true;setStatus('☁️ Conectado — lançamentos compartilhados em tempo real.','ok');const q=query(collection(db,'ferias'),orderBy('createdAt','desc'));unsub=onSnapshot(q,snap=>{shared=snap.docs.map(x=>({id:x.id,...x.data()}));render()},err=>{console.error(err);setStatus('⚠️ Erro ao ler os dados do Firebase.','err')})}});signInAnonymously(auth).catch(e=>{console.error(e);setStatus('⚠️ Ative o login anônimo no Firebase Authentication.','err')})}catch(e){console.error(e);setStatus('⚠️ Configuração do Firebase inválida.','err');render()}}
 initFirebase();
 </script>
+
+<div style="text-align:center;padding:18px 10px 30px;color:#61798c;font-size:11px;">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.</div>
 </body></html>
