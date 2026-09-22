@@ -32,7 +32,7 @@ button,input{font:inherit}button{cursor:pointer}
 .hero p{position:relative;z-index:3;font-weight:900;font-size:16px;margin:14px 0;text-shadow:0 2px 2px #075080}
 .chair{position:absolute;right:28px;bottom:25px;font-size:70px;z-index:3}
 
-.wrap{max-width:850px;margin:-34px auto 0;position:relative;z-index:5;padding:0 12px 35px}
+.wrap{max-width:850px;margin:0 auto;padding:0 12px 35px;position:relative;z-index:5}
 .card{background:#fffffff5;border:1px solid #fff;border-radius:22px;padding:16px;margin-bottom:14px;box-shadow:0 10px 28px #07508018}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}
 .field label{display:block;font-weight:900;font-size:13px;margin-bottom:7px}
@@ -100,8 +100,8 @@ button,input{font:inherit}button{cursor:pointer}
 .quote{background:linear-gradient(135deg,#c8f1ff,#eaf9ff);border-radius:17px;padding:16px;text-align:center;font-weight:900}
 .quote span{display:block;color:#6b8092;font-size:11px;margin-top:5px}
 .footer{text-align:center;color:#61798c;font-size:11px;margin-top:17px}
-.developer-area{width:min(826px,calc(100% - 24px));margin:10px auto;display:flex;justify-content:flex-end}
-.developer-btn{border:0;border-radius:14px;padding:10px 14px;background:#075b8a;color:#fff;font-weight:800}
+.developer-area{width:min(826px,calc(100% - 24px));margin:10px auto 16px;display:flex;justify-content:flex-end;position:relative;z-index:20}
+.developer-btn{border:0;border-radius:14px;padding:10px 14px;background:#075b8a;color:#fff;font-weight:800;position:relative;z-index:21}
 
 .reject-modal{display:none;position:fixed;inset:0;z-index:9999;background:#0008;align-items:center;justify-content:center;padding:18px}
 .reject-modal.open{display:flex}
@@ -211,6 +211,7 @@ button,input{font:inherit}button{cursor:pointer}
   <div class="grid">
     <div class="field"><label>👤 Nome</label><input class="input" id="name" placeholder="Digite o nome"></div>
     <div class="field"><label>📅 Data de início</label><input class="input" id="start" type="date"></div>
+    <div class="field"><label>🏢 Data de admissão <span style="font-weight:600;color:#71879a">(opcional)</span></label><input class="input" id="admission" type="date"></div>
   </div>
 
   <div class="calendar-card">
@@ -369,6 +370,17 @@ button,input{font:inherit}button{cursor:pointer}
     return {s,e,b,n};
   }
 
+
+  function vacationBalance(x){
+    if(!x.admission) return null;
+    const adm=date(x.admission), today=new Date();
+    const now=new Date(Date.UTC(today.getFullYear(),today.getMonth(),today.getDate()));
+    if(now<adm) return null;
+    const months=(now.getUTCFullYear()-adm.getUTCFullYear())*12+(now.getUTCMonth()-adm.getUTCMonth())-(now.getUTCDate()<adm.getUTCDate()?1:0);
+    const completeYears=Math.floor(months/12);
+    return {years:completeYears, overdue:completeYears>=1 ? Math.max(0, completeYears-1) : 0};
+  }
+
   function state(x){
     return x.status || 'pendente';
   }
@@ -407,6 +419,7 @@ button,input{font:inherit}button{cursor:pointer}
           <div>☀️ Último dia<b>${fmt(e)}</b></div>
           <div>✈️ Retorno<b>${fmt(b)}</b></div>
         </div>
+        ${x.admission ? `<div class="status">🏢 Admissão: ${fmt(date(x.admission))}${vacationBalance(x)?.overdue ? ` · ⚠️ ${vacationBalance(x).overdue} período(s) vencido(s)` : ' · ✅ Sem período vencido'}</div>` : ''}
         <div class="ra">
           <button data-edit="${x.id}">✏️ Editar</button>
           <button data-delete="${x.id}">🗑️ Apagar</button>
@@ -470,11 +483,15 @@ button,input{font:inherit}button{cursor:pointer}
 
   function editRecord(id){
     const x=local().find(r=>String(r.id)===String(id));if(!x)return;
-    editId=x.id;$('name').value=x.name;$('start').value=x.start;syncDays(x.days);
+    editId=x.id;$('name').value=x.name;$('start').value=x.start;$('admission').value=x.admission||'';syncDays(x.days);
     $('calendarHint').textContent='✏️ Registro carregado para alteração.';
     $('calendarHint').className='calendar-hint';
     const [y,m]=x.start.split('-').map(Number);calendarMonth=new Date(Date.UTC(y,m-1,1));
     renderCalendar();calc();
+    const cal = document.querySelector('.calendar-card');
+    if(cal){
+      setTimeout(()=>cal.scrollIntoView({behavior:'smooth',block:'center'}),80);
+    }
   }
 
   function removeRecord(id){
@@ -496,14 +513,14 @@ button,input{font:inherit}button{cursor:pointer}
     }
     const a=local(), id=editId||Date.now();
     const old=a.find(r=>String(r.id)===String(id));
-    const record={id,name,start:$('start').value,days:c.n,status:'pendente',reason:'',updatedAt:Date.now()};
+    const record={id,name,start:$('start').value,admission:$('admission').value||'',days:c.n,status:'pendente',reason:'',updatedAt:Date.now()};
     const i=a.findIndex(r=>String(r.id)===String(id));
     if(i>=0)a[i]=record;else a.unshift(record);
     saveLocal(a); reset(); renderRecords(); alert('Salvo neste aparelho.');
   }
 
   function reset(){
-    editId=null;$('name').value='';$('start').value='';syncDays(12);
+    editId=null;$('name').value='';$('start').value='';$('admission').value='';syncDays(12);
     ['rs','re','rb','ws','we','wb'].forEach(id=>$(id).textContent='—');
     $('notice').textContent='Escolha uma data para calcular.';
     $('calendarHint').textContent='Toque em uma data para escolher o início das férias.';
