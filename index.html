@@ -212,6 +212,7 @@ button,input{font:inherit}button{cursor:pointer}
     <div class="field"><label>👤 Nome</label><input class="input" id="name" placeholder="Digite o nome"></div>
     <div class="field"><label>📅 Data de início</label><input class="input" id="start" type="date"></div>
     <div class="field"><label>🏢 Data de admissão <span style="font-weight:600;color:#71879a">(opcional)</span></label><input class="input" id="admission" type="date"></div>
+    <div class="status" id="vacationBalanceBox" style="display:none;grid-column:1/-1"></div>
   </div>
 
   <div class="calendar-card">
@@ -372,13 +373,39 @@ button,input{font:inherit}button{cursor:pointer}
 
 
   function vacationBalance(x){
-    if(!x.admission) return null;
+    if(!x?.admission) return null;
     const adm=date(x.admission), today=new Date();
     const now=new Date(Date.UTC(today.getFullYear(),today.getMonth(),today.getDate()));
-    if(now<adm) return null;
+    if(now<adm) return {years:0,overdue:0,current:0};
     const months=(now.getUTCFullYear()-adm.getUTCFullYear())*12+(now.getUTCMonth()-adm.getUTCMonth())-(now.getUTCDate()<adm.getUTCDate()?1:0);
-    const completeYears=Math.floor(months/12);
-    return {years:completeYears, overdue:completeYears>=1 ? Math.max(0, completeYears-1) : 0};
+    const years=Math.floor(months/12);
+    const overdue=Math.max(0, years-1);
+    const current=years>0 ? 1 : 0;
+    return {years,overdue,current};
+  }
+
+  function updateVacationBalance(){
+    const box=$('vacationBalanceBox');
+    const value=$('admission').value;
+    if(!value){
+      box.style.display='none';
+      box.textContent='';
+      return;
+    }
+    const b=vacationBalance({admission:value});
+    box.style.display='block';
+    if(!b || !b.years){
+      box.className='status ok';
+      box.textContent='📊 Ainda não há período completo de férias adquirido pela data de admissão.';
+      return;
+    }
+    if(b.overdue>0){
+      box.className='status err';
+      box.innerHTML=`⚠️ <strong>${b.overdue} ${b.overdue===1?'período de férias vencido':'períodos de férias vencidos'}</strong> · ${b.years} ${b.years===1?'período adquirido':'períodos adquiridos'} · 1 período atual`;
+    }else{
+      box.className='status ok';
+      box.innerHTML=`✅ <strong>Nenhum período vencido</strong> · ${b.years} ${b.years===1?'período adquirido':'períodos adquiridos'} · 1 período atual`;
+    }
   }
 
   function state(x){
@@ -483,7 +510,7 @@ button,input{font:inherit}button{cursor:pointer}
 
   function editRecord(id){
     const x=local().find(r=>String(r.id)===String(id));if(!x)return;
-    editId=x.id;$('name').value=x.name;$('start').value=x.start;$('admission').value=x.admission||'';syncDays(x.days);
+    editId=x.id;$('name').value=x.name;$('start').value=x.start;$('admission').value=x.admission||'';syncDays(x.days);updateVacationBalance();
     $('calendarHint').textContent='✏️ Registro carregado para alteração.';
     $('calendarHint').className='calendar-hint';
     const [y,m]=x.start.split('-').map(Number);calendarMonth=new Date(Date.UTC(y,m-1,1));
@@ -520,7 +547,7 @@ button,input{font:inherit}button{cursor:pointer}
   }
 
   function reset(){
-    editId=null;$('name').value='';$('start').value='';$('admission').value='';syncDays(12);
+    editId=null;$('name').value='';$('start').value='';$('admission').value='';syncDays(12);updateVacationBalance();
     ['rs','re','rb','ws','we','wb'].forEach(id=>$(id).textContent='—');
     $('notice').textContent='Escolha uma data para calcular.';
     $('calendarHint').textContent='Toque em uma data para escolher o início das férias.';
@@ -549,6 +576,8 @@ button,input{font:inherit}button{cursor:pointer}
   // Eventos
   $('calPrev').onclick=()=>{calendarMonth.setUTCMonth(calendarMonth.getUTCMonth()-1);renderCalendar()};
   $('calNext').onclick=()=>{calendarMonth.setUTCMonth(calendarMonth.getUTCMonth()+1);renderCalendar()};
+  $('admission').oninput=updateVacationBalance;
+  $('admission').onchange=updateVacationBalance;
   $('start').onchange=()=>{
     const v=$('start').value;
     if(v){
@@ -606,6 +635,7 @@ button,input{font:inherit}button{cursor:pointer}
 
   // Inicialização
   renderCalendar();
+  updateVacationBalance();
   renderRecords();
 })();
 </script>
