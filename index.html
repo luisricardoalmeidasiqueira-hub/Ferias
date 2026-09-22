@@ -1,445 +1,107 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-<!-- APP_VERSION: 20260923001130 -->
-
-<meta charset="UTF-8">
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0797e6">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Férias">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icon.png">
+<!-- APP_VERSION: 20260922125000 -->
 <title>Controle de Férias</title>
 <style>
-:root{--blue:#0797e6;--ink:#12375d;--line:#d8e9f3;--red:#e94141;--orange:#f39a19;--green:#13a56a;--purple:#7355e8}
-*{box-sizing:border-box}html{margin:0;padding:0;min-height:100%;overflow-x:hidden}body{margin:0;padding:0;min-height:100vh;height:auto;overflow-x:hidden;overflow-y:visible;-webkit-overflow-scrolling:auto;background:#eef9ff;color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}button,input{font:inherit}button{cursor:pointer}
-.hero{height:270px;position:relative;overflow:hidden;padding:24px 18px;color:#fff;background:linear-gradient(#46c8ff 0 46%,#18a9e8 46% 69%,#f8d79e 69%);border-radius:0 0 30px 30px}.hero:after{content:"";position:absolute;left:-10%;right:-10%;bottom:43px;height:45px;background:#fff9;border-radius:50%;transform:rotate(-2deg)}.sun{position:absolute;right:22px;top:24px;width:66px;height:66px;border-radius:50%;background:#ffd32f;box-shadow:0 0 28px #ffe98a}.palm{position:absolute;left:-22px;top:-12px;font-size:95px;transform:rotate(-7deg)}.board{display:inline-block;position:relative;z-index:2;background:linear-gradient(#8f5c2e,#c4873d);border:4px solid #dfa35d;border-radius:12px;padding:9px 15px;box-shadow:0 8px 15px #07508055;transform:rotate(-2deg)}.board h1{margin:0;font-size:28px;text-shadow:0 2px 2px #0005}.hero p{position:relative;z-index:3;font-weight:900;font-size:17px;margin:16px 0;text-shadow:0 2px 2px #075080}.chair{position:absolute;right:25px;bottom:28px;font-size:76px;z-index:3}
-.wrap{max-width:850px;margin:-40px auto 0;position:relative;z-index:5;padding:0 12px 35px}.card{background:#fffffff5;border:1px solid #fff;border-radius:22px;padding:16px;margin-bottom:14px;box-shadow:0 10px 28px #07508018}.grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}.field label{display:block;font-weight:900;font-size:13px;margin-bottom:7px}.input{width:100%;height:50px;border:1.5px solid var(--line);border-radius:13px;padding:0 13px;background:#fbfeff;color:var(--ink);outline:none}.input:focus{border-color:var(--blue);box-shadow:0 0 0 3px #0797e61a}.days{display:flex;align-items:center;gap:8px;margin-top:14px}.days label{font-weight:900;margin-right:auto}.num{width:75px;text-align:center;font-weight:900;font-size:20px}.round{width:44px;height:44px;border:0;border-radius:50%;background:var(--blue);color:#fff;font-size:25px;font-weight:900}.range{width:100%;accent-color:var(--blue);margin-top:8px}.scale{display:flex;justify-content:space-between;font-size:11px;font-weight:800;color:#70879a}.calc{width:100%;border:0;border-radius:15px;margin-top:12px;padding:14px;background:linear-gradient(135deg,#0ca7f3,#1976df);color:#fff;font-weight:900;font-size:17px}.results{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.result{padding:14px;border-radius:17px}.result small{display:block;font-size:10px;font-weight:900}.result strong{display:block;font-size:18px;margin-top:7px}.result span{display:block;font-size:12px;margin-top:3px;color:#61768a;font-weight:700}.start{background:#e8f8ee}.end{background:#fff3dc}.back{background:#e5f2ff}.back.red{outline:3px solid var(--red)}.back.orange{outline:3px solid var(--orange)}.notice{text-align:center;background:#eef8ff;border-radius:13px;padding:11px;margin-top:10px;font-weight:800}.actions{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:11px}.act{border:0;border-radius:13px;color:#fff;padding:13px 6px;font-weight:900}.save{background:var(--green)}.edit{background:#f2a20b}.delete{background:var(--red)}.share{background:var(--purple)}
-.head{display:flex;justify-content:space-between;align-items:center}.head h2{font-size:18px;margin:0}.count{font-size:11px;font-weight:900;color:#71879a}.record{border:1px solid var(--line);border-radius:15px;padding:12px;margin-top:9px;background:#fbfdff}.top{display:flex;justify-content:space-between;gap:8px}.name{font-weight:900}.badge{font-size:10px;font-weight:900;padding:5px 8px;border-radius:999px;background:#e4f1ff;color:#1666a9}.badge.r{background:#ffe5e5;color:#b42323}.badge.o{background:#fff0da;color:#9b5a0b}.badge.g{background:#e4f8ed;color:#087446}.info{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:9px}.info div{font-size:10px;color:#70859a;background:#f2f7fa;border-radius:9px;padding:7px}.info b{display:block;color:var(--ink);font-size:12px;margin-top:2px}.ra{display:flex;gap:7px;margin-top:9px}.ra button{border:0;border-radius:9px;padding:8px 11px;font-weight:800}.quote{background:linear-gradient(135deg,#c8f1ff,#eaf9ff);border-radius:17px;padding:16px;text-align:center;font-weight:900}.quote span{display:block;color:#6b8092;font-size:11px;margin-top:5px}.footer{text-align:center;color:#61798c;font-size:10px;margin-top:17px}.status{margin-top:9px;padding:9px 11px;border-radius:10px;background:#fff7df;color:#7a5700;font-size:11px;font-weight:800}.status.ok{background:#e7f8ee;color:#087446}.status.err{background:#ffe8e8;color:#a52222}
-
-.calendar-card{margin-top:13px;border:1px solid var(--line);border-radius:16px;background:#fafdff;padding:12px}.calendar-head{display:grid;grid-template-columns:40px 1fr 40px;align-items:center;text-align:center;margin-bottom:9px}.calendar-head strong{font-size:15px}.cal-nav{width:36px;height:36px;border:0;border-radius:50%;background:#e6f4fc;color:var(--ink);font-size:25px;font-weight:900}.calendar-week,.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.calendar-week span{text-align:center;font-size:9px;font-weight:900;color:#71879a;padding:4px 0}.cal-day{position:relative;min-height:40px;border:0;border-radius:10px;background:#fff;color:var(--ink);font-weight:900;font-size:12px;padding:14px 2px 4px}.cal-day .dot{position:absolute;top:4px;left:50%;transform:translateX(-50%);width:7px;height:7px;border-radius:50%;display:block}.cal-day.holiday .dot{background:var(--red)}.cal-day.near .dot{background:var(--orange)}.cal-day.normal .dot{background:#fff;border:1px solid #d8e1e7}.cal-day.selected{box-shadow:0 0 0 3px var(--blue) inset;background:#e8f5ff}.cal-day.disabled{opacity:.72}.cal-day.empty{background:transparent}.calendar-legend{display:flex;flex-wrap:wrap;gap:8px 13px;justify-content:center;margin-top:10px;color:#657b8e;font-size:9px;font-weight:800}.calendar-legend .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;vertical-align:middle}.red-dot{background:var(--red)}.orange-dot{background:var(--orange)}.white-dot{background:#fff;border:1px solid #cbd7df}.calendar-hint{text-align:center;margin-top:8px;font-size:10px;font-weight:800;color:#7a5700;background:#fff7df;border-radius:9px;padding:7px}.calendar-hint.ok{background:#e7f8ee;color:#087446}.calendar-hint.err{background:#ffe8e8;color:#a52222}
-@media(max-width:650px){.grid{grid-template-columns:1fr}.results{grid-template-columns:1fr}.result{display:flex;align-items:center;justify-content:space-between}.result strong{margin:0}.actions{grid-template-columns:1fr 1fr}.info{grid-template-columns:1fr}.board h1{font-size:25px}.chair{font-size:60px;right:12px}}
-
-.filters{display:flex;gap:6px;overflow-x:auto;padding:10px 0 2px;scrollbar-width:none}.filters::-webkit-scrollbar{display:none}.filter{border:0;border-radius:999px;padding:7px 10px;background:#edf4f8;color:#31536d;font-size:10px;font-weight:900;white-space:nowrap}.filter.active{background:#0d6f9f;color:#fff}.approval{display:flex;gap:7px;margin-top:9px}.approval button{flex:1;border:0;border-radius:10px;padding:9px 8px;font-weight:900;color:#fff}.approve{background:#16a765}.reject{background:#ef4444}.status.closed{background:#eef2f5;color:#5d7181}
+:root{--blue:#0797e6;--ink:#12375d;--line:#d7e8f2;--red:#e94343;--orange:#f39a19;--green:#13a56a;--purple:#7355e8;--bg:#eef9ff}
+*{box-sizing:border-box}html{min-height:100%;overflow-y:auto}body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch}button,input{font:inherit}button{cursor:pointer}
+.hero{height:230px;position:relative;overflow:hidden;padding:22px 18px;color:#fff;background:linear-gradient(#46c8ff 0 46%,#18a9e8 46% 69%,#f8d79e 69%);border-radius:0 0 28px 28px}.hero:after{content:"";position:absolute;left:-10%;right:-10%;bottom:38px;height:38px;background:#fff9;border-radius:50%;transform:rotate(-2deg)}.sun{position:absolute;right:22px;top:22px;width:62px;height:62px;border-radius:50%;background:#ffd32f;box-shadow:0 0 28px #ffe98a}.palm{position:absolute;left:-22px;top:-16px;font-size:86px;transform:rotate(-7deg)}.board{position:relative;z-index:2;display:inline-block;background:linear-gradient(#8f5c2e,#c4873d);border:4px solid #dfa35d;border-radius:12px;padding:8px 13px;box-shadow:0 8px 15px #07508055;transform:rotate(-2deg)}.board h1{margin:0;font-size:26px;text-shadow:0 2px 2px #0005}.hero p{position:relative;z-index:3;font-weight:900;font-size:16px;margin:14px 0;text-shadow:0 2px 2px #075080}.chair{position:absolute;right:24px;bottom:26px;font-size:68px;z-index:3}
+.wrap{max-width:850px;margin:-34px auto 0;position:relative;z-index:5;padding:0 12px 40px}.card{background:#fffffff5;border:1px solid #fff;border-radius:22px;padding:16px;margin-bottom:14px;box-shadow:0 10px 28px #07508018}.grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}.field label{display:block;font-weight:900;font-size:13px;margin-bottom:7px}.input{width:100%;height:50px;border:1.5px solid var(--line);border-radius:13px;padding:0 13px;background:#fbfeff;color:var(--ink);outline:none}.input:focus{border-color:var(--blue);box-shadow:0 0 0 3px #0797e61a}.days{display:flex;align-items:center;gap:8px;margin-top:14px}.days label{font-weight:900;margin-right:auto}.num{width:75px;text-align:center;font-weight:900;font-size:20px}.round{width:44px;height:44px;border:0;border-radius:50%;background:var(--blue);color:#fff;font-size:25px;font-weight:900}.range{width:100%;accent-color:var(--blue);margin-top:8px}.scale{display:flex;justify-content:space-between;font-size:11px;font-weight:800;color:#70879a}.calendar-box{margin-top:14px;border:1px solid var(--line);border-radius:17px;padding:12px;background:#fbfeff}.cal-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.cal-title{font-weight:900;text-align:center;flex:1}.cal-nav{border:0;width:38px;height:38px;border-radius:11px;background:#e7f5fc;color:#17648f;font-weight:900;font-size:20px}.week{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-top:10px;text-align:center}.week div{font-size:10px;font-weight:900;color:#789}.days-grid div{min-height:43px;position:relative;display:flex;align-items:center;justify-content:center;border-radius:11px;font-weight:800}.days-grid div.empty{background:transparent}.days-grid div:not(.empty){background:#fff;border:1px solid #edf4f8}.days-grid div.blocked{background:#fff0f0;color:#a52b2b}.days-grid div.normal:hover{border-color:#7cc8eb}.days-grid div.selected{outline:3px solid var(--blue);background:#e7f6ff}.dot{position:absolute;top:3px;width:7px;height:7px;border-radius:50%;border:1px solid #fff;box-shadow:0 0 0 1px #0001}.dot.red{background:var(--red)}.dot.orange{background:var(--orange)}.dot.white{background:#fff;border-color:#8aa1b2;box-shadow:0 0 0 1px #7890a0}.legend{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:10px;font-size:10px;font-weight:800;color:#667b8d}.legend span{display:flex;align-items:center;gap:4px}.legend i{width:8px;height:8px;border-radius:50%;display:inline-block;border:1px solid #789}.legend .r{background:var(--red);border-color:var(--red)}.legend .o{background:var(--orange);border-color:var(--orange)}.legend .w{background:#fff}
+.calc{width:100%;border:0;border-radius:15px;margin-top:12px;padding:14px;background:linear-gradient(135deg,#0ca7f3,#1976df);color:#fff;font-weight:900;font-size:17px}.results{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}.result{padding:14px;border-radius:17px}.result small{display:block;font-size:10px;font-weight:900}.result strong{display:block;font-size:18px;margin-top:7px}.result span{display:block;font-size:12px;margin-top:3px;color:#61768a;font-weight:700}.start{background:#e8f8ee}.end{background:#fff3dc}.back{background:#e5f2ff}.back.red{outline:3px solid var(--red)}.back.orange{outline:3px solid var(--orange)}.notice{text-align:center;background:#eef8ff;border-radius:13px;padding:11px;margin-top:10px;font-weight:800;font-size:12px}.actions{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:11px}.act{border:0;border-radius:13px;color:#fff;padding:13px 6px;font-weight:900}.save{background:var(--green)}.edit{background:#f2a20b}.delete{background:var(--red)}.share{background:var(--purple)}
+.head{display:flex;justify-content:space-between;align-items:center;gap:10px}.head h2{font-size:18px;margin:0}.count{font-size:11px;font-weight:900;color:#71879a}.filters{display:flex;gap:7px;overflow-x:auto;padding:10px 1px 3px;-webkit-overflow-scrolling:touch}.filter{white-space:nowrap;border:0;border-radius:999px;padding:9px 11px;background:#edf5f9;color:#506a7e;font-size:11px;font-weight:900}.filter.active{background:#0b92dc;color:#fff}.record{border:1px solid var(--line);border-radius:15px;padding:12px;margin-top:9px;background:#fbfdff}.top{display:flex;justify-content:space-between;gap:8px}.name{font-weight:900}.badge{font-size:10px;font-weight:900;padding:5px 8px;border-radius:999px;background:#fff0da;color:#9b5a0b}.badge.pending{background:#fff0da;color:#9b5a0b}.badge.approved{background:#e4f8ed;color:#087446}.badge.rejected{background:#ffe5e5;color:#b42323}.badge.done{background:#edf1f4;color:#526b7d}.info{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:9px}.info div{font-size:10px;color:#70859a;background:#f2f7fa;border-radius:9px;padding:7px}.info b{display:block;color:var(--ink);font-size:12px;margin-top:2px}.ra{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.ra button{border:0;border-radius:9px;padding:8px 11px;font-weight:800}.approve{background:#e3f8ec;color:#087446}.reject{background:#ffe6e6;color:#a52222}.edit-small{background:#fff0d5;color:#8b5b00}.delete-small{background:#f2f5f7;color:#526b7d}.reason{margin-top:8px;padding:8px 10px;border-radius:9px;background:#fff7df;font-size:11px;font-weight:800}.empty{text-align:center;color:#71879a;padding:14px}.quote{background:linear-gradient(135deg,#c8f1ff,#eaf9ff);border-radius:17px;padding:16px;text-align:center;font-weight:900}.quote span{display:block;color:#6b8092;font-size:11px;margin-top:5px}.footer{text-align:center;color:#61798c;font-size:10px;margin-top:17px}.dev{width:100%;border:0;border-radius:13px;background:#075b8a;color:#fff;padding:12px;font-weight:900}.devpanel{display:none;margin-top:10px;padding:12px;border-radius:14px;background:#eef8ff}.devpanel.open{display:block}.status{margin-top:9px;padding:9px 11px;border-radius:10px;background:#e7f8ee;color:#087446;font-size:11px;font-weight:800}
+@media(max-width:650px){.grid{grid-template-columns:1fr}.results{grid-template-columns:1fr}.result{display:flex;align-items:center;justify-content:space-between}.result strong{margin:0}.actions{grid-template-columns:1fr 1fr}.info{grid-template-columns:1fr}.board h1{font-size:23px}.chair{font-size:58px;right:10px}.hero{height:220px}.wrap{margin-top:-28px}}
 </style>
-<style id="admin-style">
-</style>
-
-
-<style id="developer-style">
-.developer-area{
-  width:min(826px,calc(100% - 24px));
-  margin:14px auto 8px;
-  display:flex;
-  justify-content:flex-end;
-  position:relative;
-  z-index:30;
-}
-.developer-btn{
-  border:0;
-  border-radius:14px;
-  padding:11px 16px;
-  background:#075b8a;
-  color:#fff;
-  font-weight:800;
-  font-size:14px;
-  box-shadow:0 5px 14px rgba(0,0,0,.15);
-  cursor:pointer;
-}
-.developer-btn:active{transform:scale(.98)}
-.admin-panel{
-  display:none;
-  width:min(826px,calc(100% - 24px));
-  margin:10px auto 16px;
-  padding:18px;
-  box-sizing:border-box;
-  background:rgba(255,255,255,.98);
-  border-radius:22px;
-  box-shadow:0 12px 30px rgba(0,0,0,.14);
-  position:relative;
-  z-index:30;
-}
-.admin-panel.open{display:block}
-.admin-panel h2{margin:0 0 12px;color:#075b8a}
-@media(max-width:520px){
-  .developer-area{margin-top:10px}
-  .developer-btn{font-size:13px;padding:10px 14px}
-  .admin-panel{padding:15px}
-}
-</style>
-
-
-<style id="developer-extra-style">
-.admin-login{display:flex;gap:8px;flex-wrap:wrap}
-.admin-login input{flex:1;min-width:160px;height:44px;padding:0 12px;border:1px solid #c8dbe7;border-radius:12px}
-.admin-main,.admin-close{border:0;border-radius:12px;padding:11px 14px;font-weight:800;cursor:pointer}
-.admin-main{background:#075b8a;color:#fff}
-.admin-close{background:#e9eef2;color:#234}
-.admin-note{font-size:12px;color:#60788b;margin-top:10px;line-height:1.4}
-.admin-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
-.admin-card{padding:13px;border-radius:15px;background:#eef8ff;border:1px solid #d5ebf7;font-size:13px}
-.admin-card strong{display:block;font-size:22px;color:#075b8a;margin-top:3px}
-.admin-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-@media(max-width:520px){.admin-grid{grid-template-columns:1fr}}
-</style>
-
-
-<script id="single-file-update">
-(function(){
-  const CURRENT_VERSION="20260922000400";
-  const UPDATE_KEY="ferias_index_version";
-  function checkForUpdate(){
-    try{
-      const base=window.location.href.split("#")[0].split("?")[0];
-      const sep=base.includes("?")?"&":"?";
-      fetch(base+sep+"v="+Date.now(),{
-        cache:"no-store",
-        headers:{"Cache-Control":"no-cache","Pragma":"no-cache"}
-      }).then(r=>r.ok?r.text():null).then(text=>{
-        if(!text) return;
-        const m=text.match(/APP_VERSION:\s*([0-9]+)/);
-        if(m && m[1]!==CURRENT_VERSION){
-          sessionStorage.setItem(UPDATE_KEY,m[1]);
-          window.location.replace(base+"?versao="+m[1]);
-        } else {
-          localStorage.setItem(UPDATE_KEY,CURRENT_VERSION);
-        }
-      }).catch(()=>{});
-    }catch(e){}
-  }
-  window.addEventListener("load",()=>setTimeout(checkForUpdate,900));
-})();
-</script>
-
 </head>
 <body>
-
 <header class="hero"><div class="palm">🌴</div><div class="sun"></div><div class="board"><h1>🏝️ Controle de Férias</h1></div><p>Planeje hoje, aproveite amanhã!</p><div class="chair">🏖️</div></header>
-<div class="developer-area">
-  <button type="button" id="developerBtn" class="developer-btn" onclick="window.abrirDesenvolvedor()">👨‍💻 Desenvolvedor</button>
-</div>
-
-<div id="adminPanel" class="admin-panel">
-  <h2>👨‍💻 Área do Desenvolvedor</h2>
-  <div id="adminLogin">
-    <div class="admin-login">
-      <input id="adminPassword" type="password" placeholder="Senha do desenvolvedor" autocomplete="current-password">
-      <button class="admin-main" type="button" id="adminLoginBtn">Entrar</button>
-    </div>
-    <div class="admin-note">Você é o Desenvolvedor/Dono. A autenticação definitiva e as permissões reais serão ligadas ao Firebase.</div>
-  </div>
-
-  <div id="adminArea" style="display:none">
-    <div class="admin-grid">
-      <div class="admin-card">👥 Usuários<strong id="adminUsers">0</strong></div>
-      <div class="admin-card">🏖️ Registros de férias<strong id="adminVacations">0</strong></div>
-      <div class="admin-card">✅ Aprovados<strong id="adminApproved">0</strong></div>
-      <div class="admin-card">⏳ Pendentes<strong id="adminPending">0</strong></div>
-    </div>
-    <div class="admin-actions">
-      <button class="admin-main" type="button" id="adminExportBtn">💾 Exportar dados</button>
-      <button class="admin-close" type="button" id="adminCloseBtn">Fechar</button>
-    </div>
-    <div class="admin-note">Aqui ficará o controle do administrador operacional, permissões e demais funções quando conectarmos ao Firebase.</div>
-  </div>
-</div>
-
 <main class="wrap">
 <section class="card">
- <div class="grid"><div class="field"><label>👤 Nome</label><input class="input" id="name" placeholder="Digite o nome"></div><div class="field"><label>📅 Data de início</label><input class="input" id="start" type="date"></div></div>
- <div class="calendar-card" id="calendarCard">
-   <div class="calendar-head"><button type="button" class="cal-nav" id="calPrev">‹</button><strong id="calTitle">—</strong><button type="button" class="cal-nav" id="calNext">›</button></div>
-   <div class="calendar-week"><span>DOM</span><span>SEG</span><span>TER</span><span>QUA</span><span>QUI</span><span>SEX</span><span>SÁB</span></div>
-   <div class="calendar-grid" id="calendarGrid"></div>
-   <div class="calendar-legend"><span><i class="dot red-dot"></i> Feriado</span><span><i class="dot orange-dot"></i> Até 2 dias do feriado</span><span><i class="dot white-dot"></i> Dia normal</span></div>
-   <div class="calendar-hint" id="calendarHint">Toque em uma data para escolher o início das férias.</div>
- </div>
- <div class="days"><label>🏖️ Quantidade de dias</label><button class="round" id="minus">−</button><input class="input num" id="days" type="number" min="1" max="30" value="12"><span style="font-weight:900">dias</span><button class="round" id="plus">+</button></div>
- <input class="range" id="range" type="range" min="1" max="30" value="12"><div class="scale"><span>1</span><span>30</span></div><button class="calc" id="calc">☀️ Calcular minhas férias</button>
+<div class="grid">
+<div class="field"><label for="name">Nome do funcionário</label><input id="name" class="input" type="text" placeholder="Digite o nome"></div>
+<div class="field"><label for="start">Data de início</label><input id="start" class="input" type="date"></div>
+</div>
+<div class="days"><label>Quantidade de dias</label><button class="round" id="minus" type="button">−</button><input id="days" class="input num" type="number" min="1" max="30" value="12"><button class="round" id="plus" type="button">+</button></div>
+<input id="range" class="range" type="range" min="1" max="30" value="12"><div class="scale"><span>1</span><span>15</span><span>30 dias</span></div>
+<div class="calendar-box">
+<div class="cal-head"><button class="cal-nav" id="prevMonth" type="button">‹</button><div class="cal-title" id="calTitle"></div><button class="cal-nav" id="nextMonth" type="button">›</button></div>
+<div class="week"><div>DOM</div><div>SEG</div><div>TER</div><div>QUA</div><div>QUI</div><div>SEX</div><div>SÁB</div></div>
+<div class="week days-grid" id="calendar"></div>
+<div class="legend"><span><i class="r"></i> Feriado</span><span><i class="o"></i> Até 2 dias do feriado</span><span><i class="w"></i> Dia normal</span></div>
+</div>
+<button class="calc" id="calc" type="button">🧮 Calcular minhas férias</button>
+<div class="results"><div class="result start"><small>🏖️ INÍCIO</small><strong id="rs">—</strong><span id="ws">—</span></div><div class="result end"><small>☀️ ÚLTIMO DIA</small><strong id="re">—</strong><span id="we">—</span></div><div class="result back" id="rbx"><small>✈️ RETORNO</small><strong id="rb">—</strong><span id="wb">—</span></div></div>
+<div class="notice" id="notice">Escolha uma data para calcular.</div>
+<div class="actions"><button class="act save" id="save" type="button">💾 Salvar</button><button class="act edit" id="edit" type="button">✏️ Editar</button><button class="act delete" id="del" type="button">🗑️ Apagar</button><button class="act share" id="share" type="button">📤 Compartilhar</button></div>
+<div id="saveStatus"></div>
 </section>
-<section class="card">
- <div class="results"><div class="result start"><small>🌴 INÍCIO</small><strong id="rs">—</strong><span id="ws">—</span></div><div class="result end"><small>☀️ ÚLTIMO DIA</small><strong id="re">—</strong><span id="we">—</span></div><div class="result back" id="rbx"><small>✈️ RETORNO</small><strong id="rb">—</strong><span id="wb">—</span></div></div>
- <div class="notice" id="notice">Escolha uma data para calcular.</div><div class="status" id="syncStatus">☁️ Dados locais — Firebase ainda não configurado.</div>
- <div class="actions"><button class="act save" id="save">💾 Salvar</button><button class="act edit" id="edit">✏️ Editar</button><button class="act delete" id="del">🗑️ Apagar</button><button class="act share" id="share">📤 Compartilhar</button></div>
-</section>
-<section class="card"><div class="head"><h2>📋 Férias cadastradas</h2><span class="count" id="count">0 registros</span></div>
-<div class="filters" id="statusFilters"><button class="filter active" data-filter="todos">Todas</button><button class="filter" data-filter="pendente">🟡 Aguardando</button><button class="filter" data-filter="aprovada">🟢 Aprovadas</button><button class="filter" data-filter="recusada">🔴 Recusadas</button><button class="filter" data-filter="encerrada">⚪ Encerradas/realizadas</button></div>
-<div id="records"><div style="text-align:center;color:#71879a;padding:14px">Nenhum registro.</div></div></section>
+<section class="card"><div class="head"><h2>📋 Férias</h2><span class="count" id="count">0 registros</span></div><div class="filters"><button class="filter active" data-filter="todos">Todos</button><button class="filter" data-filter="pendente">🟡 Aguardando</button><button class="filter" data-filter="aprovada">🟢 Aprovadas</button><button class="filter" data-filter="recusada">🔴 Recusadas</button><button class="filter" data-filter="encerrada">⚪ Encerradas</button></div><div id="records"><div class="empty">Nenhum registro.</div></div></section>
+<section class="card"><button class="dev" id="devBtn" type="button">👨‍💻 Desenvolvedor</button><div class="devpanel" id="devPanel"><b>Área do Desenvolvedor</b><p style="font-size:11px;margin-bottom:0">Nesta versão de teste os dados ficam neste aparelho. O Firebase será conectado depois.</p></div></section>
 <section class="card"><div class="quote">🌊 “Descanso hoje para voltar com mais energia amanhã!”<span>Férias fazem bem.</span></div></section>
-
+<div class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.</div>
 </main>
-
 <script>
 (function(){
-  function q(id){return document.getElementById(id)}
-  const HOL={"01-01":"Confraternização Universal","04-21":"Tiradentes","05-01":"Dia do Trabalho","09-07":"Independência do Brasil","10-12":"Nossa Senhora Aparecida","11-02":"Finados","11-15":"Proclamação da República","11-20":"Dia da Consciência Negra","12-25":"Natal"};
-  function easter(y){let a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mo=Math.floor((h+l-7*m+114)/31),da=((h+l-7*m+114)%31)+1;return new Date(Date.UTC(y,mo-1,da))}
-  function holidays(y){const m={};Object.entries(HOL).forEach(([md,n])=>m[y+'-'+md]=n);const e=easter(y), add=(off,n)=>{const x=new Date(e);x.setUTCDate(x.getUTCDate()+off);m[x.toISOString().slice(0,10)]=n};add(-47,'Carnaval');add(-2,'Sexta-feira Santa');add(60,'Corpus Christi');return m}
-  function iso(y,m,d){return y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0')}
-  function nearHoliday(v,h){const x=new Date(v+'T00:00:00Z');for(const k in h){if(Math.abs((x-new Date(k+'T00:00:00Z'))/86400000)<=2)return k}return null}
-  let month=new Date(); month=new Date(Date.UTC(month.getUTCFullYear(),month.getUTCMonth(),1));
-  function render(){
-    const y=month.getUTCFullYear(),m=month.getUTCMonth(),h=holidays(y), title=new Intl.DateTimeFormat('pt-BR',{month:'long',year:'numeric',timeZone:'UTC'}).format(month);
-    q('calTitle').textContent=title.charAt(0).toUpperCase()+title.slice(1);
-    const first=new Date(Date.UTC(y,m,1)).getUTCDay(), total=new Date(Date.UTC(y,m+1,0)).getUTCDate(); let html='';
-    for(let i=0;i<first;i++)html+='<div class="cal-day empty"></div>';
-    for(let day=1;day<=total;day++){const v=iso(y,m,day),fh=h[v],near=nearHoliday(v,h),cls=fh?'holiday':near?'near':'normal',sel=q('start').value===v?' selected':'';html+='<button type="button" class="cal-day '+cls+sel+'" data-date="'+v+'"><i class="dot"></i>'+day+'</button>'}
-    q('calendarGrid').innerHTML=html;
-    q('calendarGrid').querySelectorAll('[data-date]').forEach(b=>b.onclick=function(e){e.preventDefault();const v=this.dataset.date,hh=holidays(Number(v.slice(0,4))),near=nearHoliday(v,hh);if(near){q('calendarHint').textContent='⚠️ Data não disponível. Está até 2 dias do feriado: '+hh[near]+'.';q('calendarHint').className='calendar-hint err';return}q('start').value=v;q('calendarHint').textContent='✅ Data selecionada para início das férias.';q('calendarHint').className='calendar-hint ok';if(typeof window.calc==='function')window.calc();render();});
-  }
-  function init(){
-    q('calPrev').onclick=function(e){e.preventDefault();month.setUTCMonth(month.getUTCMonth()-1);render()};
-    q('calNext').onclick=function(e){e.preventDefault();month.setUTCMonth(month.getUTCMonth()+1);render()};
-    q('start').addEventListener('change',function(){const v=this.value;if(v){const [y,m]=v.split('-').map(Number);month=new Date(Date.UTC(y,m-1,1));}render()});
-    render();
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-})();
-</script>
-<script>
-/* CORE FALLBACK: cálculo e salvamento local funcionam mesmo se o módulo Firebase/CDN demorar ou falhar. */
-(function(){
-  const $=id=>document.getElementById(id);
-  const KEY='ferias_app';
-  const pad=n=>String(n).padStart(2,'0');
-  const parseDate=iso=>new Date(iso+'T00:00:00Z');
-  const fmt=d=>d.toLocaleDateString('pt-BR',{timeZone:'UTC'});
-  const weekday=d=>new Intl.DateTimeFormat('pt-BR',{weekday:'long',timeZone:'UTC'}).format(d);
-  const clamp=v=>Math.max(1,Math.min(30,Number(v)||1));
-  function syncDays(v){v=clamp(v);$('days').value=v;$('range').value=v;return v}
-  function calcCore(){
-    const start=$('start').value;
-    if(!start){['rs','re','rb','ws','we','wb'].forEach(id=>$(id).textContent='—');$('notice').textContent='Escolha uma data para calcular.';return null}
-    const n=syncDays($('days').value), s=parseDate(start), e=new Date(s), b=new Date(s);
-    e.setUTCDate(e.getUTCDate()+n-1); b.setTime(e.getTime()); b.setUTCDate(b.getUTCDate()+1);
-    $('rs').textContent=fmt(s); $('ws').textContent=weekday(s).replace(/^./,c=>c.toUpperCase());
-    $('re').textContent=fmt(e); $('we').textContent=weekday(e).replace(/^./,c=>c.toUpperCase());
-    $('rb').textContent=fmt(b); $('wb').textContent=weekday(b).replace(/^./,c=>c.toUpperCase());
-    const box=$('rbx'); box.className='result back';
-    let msg='🔵 Retorno em dia útil.';
-    if(b.getUTCDay()===0||b.getUTCDay()===6){box.classList.add('red');msg='🔴 Retorno no fim de semana.'}
-    else if(b.getUTCDay()===5){box.classList.add('orange');msg='🟠 Retorno na sexta-feira.'}
-    $('notice').textContent=msg+' Último dia: '+fmt(e)+' · Retorno: '+fmt(b)+'.';
-    return {s,e,b,n};
-  }
-  window.calc=calcCore;
-  function localArr(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch{return[]}}
-  function localPut(a){localStorage.setItem(KEY,JSON.stringify(a))}
-  function simpleRender(){
-    const box=$('records'), arr=localArr();
-    $('count').textContent=arr.length+' '+(arr.length===1?'registro':'registros');
-    if(!arr.length){box.innerHTML='<div style="text-align:center;color:#71879a;padding:14px">Nenhum registro.</div>';return}
-    box.innerHTML=arr.map(x=>{
-      const s=parseDate(x.start),e=new Date(s);e.setUTCDate(e.getUTCDate()+Number(x.days||1)-1);const b=new Date(e);b.setUTCDate(b.getUTCDate()+1);
-      const st=x.status||'pendente';
-      const label=st==='aprovada'?'✅ Férias aprovadas':st==='recusada'?'❌ Férias recusadas':st==='encerrada'?'⚪ Encerradas / realizadas':'🟡 Aguardando aprovação';
-      const approval=st==='pendente'?`<div class="approval"><button class="approve" onclick="window.fallbackApprove('${x.id}')">🟢 Aprovar férias</button><button class="reject" onclick="window.fallbackReject('${x.id}')">🔴 Recusar férias</button></div>`:'';
-      return `<div class="record"><div class="top"><div class="name">👤 ${String(x.name).replace(/[&<>]/g,'')}</div><span class="badge g">Sem conflito</span></div><div class="info"><div>🏖️ Início<b>${fmt(s)}</b></div><div>☀️ Último dia<b>${fmt(e)}</b></div><div>✈️ Retorno<b>${fmt(b)}</b></div></div><div class="ra"><button onclick="window.fallbackEdit('${x.id}')">✏️ Editar</button><button onclick="window.fallbackDelete('${x.id}')">🗑️ Apagar</button></div><div class="status">${label}</div>${approval}</div>`;
-    }).join('');
-  }
-  window.fallbackApprove=id=>{const a=localArr(),x=a.find(x=>String(x.id)===String(id));if(!x)return;if(confirm('Aprovar estas férias?')){x.status='aprovada';localPut(a);simpleRender()}};
-  window.fallbackReject=id=>{const a=localArr(),x=a.find(x=>String(x.id)===String(id));if(!x)return;if(confirm('Recusar estas férias?')){x.status='recusada';localPut(a);simpleRender()}};
-  window.fallbackEdit=id=>{const x=localArr().find(x=>String(x.id)===String(id));if(!x)return;$('name').value=x.name;$('start').value=x.start;syncDays(x.days);window.calc();};
-  window.fallbackDelete=id=>{if(!confirm('Apagar este registro?'))return;localPut(localArr().filter(x=>String(x.id)!==String(id)));simpleRender()};
-  function saveCore(){
-    const c=window.calc(), name=$('name').value.trim();
-    if(!name||!c){alert('Preencha o nome e a data de início.');return}
-    /* A regra do feriado é validada pelo calendário; aqui também protegemos o salvamento. */
-    const y=c.s.getUTCFullYear();
-    const fixed={'01-01':'Confraternização Universal','04-21':'Tiradentes','05-01':'Dia do Trabalho','09-07':'Independência do Brasil','10-12':'Nossa Senhora Aparecida','11-02':'Finados','11-15':'Proclamação da República','11-20':'Dia da Consciência Negra','12-25':'Natal'};
-    const iso=d=>d.toISOString().slice(0,10); const h={}; for(const [md,n] of Object.entries(fixed))h[`${y}-${md}`]=n;
-    const selected=$('start').value, sd=parseDate(selected); let blocked=null; for(const k in h){if(Math.abs((sd-parseDate(k))/86400000)<=2){blocked=h[k];break}}
-    if(blocked){$('calendarHint').textContent='⚠️ Data não disponível. Está até 2 dias do feriado: '+blocked+'.';$('calendarHint').className='calendar-hint err';alert('Data indisponível: '+blocked+'. Escolha outra data.');return}
-    const a=localArr(), id=window.__editId||Date.now(), x={id,name,start:selected,days:c.n,status:'pendente',updatedAt:Date.now()}; const i=a.findIndex(r=>String(r.id)===String(id)); if(i>=0)a[i]=x;else a.unshift(x); localPut(a); simpleRender(); window.__editId=null; alert('Salvo neste aparelho.');
-  }
-  function bind(){
-    $('range').addEventListener('input',e=>{syncDays(e.target.value);window.calc()});
-    $('range').addEventListener('change',e=>{syncDays(e.target.value);window.calc()});
-    $('days').addEventListener('input',e=>{syncDays(e.target.value);window.calc()});
-    $('days').addEventListener('change',e=>{syncDays(e.target.value);window.calc()});
-    $('minus').addEventListener('click',()=>{syncDays(Number($('days').value)-1);window.calc()});
-    $('plus').addEventListener('click',()=>{syncDays(Number($('days').value)+1);window.calc()});
-    $('calc').addEventListener('click',window.calc);
-    $('save').addEventListener('click',saveCore);
-    $('edit').addEventListener('click',()=>{const a=localArr();if(a.length)window.fallbackEdit(a[0].id);else alert('Não há registros.')});
-    $('del').addEventListener('click',()=>{if(window.__editId)window.fallbackDelete(window.__editId);else alert('Selecione um registro para apagar.')});
-    simpleRender();
-    if($('start').value)window.calc();
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind,{once:true});else bind();
-})();
-</script>
-<script type="module">
-/* ==========================================================
-   FIREBASE — DEIXADO PRONTO PARA CONEXÃO COMPARTILHADA
-   Cole aqui a configuração do seu projeto Firebase.
-   Depois de preenchida, os registros passam a ser salvos
-   no Firestore e todos os usuários autorizados enxergam os
-   mesmos dados.
-   ========================================================== */
-const firebaseConfig={
-  apiKey:"COLE_AQUI_API_KEY",
-  authDomain:"COLE_AQUI_AUTH_DOMAIN",
-  projectId:"COLE_AQUI_PROJECT_ID",
-  storageBucket:"COLE_AQUI_STORAGE_BUCKET",
-  messagingSenderId:"COLE_AQUI_MESSAGING_SENDER_ID",
-  appId:"COLE_AQUI_APP_ID"
+'use strict';
+const $=id=>document.getElementById(id), KEY='ferias_app_v2_clean';
+let editId=null, filter='todos';
+const holidays={
+ '2026-01-01':'Confraternização Universal','2026-04-03':'Paixão de Cristo','2026-04-21':'Tiradentes','2026-05-01':'Dia do Trabalho','2026-09-07':'Independência do Brasil','2026-10-12':'Nossa Senhora Aparecida','2026-11-02':'Finados','2026-11-15':'Proclamação da República','2026-11-20':'Dia da Consciência Negra','2026-12-25':'Natal',
+ '2027-01-01':'Confraternização Universal','2027-04-21':'Tiradentes','2027-05-01':'Dia do Trabalho','2027-09-07':'Independência do Brasil','2027-10-12':'Nossa Senhora Aparecida','2027-11-02':'Finados','2027-11-15':'Proclamação da República','2027-11-20':'Dia da Consciência Negra','2027-12-25':'Natal'
 };
-
-import {initializeApp} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-import {getFirestore,collection,addDoc,doc,setDoc,deleteDoc,onSnapshot,query,orderBy,serverTimestamp} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-import {getAuth,signInAnonymously,onAuthStateChanged} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
-
-const $=id=>document.getElementById(id);let editId=null;let shared=[];let db=null;let auth=null;let firebaseReady=false;let unsub=null;
-const localKey='ferias_app';
-function clamp(v){return Math.max(1,Math.min(30,Number(v)||1))}function sync(v){v=clamp(v);$('days').value=v;$('range').value=v}
-$('range').oninput=e=>{sync(e.target.value);calc()};$('days').oninput=e=>{sync(e.target.value);calc()};$('minus').onclick=()=>{sync(+$('days').value-1);calc()};$('plus').onclick=()=>{sync(+$('days').value+1);calc()};$('start').onchange=calc;$('calc').onclick=calc;
-function d(s){return new Date(s+'T00:00:00Z')}function f(x){return x.toLocaleDateString('pt-BR',{timeZone:'UTC'})}function w(x){return new Intl.DateTimeFormat('pt-BR',{weekday:'long',timeZone:'UTC'}).format(x)}function cap(x){return x[0].toUpperCase()+x.slice(1)}
-const HOLIDAY_NAMES={"01-01":"Confraternização Universal","04-21":"Tiradentes","05-01":"Dia do Trabalho","09-07":"Independência do Brasil","10-12":"Nossa Senhora Aparecida","11-02":"Finados","11-15":"Proclamação da República","11-20":"Dia da Consciência Negra","12-25":"Natal"};
-function easterUTC(year){let a=year%19,b=Math.floor(year/100),c=year%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),month=Math.floor((h+l-7*m+114)/31),day=((h+l-7*m+114)%31)+1;return new Date(Date.UTC(year,month-1,day));}
-function holidayMap(year){const m={};for(const [md,name] of Object.entries(HOLIDAY_NAMES))m[`${year}-${md}`]=name;const e=easterUTC(year);const add=(off,name)=>{const x=new Date(e);x.setUTCDate(x.getUTCDate()+off);m[x.toISOString().slice(0,10)]=name};add(-47,'Carnaval');add(-2,'Sexta-feira Santa');add(60,'Corpus Christi');return m}
-let calendarMonth=new Date();calendarMonth=new Date(Date.UTC(calendarMonth.getUTCFullYear(),calendarMonth.getUTCMonth(),1));
-function isoUTC(y,m,day){return `${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`}
-function dateNearHoliday(iso,holidays){const x=d(iso);for(const h of Object.keys(holidays)){const gap=Math.abs((x-d(h))/86400000);if(gap<=2)return h}return null}
-function renderCalendar(){const y=calendarMonth.getUTCFullYear(),m=calendarMonth.getUTCMonth(),hol=holidayMap(y);$('calTitle').textContent=new Intl.DateTimeFormat('pt-BR',{month:'long',year:'numeric',timeZone:'UTC'}).format(calendarMonth).replace(/^./,c=>c.toUpperCase());const first=new Date(Date.UTC(y,m,1)).getUTCDay(),days=new Date(Date.UTC(y,m+1,0)).getUTCDate();let html='';for(let i=0;i<first;i++)html+='<div class="cal-day empty"></div>';for(let day=1;day<=days;day++){const iso=isoUTC(y,m,day),h=hol[iso],near=dateNearHoliday(iso,hol);const cls=h?'holiday':near?'near':'normal';const selected=$('start').value===iso?' selected':'';const title=h?` title="${h}"`:near?` title="Até 2 dias do feriado: ${hol[near]}"`:'';html+=`<button type="button" class="cal-day ${cls}${selected}" data-date="${iso}"${title}><i class="dot"></i>${day}</button>`}$('calendarGrid').innerHTML=html;document.querySelectorAll('.cal-day[data-date]').forEach(btn=>btn.addEventListener('click',()=>chooseCalendarDate(btn.dataset.date)));}
-function chooseCalendarDate(iso){const year=Number(iso.slice(0,4)),hol=holidayMap(year),near=dateNearHoliday(iso,hol);if(near){const name=hol[near];$('calendarHint').textContent=`⚠️ Data não disponível. Está até 2 dias do feriado: ${name}.`;$('calendarHint').className='calendar-hint err';return}$('start').value=iso;$('calendarHint').textContent='✅ Data selecionada para início das férias.';$('calendarHint').className='calendar-hint ok';renderCalendar();calc()}
-$('calPrev').onclick=()=>{calendarMonth.setUTCMonth(calendarMonth.getUTCMonth()-1);renderCalendar()};$('calNext').onclick=()=>{calendarMonth.setUTCMonth(calendarMonth.getUTCMonth()+1);renderCalendar()};$('start').addEventListener('change',()=>{const v=$('start').value;if(v){const [y,m]=v.split('-').map(Number);calendarMonth=new Date(Date.UTC(y,m-1,1));const hol=holidayMap(y),near=dateNearHoliday(v,hol);$('calendarHint').textContent=near?`⚠️ Data está até 2 dias do feriado: ${hol[near]}.`:'✅ Data selecionada para início das férias.';$('calendarHint').className=near?'calendar-hint err':'calendar-hint ok';}else{$('calendarHint').textContent='Toque em uma data para escolher o início das férias.';$('calendarHint').className='calendar-hint'}renderCalendar()};
-/* calendar rendered by independent script */
-window.calc=function(){if(!$('start').value)return;let n=clamp($('days').value);sync(n);let s=d($('start').value),e=new Date(s);e.setUTCDate(e.getUTCDate()+n-1);let b=new Date(e);b.setUTCDate(b.getUTCDate()+1);$('rs').textContent=f(s);$('ws').textContent=cap(w(s));$('re').textContent=f(e);$('we').textContent=cap(w(e));$('rb').textContent=f(b);$('wb').textContent=cap(w(b));let box=$('rbx');box.className='result back';let msg='🔵 Retorno em dia útil.';if(b.getUTCDay()===0||b.getUTCDay()===6){box.classList.add('red');msg='🔴 Retorno no fim de semana.'}else if(b.getUTCDay()===5){box.classList.add('orange');msg='🟠 Retorno na sexta-feira.'}$('notice').textContent=msg+' Último dia: '+f(e)+' · Retorno: '+f(b)+'.';return{s,e,b,n}}
-function localArr(){return JSON.parse(localStorage.getItem(localKey)||'[]')}function localPut(a){localStorage.setItem(localKey,JSON.stringify(a))}
-function setStatus(t,kind=''){const e=$('syncStatus');e.textContent=t;e.className='status '+kind}
+// Móveis de 2026/2027, para o teste e para a regra visual.
+Object.assign(holidays,{'2026-02-16':'Carnaval','2026-02-17':'Carnaval','2026-04-02':'Quinta-feira Santa','2026-06-04':'Corpus Christi','2027-02-08':'Carnaval','2027-02-09':'Carnaval','2027-03-25':'Quinta-feira Santa','2027-05-27':'Corpus Christi'});
+function pad(n){return String(n).padStart(2,'0')}
+function keyDate(y,m,d){return y+'-'+pad(m+1)+'-'+pad(d)}
+function parseDate(s){return new Date(s+'T12:00:00')}
+function fmt(s){return parseDate(s).toLocaleDateString('pt-BR')}
+function isoLocal(dt){return dt.getFullYear()+'-'+pad(dt.getMonth()+1)+'-'+pad(dt.getDate())}
+function addDays(dt,n){const x=new Date(dt);x.setDate(x.getDate()+n);return x}
+function clamp(n){return Math.max(1,Math.min(30,Number(n)||1))}
+function syncDays(v){v=clamp(v);$('days').value=v;$('range').value=v}
+function isNearHoliday(s){const dt=parseDate(s);for(let i=-2;i<=2;i++){if(holidays[isoLocal(addDays(dt,i))])return holidays[isoLocal(addDays(dt,i))]}return null}
+function holidayInfo(s){return holidays[s]||null}
+function calc(){
+ const s=$('start').value;if(!s){resetResults();return null}
+ const n=clamp($('days').value);syncDays(n);const sd=parseDate(s),last=addDays(sd,n-1),back=addDays(last,1);
+ $('rs').textContent=fmt(s);$('ws').textContent=sd.toLocaleDateString('pt-BR',{weekday:'long'});$('re').textContent=fmt(isoLocal(last));$('we').textContent=last.toLocaleDateString('pt-BR',{weekday:'long'});$('rb').textContent=fmt(isoLocal(back));$('wb').textContent=back.toLocaleDateString('pt-BR',{weekday:'long'});
+ const box=$('rbx');box.className='result back';let msg='🔵 Retorno em dia útil.';if(back.getDay()===0||back.getDay()===6){box.classList.add('red');msg='🔴 Retorno no fim de semana.'}else if(back.getDay()===5){box.classList.add('orange');msg='🟠 Retorno na sexta-feira.'}$('notice').textContent=msg+' Último dia: '+fmt(isoLocal(last))+' · Retorno: '+fmt(isoLocal(back))+'.';return {start:s,days:n,last:isoLocal(last),return:isoLocal(back)}
+}
+function resetResults(){['rs','re','rb','ws','we','wb'].forEach(id=>$(id).textContent='—');$('rbx').className='result back';$('notice').textContent='Escolha uma data para calcular.'}
+function renderCalendar(){
+ const s=$('start').value;let base=window.calMonth;if(!base){const d=s?parseDate(s):new Date();base={y:d.getFullYear(),m:d.getMonth()}}
+ const first=new Date(base.y,base.m,1),days=new Date(base.y,base.m+1,0).getDate(),lead=first.getDay();$('calTitle').textContent=first.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+ const cells=[];for(let i=0;i<lead;i++)cells.push('<div class="empty"></div>');for(let day=1;day<=days;day++){const k=keyDate(base.y,base.m,day),h=holidayInfo(k),near=isNearHoliday(k),blocked=!!near;let dot=h?'red':blocked?'orange':'white';let cls=blocked?'blocked':'normal';if(k===s)cls+=' selected';cells.push('<div class="'+cls+'" data-date="'+k+'" title="'+(h||near||'Dia normal')+'"><i class="dot '+dot+'"></i>'+day+'</div>')}$('calendar').innerHTML=cells.join('');
+ $('calendar').querySelectorAll('[data-date]').forEach(el=>el.addEventListener('click',()=>{const k=el.dataset.date;const h=holidayInfo(k),near=isNearHoliday(k);if(near){$('notice').textContent='⚠️ Data não disponível. Está até 2 dias do feriado: '+near+'.';return}$('start').value=k;calc();renderCalendar()}));
+}
+window.calMonth=null;
+$('prevMonth').addEventListener('click',()=>{let b=window.calMonth||(()=>{const d=parseDate($('start').value||isoLocal(new Date()));return {y:d.getFullYear(),m:d.getMonth()}})();b.m--;if(b.m<0){b.m=11;b.y--}window.calMonth=b;renderCalendar()});
+$('nextMonth').addEventListener('click',()=>{let b=window.calMonth||(()=>{const d=parseDate($('start').value||isoLocal(new Date()));return {y:d.getFullYear(),m:d.getMonth()}})();b.m++;if(b.m>11){b.m=0;b.y++}window.calMonth=b;renderCalendar()});
+$('start').addEventListener('change',()=>{const d=parseDate($('start').value);window.calMonth={y:d.getFullYear(),m:d.getMonth()};calc();renderCalendar()});
+$('days').addEventListener('input',()=>{syncDays($('days').value);calc()});$('range').addEventListener('input',()=>{syncDays($('range').value);calc()});$('minus').addEventListener('click',()=>{syncDays(Number($('days').value)-1);calc()});$('plus').addEventListener('click',()=>{syncDays(Number($('days').value)+1);calc()});$('calc').addEventListener('click',calc);
+function load(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){return []}}
+function saveAll(a){localStorage.setItem(KEY,JSON.stringify(a))}
+function statusInfo(x){if(x.status==='aprovada')return ['approved','🟢 Aprovadas'];if(x.status==='recusada')return ['rejected','🔴 Recusadas'];if(x.status==='encerrada')return ['done','⚪ Encerradas / realizadas'];return ['pending','🟡 Aguardando aprovação']}
+function isEnded(x){return isoLocal(new Date())>x.return}
+function renderRecords(){
+ let a=load();a=a.map(x=>x.status==='aprovada'&&isEnded(x)?({...x,status:'encerrada'}):x);saveAll(a);let shown=filter==='todos'?a:a.filter(x=>x.status===filter);$('count').textContent=a.length+' '+(a.length===1?'registro':'registros');
+ $('records').innerHTML=shown.length?shown.map(x=>{const [bc,bt]=statusInfo(x);let buttons='';if(x.status==='pendente'){buttons='<button class="approve" data-action="approve" data-id="'+x.id+'">🟢 Aprovar</button><button class="reject" data-action="reject" data-id="'+x.id+'">🔴 Recusar</button>'}if(x.status==='recusada'){buttons='<button class="edit-small" data-action="edit" data-id="'+x.id+'">✏️ Alterar</button><button class="delete-small" data-action="delete" data-id="'+x.id+'">🗑️ Apagar</button>'}if(x.status==='aprovada'||x.status==='encerrada'){buttons='<button class="edit-small" data-action="edit" data-id="'+x.id+'">✏️ Editar</button>'}return '<div class="record"><div class="top"><div class="name">👤 '+esc(x.name)+'</div><span class="badge '+bc+'">'+bt+'</span></div><div class="info"><div>🏖️ Início<b>'+fmt(x.start)+'</b></div><div>☀️ Último dia<b>'+fmt(x.last)+'</b></div><div>✈️ Retorno<b>'+fmt(x.return)+'</b></div></div><div class="ra">'+buttons+'</div>'+(x.reason?'<div class="reason">Motivo: '+esc(x.reason)+'</div>':'')+'</div>'}).join(''):'<div class="empty">Nenhum registro nesta categoria.</div>';
+}
 function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
-function conflictType(item){const others=shared.filter(x=>x.id!==item.id);const s=d(item.start),e=new Date(s);e.setUTCDate(e.getUTCDate()+item.days-1);let overlap=false,near=false;for(const x of others){const os=d(x.start),oe=new Date(os);oe.setUTCDate(oe.getUTCDate()+x.days-1);if(s<=oe&&e>=os)overlap=true;else{const gap=Math.min(Math.abs(s-oe),Math.abs(os-e))/86400000;if(gap<=7)near=true}}return overlap?'r':near?'o':'g'}
-let statusFilter='todos';
-function getRecordState(x){
-  const s=d(x.start),e=new Date(s);e.setUTCDate(e.getUTCDate()+Number(x.days||1)-1);
-  const today=new Date(); const t=new Date(Date.UTC(today.getFullYear(),today.getMonth(),today.getDate()));
-  if(x.status==='aprovada' && e<t) return 'encerrada';
-  return x.status||'pendente';
-}
-function statusLabel(state){return state==='aprovada'?'✅ Férias aprovadas':state==='recusada'?'❌ Férias recusadas':state==='encerrada'?'⚪ Encerradas / realizadas':'🟡 Aguardando aprovação'}
-function render(){
- const all=firebaseReady?shared:localArr();
- const filtered=statusFilter==='todos'?all:all.filter(x=>getRecordState(x)===statusFilter);
- $('count').textContent=filtered.length+' '+(filtered.length===1?'registro':'registros');
- if(!filtered.length){$('records').innerHTML='<div style="text-align:center;color:#71879a;padding:14px">Nenhum registro nesta categoria.</div>';return}
- $('records').innerHTML=filtered.map(x=>{
-   let s=d(x.start),e=new Date(s);e.setUTCDate(e.getUTCDate()+Number(x.days||1)-1);let b=new Date(e);b.setUTCDate(b.getUTCDate()+1);
-   let cls=conflictType(x),txt=cls==='r'?'Conflito de período':cls==='o'?'Período próximo':'Sem conflito';
-   let state=getRecordState(x),statusClass=state==='aprovada'?'ok':state==='recusada'?'err':state==='encerrada'?'closed':'';
-   const approval=state==='pendente'?`<div class="approval"><button class="approve" onclick="window.approveRecord('${String(x.id).replace(/'/g,"\\'")}')">🟢 Aprovar férias</button><button class="reject" onclick="window.rejectRecord('${String(x.id).replace(/'/g,"\\'")}')">🔴 Recusar férias</button></div>`:'';
-   return `<div class="record"><div class="top"><div class="name">👤 ${esc(x.name)}</div><span class="badge ${cls}">${txt}</span></div><div class="info"><div>🏖️ Início<b>${f(s)}</b></div><div>☀️ Último dia<b>${f(e)}</b></div><div>✈️ Retorno<b>${f(b)}</b></div></div><div class="ra"><button onclick="window.loadRecord('${String(x.id).replace(/'/g,"\\'")}')">✏️ Editar</button><button onclick="window.deleteRecord('${String(x.id).replace(/'/g,"\\'")}')">🗑️ Apagar</button></div><div class="status ${statusClass}">${statusLabel(state)}</div>${approval}</div>`
- }).join('')
-}
-async function updateApproval(id,status){
- const a=firebaseReady?shared:localArr();const x=a.find(q=>String(q.id)===String(id));if(!x)return;
- try{
-   if(firebaseReady){await setDoc(doc(db,'ferias',String(id)),{status,updatedAt:serverTimestamp()},{merge:true})}
-   else{x.status=status;x.updatedAt=Date.now();localPut(a);render()}
- }catch(e){console.error(e);alert('Não foi possível atualizar a aprovação.');return}
-}
-window.approveRecord=async id=>{if(confirm('Aprovar estas férias?'))await updateApproval(id,'aprovada')};
-window.rejectRecord=async id=>{if(confirm('Recusar estas férias?'))await updateApproval(id,'recusada')};
-window.loadRecord=id=>{const x=(firebaseReady?shared:localArr()).find(q=>String(q.id)===String(id));if(!x)return;editId=x.id;$('name').value=x.name;$('start').value=x.start;sync(x.days);calc();};
-window.deleteRecord=async id=>{if(!confirm('Apagar este registro?'))return;if(firebaseReady){await deleteDoc(doc(db,'ferias',id))}else{localPut(localArr().filter(x=>String(x.id)!==String(id)));render()}if(String(editId)===String(id))reset()};
-$('save').onclick=async()=>{const c=calc(),name=$('name').value.trim();if(!name||!c){alert('Preencha o nome e a data de início.');return}const hol=holidayMap(Number(c.s.getUTCFullYear())),near=dateNearHoliday($('start').value,hol);if(near){$('calendarHint').textContent=`⚠️ Não é possível iniciar férias até 2 dias antes/depois de ${hol[near]}.`;$('calendarHint').className='calendar-hint err';alert(`Data indisponível: ${hol[near]}. Escolha outra data.`);return}const base={name,start:$('start').value,days:c.n,status:'pendente',updatedAt:serverTimestamp()};try{if(firebaseReady){if(editId){await setDoc(doc(db,'ferias',String(editId)),base,{merge:true})}else{await addDoc(collection(db,'ferias'),{...base,createdAt:serverTimestamp()})}}else{const x={id:editId||Date.now(),...base,updatedAt:Date.now()};const a=localArr(),i=a.findIndex(q=>String(q.id)===String(x.id));if(i>=0)a[i]=x;else a.unshift(x);localPut(a);render()}reset();alert(firebaseReady?'Férias salvas e compartilhadas.':'Salvo neste aparelho.')}catch(e){console.error(e);alert('Não foi possível salvar. Verifique a configuração do Firebase.')}};
-$('edit').onclick=()=>{const a=firebaseReady?shared:localArr();if(!a.length){alert('Não há registros.');return}window.loadRecord(a[0].id)};$('del').onclick=()=>{if(editId)window.deleteRecord(editId);else reset()};
-function reset(){editId=null;$('name').value='';$('start').value='';sync(12);['rs','re','rb','ws','we','wb'].forEach(id=>$(id).textContent='—');$('notice').textContent='Escolha uma data para calcular.';$('calendarHint').textContent='Toque em uma data para escolher o início das férias.';$('calendarHint').className='calendar-hint';renderCalendar()}
-$('share').onclick=async()=>{const url=window.location.href,title='🏖️ Controle de Férias',text='Abra o aplicativo Controle de Férias:';if(navigator.share){try{await navigator.share({title,text,url});return}catch(e){if(e&&e.name==='AbortError')return}}try{await navigator.clipboard.writeText(url);alert('🔗 Link do aplicativo copiado!')}catch(e){prompt('Copie o link do aplicativo:',url)}};
-function initFirebase(){const configured=!Object.values(firebaseConfig).some(v=>String(v).startsWith('COLE_AQUI_'));if(!configured){setStatus('☁️ Firebase preparado, mas ainda aguardando a configuração do projeto.','');render();return}try{const app=initializeApp(firebaseConfig);db=getFirestore(app);auth=getAuth(app);onAuthStateChanged(auth,u=>{if(u){firebaseReady=true;setStatus('☁️ Conectado — lançamentos compartilhados em tempo real.','ok');const q=query(collection(db,'ferias'),orderBy('createdAt','desc'));unsub=onSnapshot(q,snap=>{shared=snap.docs.map(x=>({id:x.id,...x.data()}));render()},err=>{console.error(err);setStatus('⚠️ Erro ao ler os dados do Firebase.','err')})}});signInAnonymously(auth).catch(e=>{console.error(e);setStatus('⚠️ Ative o login anônimo no Firebase Authentication.','err')})}catch(e){console.error(e);setStatus('⚠️ Configuração do Firebase inválida.','err');render()}}
-document.querySelectorAll('#statusFilters .filter').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('#statusFilters .filter').forEach(b=>b.classList.remove('active'));btn.classList.add('active');statusFilter=btn.dataset.filter;render()}));
-initFirebase();
-</script>
-
-<div style="text-align:center;padding:18px 10px 30px;color:#61798c;font-size:11px;"></div>
-
-
-
-<script id="admin-script">
-(function(){
-  const ADMIN_KEY="ferias_admin_autenticado";
-  const SENHA_LOCAL="admin123";
-
-  function $(id){return document.getElementById(id);}
-
-  function atualizarPainel(){
-    let registros=[];
-    try{
-      const keys=["ferias","feriasRecords","registrosFerias","vacations"];
-      for(const k of keys){
-        const v=localStorage.getItem(k);
-        if(v){const x=JSON.parse(v); if(Array.isArray(x)) registros=x;}
-      }
-    }catch(e){}
-    const total=registros.length;
-    const aprovados=registros.filter(r=>String(r.status||r.situacao||"").toLowerCase().includes("aprov")).length;
-    $("adminVacations").textContent=total;
-    $("adminApproved").textContent=aprovados;
-    $("adminPending").textContent=Math.max(0,total-aprovados);
-    $("adminUsers").textContent="1";
-  }
-
-  window.abrirDesenvolvedor=function(){
-    const p=$("adminPanel");
-    if(!p) return;
-    const aberto=p.classList.contains("open");
-    p.classList.toggle("open",!aberto);
-    if(!aberto){
-      if(localStorage.getItem(ADMIN_KEY)==="1"){
-        $("adminLogin").style.display="none";
-        $("adminArea").style.display="block";
-        atualizarPainel();
-      }else{
-        $("adminLogin").style.display="block";
-        $("adminArea").style.display="none";
-        setTimeout(function(){ $("adminPassword")?.focus(); },100);
-      }
-    }
-  };
-
-  window.entrarAdmin=function(){
-    if($("adminPassword").value===SENHA_LOCAL){
-      localStorage.setItem(ADMIN_KEY,"1");
-      $("adminPassword").value="";
-      $("adminLogin").style.display="none";
-      $("adminArea").style.display="block";
-      atualizarPainel();
-    }else{
-      alert("Senha de desenvolvedor incorreta.");
-    }
-  };
-
-  window.fecharAdmin=function(){
-    $("adminPanel").classList.remove("open");
-  };
-
-  window.exportarAdmin=function(){
-    const dados={exportadoEm:new Date().toISOString(),localStorage:{}};
-    for(let i=0;i<localStorage.length;i++){
-      const k=localStorage.key(i);
-      dados.localStorage[k]=localStorage.getItem(k);
-    }
-    const blob=new Blob([JSON.stringify(dados,null,2)],{type:"application/json"});
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement("a");
-    a.href=url; a.download="backup-controle-ferias.json";
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(()=>URL.revokeObjectURL(url),1000);
-  };
-
-  document.addEventListener("DOMContentLoaded",function(){
-    $("adminLoginBtn").onclick=window.entrarAdmin;
-    $("adminCloseBtn").onclick=window.fecharAdmin;
-    $("adminExportBtn").onclick=window.exportarAdmin;
-    $("adminPassword").addEventListener("keydown",function(e){if(e.key==="Enter")window.entrarAdmin();});
-  });
+$('records').addEventListener('click',e=>{const b=e.target.closest('button[data-action]');if(!b)return;const id=String(b.dataset.id),a=load(),x=a.find(r=>String(r.id)===id);if(!x)return;const act=b.dataset.action;if(act==='approve'){x.status='aprovada';x.reason='';saveAll(a);renderRecords()}else if(act==='reject'){const r=prompt('Informe o motivo da recusa (opcional):','');x.status='recusada';x.reason=r||'';saveAll(a);renderRecords()}else if(act==='delete'){if(confirm('Apagar esta solicitação recusada?')){saveAll(a.filter(r=>String(r.id)!==id));renderRecords()}}else if(act==='edit'){editId=x.id;$('name').value=x.name;$('start').value=x.start;syncDays(x.days);window.calMonth={y:parseDate(x.start).getFullYear(),m:parseDate(x.start).getMonth()};calc();renderCalendar();window.scrollTo({top:0,behavior:'smooth'})}});
+$('save').addEventListener('click',()=>{const name=$('name').value.trim(),c=calc();if(!name||!c){alert('Preencha o nome e a data de início.');return}const near=isNearHoliday(c.start);if(near){alert('⚠️ Data não disponível. Está até 2 dias do feriado: '+near+'.');return}const a=load();const x={id:editId||String(Date.now()),name,start:c.start,days:c.days,last:c.last,return:c.return,status:'pendente'};const idx=a.findIndex(r=>String(r.id)===String(editId));if(idx>=0)a[idx]=x;else a.unshift(x);saveAll(a);editId=null;renderRecords();$('saveStatus').innerHTML='<div class="status">✅ Solicitação salva e enviada para aprovação.</div>';setTimeout(()=>$('saveStatus').innerHTML='',3000)});
+$('edit').addEventListener('click',()=>{const a=load();if(!a.length){alert('Não há registros.');return}const x=a[0];editId=x.id;$('name').value=x.name;$('start').value=x.start;syncDays(x.days);calc();renderCalendar();window.scrollTo({top:0,behavior:'smooth'})});
+$('del').addEventListener('click',()=>{if(!editId){alert('Selecione uma solicitação para editar.');return}const a=load(),x=a.find(r=>String(r.id)===String(editId));if(x&&x.status!=='recusada'){alert('Nesta versão, apagar pelo botão geral é permitido apenas para solicitação recusada.');return}if(x&&confirm('Apagar esta solicitação?')){saveAll(a.filter(r=>String(r.id)!==String(editId)));editId=null;renderRecords()}});
+$('share').addEventListener('click',async()=>{const url=location.href;if(navigator.share){try{await navigator.share({title:'Controle de Férias',text:'Abra o aplicativo Controle de Férias:',url});return}catch(e){if(e.name==='AbortError')return}}try{await navigator.clipboard.writeText(url);alert('🔗 Link copiado!')}catch(e){prompt('Copie o link:',url)}});
+document.querySelectorAll('.filter').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.filter').forEach(x=>x.classList.remove('active'));btn.classList.add('active');filter=btn.dataset.filter;renderRecords()}));
+$('devBtn').addEventListener('click',()=>$('devPanel').classList.toggle('open'));
+renderCalendar();renderRecords();
 })();
 </script>
-
-<footer style="text-align:center;padding:24px 16px 30px;color:#637789;font-size:13px;border-top:1px solid rgba(7,91,138,.12);margin-top:12px">
-  © 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.
-</footer>
-
 </body></html>
