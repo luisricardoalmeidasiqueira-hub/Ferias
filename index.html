@@ -95,7 +95,7 @@ button,input{font:inherit}button{cursor:pointer}
 .approve{background:#16a765}.reject{background:#ef4444}
 .status{margin-top:9px;padding:9px 11px;border-radius:10px;background:#fff7df;color:#7a5700;font-size:11px;font-weight:800}
 .status.ok{background:#e7f8ee;color:#087446}
-.status.err{background:#ffe8e8;color:#a52222}
+.status.err{background:#ffe8e8;color:#a52222}.status.warn{background:#fff4d8;color:#8a6500}
 .status.closed{background:#eef2f5;color:#5d7181}
 .quote{background:linear-gradient(135deg,#c8f1ff,#eaf9ff);border-radius:17px;padding:16px;text-align:center;font-weight:900}
 
@@ -489,15 +489,14 @@ button,input{font:inherit}button{cursor:pointer}
 
 
 
+  let historyDraft=[];
   function monthValue(v){
     if(!v) return '';
     if(/^\d{4}-\d{2}$/.test(v)) return v;
     if(/^\d{4}-\d{2}-\d{2}$/.test(v)) return v.slice(0,7);
     return '';
   }
-  function historyMonths(){
-    return [...new Set([...document.querySelectorAll('.history-month')].map(el=>monthValue(el.value)).filter(Boolean))].sort().reverse();
-  }
+  function historyMonths(){ return [...new Set(historyDraft.map(monthValue).filter(Boolean))].sort().reverse(); }
   function fmtMonth(v){
     const [y,m]=v.split('-').map(Number);
     return new Intl.DateTimeFormat('pt-BR',{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(Date.UTC(y,m-1,1))).replace(/^./,c=>c.toUpperCase());
@@ -510,11 +509,8 @@ button,input{font:inherit}button{cursor:pointer}
     return x;
   }
   function addDaysUTC(d,n){const x=new Date(d);x.setUTCDate(x.getUTCDate()+n);return x;}
-  function monthEnd(v){const [y,m]=v.split('-').map(Number);return new Date(Date.UTC(y,m,0));}
   function admissionDate(){const v=$('admission').value; return v?date(v):null;}
 
-  // Cada registro do histórico representa um período de férias realizado (mês/ano).
-  // O cálculo abaixo só é usado quando o usuário confirma que o histórico está completo.
   function legalVacationControl(){
     const adm=admissionDate(), hist=historyMonths(), today=new Date();
     if(!adm || !hist.length || !$('historyComplete').checked) return {ready:false};
@@ -524,16 +520,14 @@ button,input{font:inherit}button{cursor:pointer}
       const start=addYearsSafe(adm,i), end=addDaysUTC(addYearsSafe(adm,i+1),-1), concessionEnd=addYearsSafe(end,1);
       if(start>today) break;
       periods.push({i,start,end,concessionEnd,used:false,vacation:null});
-      i++;
-      if(i>100) break;
+      i++; if(i>100) break;
     }
-    const used=[];
     hist.forEach(m=>{
-      const vm=monthEnd(m);
+      const [y,mo]=m.split('-').map(Number), vm=new Date(Date.UTC(y,mo,0));
       let p=periods.find(x=>!x.used && x.end<=vm && vm<=x.concessionEnd);
       if(!p) p=periods.find(x=>!x.used && x.end<=vm);
       if(!p) p=periods.find(x=>!x.used);
-      if(p){p.used=true;p.vacation=m;used.push(p)}
+      if(p){p.used=true;p.vacation=m;}
     });
     const overdue=periods.filter(p=>!p.used && p.concessionEnd<today);
     const pending=periods.filter(p=>!p.used && p.concessionEnd>=today);
@@ -546,7 +540,7 @@ button,input{font:inherit}button{cursor:pointer}
     $('historyCount').textContent=dates.length ? `${dates.length} ${dates.length===1?'período registrado':'períodos registrados'}` : 'Nenhum período registrado';
     if(!adm){
       $('historyRange').textContent='Informe a admissão';
-      box.className='status'; box.textContent='Informe a data de admissão e o histórico de férias.'; return;
+      box.className='status'; box.textContent='Informe a data de admissão e registre as férias realizadas.'; return;
     }
     const admYear=Number(adm.slice(0,4)), currentYear=new Date().getFullYear();
     $('historyRange').textContent=`${admYear} → ${currentYear}`;
@@ -560,11 +554,8 @@ button,input{font:inherit}button{cursor:pointer}
       box.className='status err'; box.innerHTML=`🔴 <strong>${n} ${n===1?'período vencido':'períodos vencidos'}</strong>`;
     }else if(c.nearest){
       const days=Math.ceil((c.nearest.concessionEnd-new Date())/86400000);
-      if(days<=90){
-        box.className='status warn'; box.innerHTML=`🟡 <strong>Período próximo do vencimento</strong>`;
-      }else{
-        box.className='status ok'; box.innerHTML='🟢 <strong>Nenhum período vencido</strong>';
-      }
+      if(days<=90){ box.className='status warn'; box.innerHTML='🟡 <strong>Período próximo do vencimento</strong>'; }
+      else { box.className='status ok'; box.innerHTML='🟢 <strong>Nenhum período vencido</strong>'; }
     }else{
       box.className='status ok'; box.innerHTML='🟢 <strong>Nenhum período vencido</strong>';
     }
@@ -575,41 +566,54 @@ button,input{font:inherit}button{cursor:pointer}
   function renderHistoryList(){
     const list=$('historyList'), vals=historyMonths();
     list.innerHTML='';
+    if(!vals.length){
+      list.innerHTML='<div style="font-size:12px;color:#71879a;font-weight:700;padding:6px">Nenhuma férias registrada.</div>';
+      return;
+    }
     vals.forEach(v=>{
       const row=document.createElement('div'); row.className='history-item';
       row.innerHTML=`<strong>${escapeHtml(fmtMonth(v))}</strong><button type="button" class="history-remove" data-month="${v}">🗑️</button>`;
       list.appendChild(row);
     });
-    if(!vals.length) list.innerHTML='<div style="font-size:12px;color:#71879a;font-weight:700;padding:6px">Nenhuma férias registrada.</div>';
     list.querySelectorAll('.history-remove').forEach(btn=>btn.onclick=()=>{
       const v=btn.dataset.month;
-      const rows=[...document.querySelectorAll('.history-month')];
-      const target=rows.find(el=>el.value===v);
-      if(target) target.closest('.history-row').remove();
+      historyDraft=historyDraft.filter(x=>monthValue(x)!==v);
       renderHistoryList(); renderHistorySummary();
     });
   }
 
-  function addHistoryRow(value=''){
-    const list=$('historyList'), row=document.createElement('div');
-    row.className='history-row';
-    row.style.cssText='display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center';
-    row.innerHTML=`<input class="input history-month" type="month" aria-label="Mês e ano das férias realizadas" value="${monthValue(value)}"> <button type="button" class="history-remove">🗑️</button>`;
-    list.appendChild(row);
-    row.querySelector('.history-month').addEventListener('change',()=>{renderHistoryList();renderHistorySummary()});
-    row.querySelector('.history-remove').onclick=()=>{row.remove();renderHistoryList();renderHistorySummary()};
-    return row;
+  function openHistoryEditor(){
+    const list=$('historyList');
+    list.innerHTML='';
+    const vals=historyMonths();
+    if(vals.length){
+      vals.forEach(v=>{
+        const row=document.createElement('div'); row.className='history-item';
+        row.innerHTML=`<strong>${escapeHtml(fmtMonth(v))}</strong><button type="button" class="history-remove" data-month="${v}">🗑️</button>`;
+        list.appendChild(row);
+      });
+      list.querySelectorAll('.history-remove').forEach(btn=>btn.onclick=()=>{
+        historyDraft=historyDraft.filter(x=>monthValue(x)!==btn.dataset.month);
+        openHistoryEditor(); renderHistorySummary();
+      });
+    } else {
+      list.innerHTML='<div style="font-size:12px;color:#71879a;font-weight:700;padding:6px">Nenhuma férias registrada ainda.</div>';
+    }
+    const addBox=document.createElement('div');
+    addBox.style.cssText='display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:9px;align-items:center';
+    addBox.innerHTML='<input id="newHistoryMonth" class="input" type="month" aria-label="Mês e ano das férias realizadas"><button type="button" class="history-toggle" id="confirmHistoryAdd">Adicionar</button>';
+    list.appendChild(addBox);
+    $('confirmHistoryAdd').onclick=()=>{
+      const v=monthValue($('newHistoryMonth').value);
+      if(!v){alert('Escolha o mês e o ano das férias realizadas.');return;}
+      if(!historyDraft.some(x=>monthValue(x)===v)) historyDraft.push(v);
+      openHistoryEditor(); renderHistorySummary();
+    };
   }
 
   function loadHistory(values){
-    const list=$('historyList');
-    list.innerHTML='';
-    const arr=normalizeHistory(values);
-    arr.forEach(v=>addHistoryRow(v));
-    if(!arr.length){
-      $('historyComplete').checked=false;
-      renderHistoryList();
-    }
+    historyDraft=normalizeHistory(values);
+    renderHistoryList();
     renderHistorySummary();
   }
 
@@ -682,7 +686,7 @@ button,input{font:inherit}button{cursor:pointer}
   $('calPrev').onclick=()=>{calendarMonth.setUTCMonth(calendarMonth.getUTCMonth()-1);renderCalendar()};
   $('calNext').onclick=()=>{calendarMonth.setUTCMonth(calendarMonth.getUTCMonth()+1);renderCalendar()};
   $('historyToggle').onclick=()=>{const open=$('historyList').classList.toggle('open');$('addHistory').classList.toggle('open',open);$('historyToggle').textContent=open?'Ocultar histórico ▴':'Ver histórico ▾';};
-  $('addHistory').onclick=()=>{ addHistoryRow(''); renderHistoryList(); };
+  $('addHistory').onclick=()=>{ openHistoryEditor(); $('historyList').classList.add('open'); $('addHistory').classList.add('open'); $('historyToggle').textContent='Ocultar histórico ▴'; setTimeout(()=>$('newHistoryMonth')?.focus(),50); };
   $('admission').addEventListener('change',renderHistorySummary);
   $('historyComplete').addEventListener('change',renderHistorySummary);
 
