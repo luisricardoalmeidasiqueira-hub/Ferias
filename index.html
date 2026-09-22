@@ -134,26 +134,7 @@ button,input{font:inherit}button{cursor:pointer}
   .admin-grid{grid-template-columns:1fr}
 }
 </style>
-<script>
-(function(){
-  const KEY="ferias_limpeza_cache_v1";
-  if(sessionStorage.getItem(KEY)==="1") return;
-  if(!("serviceWorker" in navigator)) return;
-  navigator.serviceWorker.getRegistrations().then(function(regs){
-    return Promise.all(regs.map(function(r){return r.unregister();}));
-  }).then(function(){
-    if(!("caches" in window)) return;
-    return caches.keys().then(function(keys){
-      return Promise.all(keys.map(function(k){return caches.delete(k);}));
-    });
-  }).then(function(){
-    sessionStorage.setItem(KEY,"1");
-    window.location.reload();
-  }).catch(function(){
-    sessionStorage.setItem(KEY,"1");
-  });
-})();
-</script>
+
 
 </head>
 <body>
@@ -275,13 +256,18 @@ button,input{font:inherit}button{cursor:pointer}
 
 <script>
 (() => {
-  const KEY = 'ferias_app'; // mantém a mesma chave usada nas versões anteriores
+  const KEY = 'ferias_app';
+  const LEGACY_KEYS = ['ferias_app_v2_clean','ferias_registros'];
+  const DB_NAME = 'controle_ferias_dados';
+  const DB_STORE = 'backup';
   const $ = id => document.getElementById(id);
   const pad = n => String(n).padStart(2,'0');
   const date = iso => new Date(iso + 'T00:00:00Z');
   const fmt = d => d.toLocaleDateString('pt-BR',{timeZone:'UTC'});
   const week = d => new Intl.DateTimeFormat('pt-BR',{weekday:'long',timeZone:'UTC'}).format(d);
   const clamp = n => Math.max(1,Math.min(30,Number(n)||1));
+
+  if(navigator.storage?.persist){ navigator.storage.persist().catch(()=>{}); }
 
   let editId = null;
   let filter = 'todos';
@@ -310,13 +296,81 @@ button,input{font:inherit}button{cursor:pointer}
     for(const k in h) if(Math.abs((x-date(k))/86400000)<=2) return k;
     return null;
   }
-  function local(){
+  function readArray(key){
     try{
-      const raw=JSON.parse(localStorage.getItem(KEY)||'[]');
+      const raw=JSON.parse(localStorage.getItem(key)||'[]');
       return Array.isArray(raw) ? raw : [];
     }catch{return []}
   }
-  function saveLocal(a){localStorage.setItem(KEY,JSON.stringify(a))}
+
+  function mergeRecords(){
+    const all=[];
+    [KEY,...LEGACY_KEYS].forEach(k=>{
+      readArray(k).forEach(r=>{
+        if(r && r.id!=null && !all.some(x=>String(x.id)===String(r.id))) all.push(r);
+      });
+    });
+    return all;
+  }
+
+  function openBackupDB(){
+    return new Promise((resolve,reject)=>{
+      if(!('indexedDB' in window)){resolve(null);return}
+      const req=indexedDB.open(DB_NAME,1);
+      req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains(DB_STORE))req.result.createObjectStore(DB_STORE)};
+      req.onsuccess=()=>resolve(req.result);
+      req.onerror=()=>reject(req.error);
+    });
+  }
+
+  async function writeBackup(a){
+    try{
+      const db=await openBackupDB(); if(!db)return;
+      await new Promise((resolve,reject)=>{
+        const tx=db.transaction(DB_STORE,'readwrite');
+        tx.objectStore(DB_STORE).put({records:a, savedAt:Date.now()},'ferias');
+        tx.oncomplete=resolve; tx.onerror=()=>reject(tx.error);
+      });
+      db.close();
+    }catch(e){console.warn('Backup local protegido indisponível',e)}
+  }
+
+  async function readBackup(){
+    try{
+      const db=await openBackupDB(); if(!db)return [];
+      const item=await new Promise((resolve,reject)=>{
+        const tx=db.transaction(DB_STORE,'readonly');
+        const req=tx.objectStore(DB_STORE).get('ferias');
+        req.onsuccess=()=>resolve(req.result||null); req.onerror=()=>reject(req.error);
+      });
+      db.close();
+      return Array.isArray(item?.records)?item.records:[];
+    }catch(e){return []}
+  }
+
+  let protectedRecords = mergeRecords();
+  if(protectedRecords.length){
+    localStorage.setItem(KEY,JSON.stringify(protectedRecords));
+  }
+
+  function local(){ return protectedRecords.slice(); }
+
+  function saveLocal(a){
+    protectedRecords = Array.isArray(a) ? a.slice() : [];
+    localStorage.setItem(KEY,JSON.stringify(protectedRecords));
+    writeBackup(protectedRecords);
+  }
+
+  // Recupera dados antigos/espelhados quando uma atualização encontrar a chave principal vazia.
+  readBackup().then(backup=>{
+    if(!protectedRecords.length && backup.length){
+      protectedRecords=backup.slice();
+      localStorage.setItem(KEY,JSON.stringify(protectedRecords));
+      renderRecords();
+    }else if(protectedRecords.length){
+      writeBackup(protectedRecords);
+    }
+  }).catch(()=>{});
   function syncDays(v){v=clamp(v);$('days').value=v;$('range').value=v}
 
   // CALENDÁRIO: visual limpo. Nenhuma bolinha fica marcada.
