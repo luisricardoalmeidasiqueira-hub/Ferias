@@ -193,6 +193,17 @@ button,input{font:inherit}button{cursor:pointer}
     <div class="field"><label>👤 Nome</label><input class="input" id="name" placeholder="Digite o nome"></div>
     <div class="field"><label>📅 Data de início</label><input class="input" id="start" type="date"></div>
     <div class="field"><label>🏢 Data de admissão <span style="font-weight:600;color:#71879a">(opcional)</span></label><input class="input" id="admission" type="date"></div>
+    <div class="field" style="grid-column:1/-1">
+      <label>📚 Histórico de férias realizadas</label>
+      <div id="vacationHistory" style="display:grid;gap:10px">
+        <div class="history-row" style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center">
+          <input class="input history-date" type="date" aria-label="Data das férias realizadas">
+          <button type="button" class="history-remove" style="border:0;border-radius:12px;padding:12px 14px;background:#ef4444;color:#fff;font-weight:800">🗑️</button>
+        </div>
+      </div>
+      <button type="button" id="addHistory" style="margin-top:10px;border:0;border-radius:14px;padding:12px 16px;background:#0b83b7;color:#fff;font-weight:800">➕ Adicionar férias realizadas</button>
+      <div id="historySummary" class="status" style="margin-top:10px">Informe as férias que já foram realizadas.</div>
+    </div>
   </div>
 
   <div class="calendar-card">
@@ -425,6 +436,54 @@ button,input{font:inherit}button{cursor:pointer}
   }
 
 
+
+  function historyDates(){
+    return [...document.querySelectorAll('.history-date')].map(el=>el.value).filter(Boolean).sort();
+  }
+
+  function renderHistorySummary(){
+    const box=$('historySummary'), adm=$('admission').value, dates=historyDates();
+    if(!adm){ box.className='status'; box.textContent='Informe a data de admissão e as férias realizadas.'; return; }
+    if(!dates.length){ box.className='status'; box.textContent='📚 Nenhuma férias realizada registrada ainda.'; return; }
+
+    const admissionYear=new Date(adm+'T12:00:00').getFullYear();
+    const currentYear=new Date().getFullYear();
+    const periods=Math.max(0,currentYear-admissionYear);
+    const doneYears=new Set(dates.map(d=>new Date(d+'T12:00:00').getFullYear()));
+    const missing=Math.max(0,periods-doneYears.size);
+
+    if(missing>0){
+      box.className='status err';
+      box.innerHTML=`🔴 <strong>${missing} ${missing===1?'período vencido':'períodos vencidos'}</strong>`;
+    }else{
+      box.className='status ok';
+      box.innerHTML='🟢 <strong>Nenhum período vencido</strong>';
+    }
+  }
+
+  function collectHistory(){ return historyDates(); }
+
+  function addHistoryRow(value=''){
+    const wrap=$('vacationHistory'), row=document.createElement('div');
+    row.className='history-row';
+    row.style.cssText='display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center';
+    row.innerHTML=`<input class="input history-date" type="date" aria-label="Data das férias realizadas" value="${value}">
+      <button type="button" class="history-remove" style="border:0;border-radius:12px;padding:12px 14px;background:#ef4444;color:#fff;font-weight:800">🗑️</button>`;
+    wrap.appendChild(row);
+    row.querySelector('.history-date').addEventListener('change',renderHistorySummary);
+    row.querySelector('.history-remove').addEventListener('click',()=>{
+      if(wrap.children.length>1) row.remove(); else row.querySelector('.history-date').value='';
+      renderHistorySummary();
+    });
+  }
+
+  function loadHistory(values){
+    const wrap=$('vacationHistory'); wrap.innerHTML='';
+    const arr=Array.isArray(values)?values:[];
+    if(!arr.length) addHistoryRow(''); else arr.forEach(v=>addHistoryRow(v));
+    renderHistorySummary();
+  }
+
   function state(x){
     return x.status || 'pendente';
   }
@@ -527,7 +586,7 @@ button,input{font:inherit}button{cursor:pointer}
 
   function editRecord(id){
     const x=local().find(r=>String(r.id)===String(id));if(!x)return;
-    editId=x.id;$('name').value=x.name;$('start').value=x.start;$('admission').value=x.admission||'';syncDays(x.days);
+    editId=x.id;$('name').value=x.name;$('start').value=x.start;$('admission').value=x.admission||'';loadHistory(x.history||[]);syncDays(x.days);
     $('calendarHint').textContent='✏️ Registro carregado para alteração.';
     $('calendarHint').className='calendar-hint';
     const [y,m]=x.start.split('-').map(Number);calendarMonth=new Date(Date.UTC(y,m-1,1));
@@ -557,14 +616,14 @@ button,input{font:inherit}button{cursor:pointer}
     }
     const a=local(), id=editId||Date.now();
     const old=a.find(r=>String(r.id)===String(id));
-    const record={id,name,start:$('start').value,admission:$('admission').value||'',days:c.n,status:'pendente',reason:'',updatedAt:Date.now()};
+    const record={id,name,start:$('start').value,admission:$('admission').value||'',history:collectHistory(),days:c.n,status:'pendente',reason:'',updatedAt:Date.now()};
     const i=a.findIndex(r=>String(r.id)===String(id));
     if(i>=0)a[i]=record;else a.unshift(record);
     saveLocal(a); reset(); renderRecords(); alert('Salvo neste aparelho.');
   }
 
   function reset(){
-    editId=null;$('name').value='';$('start').value='';$('admission').value='';syncDays(12);
+    editId=null;$('name').value='';$('start').value='';$('admission').value='';loadHistory([]);syncDays(12);
     ['rs','re','rb','ws','we','wb'].forEach(id=>$(id).textContent='—');
     $('notice').textContent='Escolha uma data para calcular.';
     $('calendarHint').textContent='Toque em uma data para escolher o início das férias.';
@@ -593,6 +652,10 @@ button,input{font:inherit}button{cursor:pointer}
   // Eventos
   $('calPrev').onclick=()=>{calendarMonth.setUTCMonth(calendarMonth.getUTCMonth()-1);renderCalendar()};
   $('calNext').onclick=()=>{calendarMonth.setUTCMonth(calendarMonth.getUTCMonth()+1);renderCalendar()};
+  $('addHistory').onclick=()=>addHistoryRow('');
+  $('admission').addEventListener('change',renderHistorySummary);
+  $('vacationHistory').addEventListener('input',e=>{if(e.target.classList.contains('history-date'))renderHistorySummary();});
+
   $('start').onchange=()=>{
     const v=$('start').value;
     if(v){
@@ -650,6 +713,7 @@ button,input{font:inherit}button{cursor:pointer}
 
   // Inicialização
   renderCalendar();
+  loadHistory([]);
   renderRecords();
 })();
 </script>
