@@ -110,6 +110,7 @@ button,input{font:inherit}button{cursor:pointer}
 .history-remove{border:0;border-radius:10px;padding:8px 10px;background:#ef4444;color:#fff;font-weight:800}
 .history-add{display:none;margin-top:10px}
 .history-add.open{display:block}
+.history-save{display:flex;gap:8px;align-items:center;margin-top:10px}.history-save button{border:0;border-radius:12px;padding:11px 14px;background:var(--green);color:#fff;font-weight:900}.history-save-note{font-size:11px;color:#71879a;font-weight:800}.control-saved{display:none;margin-top:9px;padding:9px 11px;border-radius:10px;background:#e7f8ee;color:#087446;font-size:11px;font-weight:800}.control-saved.show{display:block}
 .history-complete{display:flex;gap:8px;align-items:flex-start;margin-top:10px;font-size:12px;color:#587186;font-weight:700;line-height:1.35}
 .history-complete input{margin-top:2px;width:18px;height:18px;accent-color:var(--blue)}
 .quote span{display:block;color:#6b8092;font-size:11px;margin-top:5px}
@@ -219,6 +220,8 @@ button,input{font:inherit}button{cursor:pointer}
       <div id="historyList" class="history-list"></div>
       <button type="button" id="addHistory" class="history-toggle history-add">➕ Adicionar férias realizadas</button>
       <div id="historySummary" class="status" style="margin-top:10px">Registre os períodos de férias já realizados. O controle de vencimento será calculado depois, com o histórico completo.</div>
+      <div class="history-save"><button type="button" id="saveControl">💾 Salvar controle</button><span class="history-save-note">Opcional: salva admissão e histórico sem lançar férias.</span></div>
+      <div id="controlSaved" class="control-saved">✅ Controle de férias salvo neste aparelho.</div>
     </div>
   </div>
 
@@ -283,6 +286,7 @@ button,input{font:inherit}button{cursor:pointer}
 <script>
 (() => {
   const KEY = 'ferias_app';
+  const CONTROL_KEY = 'ferias_controle';
   const LEGACY_KEYS = ['ferias_app_v2_clean','ferias_registros'];
   const DB_NAME = 'controle_ferias_dados';
   const DB_STORE = 'backup';
@@ -594,6 +598,121 @@ button,input{font:inherit}button{cursor:pointer}
     renderHistorySummary();
   }
 
+  function readControls(){
+    try{ const raw=JSON.parse(localStorage.getItem(CONTROL_KEY)||'[]'); return Array.isArray(raw)?raw:[]; }catch{return [];}
+  }
+  function saveControls(a){ localStorage.setItem(CONTROL_KEY,JSON.stringify(a)); }
+  function controlKey(name, admission){ return `${String(name||'').trim().toLowerCase()}|${admission||''}`; }
+  function saveVacationControl(){
+    const name=$('name').value.trim(), admission=$('admission').value||'', history=collectHistory();
+    if(!name){ alert('Preencha o nome para salvar o controle de férias.'); return; }
+    if(!admission && !history.length){
+      alert('Preencha a data de admissão ou registre pelo menos um período de férias.'); return;
+    }
+    const a=readControls(), key=controlKey(name,admission);
+    const record={id:key,key,name,admission,history,updatedAt:Date.now()};
+    const i=a.findIndex(x=>x.key===key);
+    if(i>=0)a[i]=record;else a.unshift(record);
+    saveControls(a);
+    // Mantém o mesmo controle também associado ao registro de férias, se já existir.
+    const vacations=local();
+    const matches=vacations.filter(x=>String(x.name||'').trim().toLowerCase()===name.toLowerCase() && (!admission || x.admission===admission));
+    if(matches.length){
+      matches.forEach(x=>{x.admission=admission;x.history=history;});
+      saveLocal(vacations);
+      renderRecords();
+    }
+    $('controlSaved').classList.add('show');
+    setTimeout(()=>$('controlSaved').classList.remove('show'),3000);
+    renderHistorySummary();
+  }
+
+  function loadSavedControl(){
+    const name=$('name').value.trim(); if(!name)return false;
+    const admission=$('admission').value||'';
+    const a=readControls();
+    let x=a.find(r=>r.key===controlKey(name,admission));
+    if(!x && admission) x=a.find(r=>String(r.name||'').trim().toLowerCase()===name.toLowerCase());
+    if(!x)return false;
+    if(!$('admission').value && x.admission) $('admission').value=x.admission;
+    loadHistory(x.history||[]);
+    return true;
+  }
+
+  function state(x){
+    return x.status || 'pendente';
+  }
+  function label(st){
+    return st==='aprovada'?'✅ Férias aprovadas':
+           st==='recusada'?'❌ Férias recusadas':
+           st==='encerrada'?'🏁 Férias realizadas':'🟡 Aguardando aprovação';
+  }
+
+  function renderRecords(){
+    const all=local();
+    const filtered=filter==='todos'?all:all.filter(x=>state(x)===filter);
+    $('count').textContent=filtered.length+' '+(filtered.length===1?'registro':'registros');
+    if(!filtered.length){
+      $('records').innerHTML='<div style="text-align:center;color:#71879a;padding:14px">Nenhum registro nesta categoria.</div>';
+      return;
+    }
+    $('records').innerHTML=filtered.map(x=>{
+      const s=date(x.start),e=new Date(s);e.setUTCDate(e.getUTCDate()+Number(x.days||1)-1);
+      const b=new Date(e);b.setUTCDate(b.getUTCDate()+1);
+      const st=state(x);
+      const actions = st==='pendente'
+        ? `<div class="approval"><button class="approve" data-approve="${x.id}">🟢 Aprovar férias</button><button class="reject" data-reject="${x.id}">🔴 Recusar férias</button></div>`
+        : st==='aprovada'
+        ? `<div class="approval"><button class="approve" data-realizada="${x.id}">🏁 Marcar como realizada</button></div>`
+        : st==='recusada'
+        ? `<div class="approval"><button class="approve" data-edit="${x.id}">✏️ Alterar e reenviar</button></div>`
+        : '';
+      return `<div class="record">
+        <div class="top"><div class="name">👤 ${escapeHtml(x.name)}</div><span class="badge">Sem conflito</span></div>
+        <div class="info">
+          <div>🏖️ Início<b>${fmt(s)}</b></div>
+          <div>☀️ Último dia<b>${fmt(e)}</b></div>
+          <div>✈️ Retorno<b>${fmt(b)}</b></div>
+        </div>
+        <div class="ra"><button data-edit="${x.id}">✏️ Editar</button><button data-delete="${x.id}">🗑️ Apagar</button></div>
+        <div class="status ${st==='aprovada'?'ok':st==='recusada'?'err':st==='encerrada'?'closed':''}">${label(st)}</div>
+        ${st==='recusada' && x.reason ? `<div class="status err">📝 Motivo: ${escapeHtml(x.reason)}</div>` : ''}
+        ${actions}
+      </div>`;
+    }).join('');
+
+    $('records').querySelectorAll('[data-approve]').forEach(b=>b.onclick=()=>setStatus(b.dataset.approve,'aprovada'));
+    $('records').querySelectorAll('[data-reject]').forEach(b=>b.onclick=()=>setStatus(b.dataset.reject,'recusada'));
+    $('records').querySelectorAll('[data-realizada]').forEach(b=>b.onclick=()=>setStatus(b.dataset.realizada,'encerrada'));
+    $('records').querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>removeRecord(b.dataset.delete));
+    $('records').querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editRecord(b.dataset.edit));
+  }
+
+  let rejectId = null;
+  function openReject(id){
+    rejectId=id; $('rejectReason').value=''; $('rejectError').classList.remove('show');
+    $('rejectModal').classList.add('open'); $('rejectModal').setAttribute('aria-hidden','false');
+    setTimeout(()=>$('rejectReason').focus(),50);
+  }
+  function closeReject(){
+    rejectId=null; $('rejectModal').classList.remove('open'); $('rejectModal').setAttribute('aria-hidden','true');
+    $('rejectReason').value=''; $('rejectError').classList.remove('show');
+  }
+  function confirmReject(){
+    const reason=$('rejectReason').value.trim();
+    if(!reason){$('rejectError').classList.add('show');$('rejectReason').focus();return;}
+    const a=local(), x=a.find(r=>String(r.id)===String(rejectId));
+    if(!x){closeReject();return;}
+    x.status='recusada'; x.reason=reason; x.updatedAt=Date.now(); saveLocal(a); closeReject(); renderRecords();
+  }
+  function setStatus(id,status){
+    const a=local(), x=a.find(r=>String(r.id)===String(id)); if(!x)return;
+    if(status==='recusada'){openReject(id);return;}
+    if(status==='aprovada'){x.status='aprovada';x.reason='';}
+    else if(status==='encerrada'){x.status='encerrada';}
+    x.updatedAt=Date.now(); saveLocal(a); renderRecords();
+  }
+
   function editRecord(id){
     const x=local().find(r=>String(r.id)===String(id));if(!x)return;
     editId=x.id;$('name').value=x.name;$('start').value=x.start;$('admission').value=x.admission||'';loadHistory(x.history||[]);renderHistoryList();renderHistorySummary();syncDays(x.days);
@@ -633,7 +752,7 @@ button,input{font:inherit}button{cursor:pointer}
   }
 
   function reset(){
-    editId=null;$('name').value='';$('start').value='';$('admission').value='';loadHistory([]);syncDays(12);
+    editId=null;$('controlSaved').classList.remove('show');$('name').value='';$('start').value='';$('admission').value='';loadHistory([]);syncDays(12);
     ['rs','re','rb','ws','we','wb'].forEach(id=>$(id).textContent='—');
     $('notice').textContent='Escolha uma data para calcular.';
     $('calendarHint').textContent='Toque em uma data para escolher o início das férias.';
@@ -664,7 +783,9 @@ button,input{font:inherit}button{cursor:pointer}
   $('calNext').onclick=()=>{calendarMonth.setUTCMonth(calendarMonth.getUTCMonth()+1);renderCalendar()};
   $('historyToggle').onclick=()=>{const open=$('historyList').classList.toggle('open');$('addHistory').classList.toggle('open',open);$('historyToggle').textContent=open?'Ocultar histórico ▴':'Ver histórico ▾';};
   $('addHistory').onclick=()=>{ openHistoryEditor(); $('historyList').classList.add('open'); $('addHistory').classList.add('open'); $('historyToggle').textContent='Ocultar histórico ▴'; setTimeout(()=>$('newHistoryMonth')?.focus(),50); };
-  $('admission').addEventListener('change',renderHistorySummary);
+  $('saveControl').onclick=saveVacationControl;
+  $('name').addEventListener('blur',()=>{ if(!historyDraft.length && !$('admission').value) loadSavedControl(); });
+  $('admission').addEventListener('change',()=>{ loadSavedControl(); renderHistorySummary(); });
 
   $('start').onchange=()=>{
     const v=$('start').value;
