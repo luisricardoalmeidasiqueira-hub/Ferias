@@ -218,8 +218,7 @@ button,input{font:inherit}button{cursor:pointer}
       </div>
       <div id="historyList" class="history-list"></div>
       <button type="button" id="addHistory" class="history-toggle history-add">➕ Adicionar férias realizadas</button>
-      <label class="history-complete"><input type="checkbox" id="historyComplete"> <span>Histórico completo desde a admissão. Marque somente quando todos os períodos de férias já realizados estiverem registrados.</span></label>
-      <div id="historySummary" class="status" style="margin-top:10px">Informe a data de admissão e o histórico de férias.</div>
+      <div id="historySummary" class="status" style="margin-top:10px">Registre os períodos de férias já realizados. O controle de vencimento será calculado depois, com o histórico completo.</div>
     </div>
   </div>
 
@@ -513,27 +512,10 @@ button,input{font:inherit}button{cursor:pointer}
 
   function legalVacationControl(){
     const adm=admissionDate(), hist=historyMonths(), today=new Date();
-    if(!adm || !hist.length || !$('historyComplete').checked) return {ready:false, incomplete:false};
-    const periods=[];
-    let i=0;
-    while(true){
-      const start=addYearsSafe(adm,i), end=addDaysUTC(addYearsSafe(adm,i+1),-1), concessionEnd=addYearsSafe(end,1);
-      if(start>today) break;
-      periods.push({i,start,end,concessionEnd,used:false,vacation:null});
-      i++; if(i>100) break;
-    }
-    hist.forEach(m=>{
-      const [y,mo]=m.split('-').map(Number), vm=new Date(Date.UTC(y,mo,0));
-      let p=periods.find(x=>!x.used && x.end<=vm && vm<=x.concessionEnd);
-      if(!p) p=periods.find(x=>!x.used && x.end<=vm);
-      if(!p) p=periods.find(x=>!x.used);
-      if(p){p.used=true;p.vacation=m;}
-    });
-    const overdue=periods.filter(p=>!p.used && p.concessionEnd<today);
-    const pending=periods.filter(p=>!p.used && p.concessionEnd>=today);
-    const nearest=pending.slice().sort((a,b)=>a.concessionEnd-b.concessionEnd)[0]||null;
-    const missing=Math.max(0,periods.length-hist.length);
-    return {ready:true,periods,overdue,pending,nearest,missing};
+    if(!adm || !hist.length) return {ready:false, incomplete:true, overdue:[], pending:[], nearest:null, missing:0};
+    // Nesta etapa, o histórico é apenas cadastral. O cálculo legal de vencimento
+    // será ativado quando tivermos todos os períodos reais registrados.
+    return {ready:false, incomplete:true, overdue:[], pending:[], nearest:null, missing:0};
   }
 
   function renderHistorySummary(){
@@ -541,7 +523,9 @@ button,input{font:inherit}button{cursor:pointer}
     $('historyCount').textContent=dates.length ? `${dates.length} ${dates.length===1?'período registrado':'períodos registrados'}` : 'Nenhum período registrado';
     if(!adm){
       $('historyRange').textContent='Informe a admissão';
-      box.className='status'; box.textContent='Informe a data de admissão e registre as férias realizadas.'; return;
+      box.className='status';
+      box.textContent=dates.length ? '🟡 Histórico cadastrado. Informe a data de admissão para completar o cadastro.' : 'Informe a data de admissão e registre as férias realizadas.';
+      return;
     }
     const admYear=Number(adm.slice(0,4)), currentYear=new Date().getFullYear();
     $('historyRange').textContent=`${admYear} → ${currentYear}`;
@@ -550,27 +534,8 @@ button,input{font:inherit}button{cursor:pointer}
       box.textContent='📚 Nenhuma férias realizada registrada ainda.';
       return;
     }
-    if(!$('historyComplete').checked){
-      box.className='status';
-      box.textContent='🟡 Histórico cadastrado. Ainda não vou calcular períodos vencidos.';
-      return;
-    }
-    const c=legalVacationControl();
-    if(c.missing>0){
-      box.className='status warn';
-      box.innerHTML=`🟡 <strong>Histórico incompleto.</strong> Registre os ${c.missing} ${c.missing===1?'período restante':'períodos restantes'} antes de calcular os vencimentos.`;
-      return;
-    }
-    if(c.overdue.length){
-      const n=c.overdue.length;
-      box.className='status err'; box.innerHTML=`🔴 <strong>${n} ${n===1?'período vencido':'períodos vencidos'}</strong>`;
-    }else if(c.nearest){
-      const days=Math.ceil((c.nearest.concessionEnd-new Date())/86400000);
-      if(days<=90){ box.className='status warn'; box.innerHTML='🟡 <strong>Período próximo do vencimento</strong>'; }
-      else { box.className='status ok'; box.innerHTML='🟢 <strong>Nenhum período vencido</strong>'; }
-    }else{
-      box.className='status ok'; box.innerHTML='🟢 <strong>Nenhum período vencido</strong>';
-    }
+    box.className='status warn';
+    box.innerHTML=`🟡 <strong>${dates.length} ${dates.length===1?'período registrado':'períodos registrados'}.</strong> O controle de vencimento ficará para a próxima etapa, quando o histórico real estiver completo.`;
   }
 
   function collectHistory(){ return historyMonths(); }
@@ -631,7 +596,7 @@ button,input{font:inherit}button{cursor:pointer}
 
   function editRecord(id){
     const x=local().find(r=>String(r.id)===String(id));if(!x)return;
-    editId=x.id;$('name').value=x.name;$('start').value=x.start;$('admission').value=x.admission||'';loadHistory(x.history||[]);$('historyComplete').checked=!!x.historyComplete;renderHistoryList();renderHistorySummary();syncDays(x.days);
+    editId=x.id;$('name').value=x.name;$('start').value=x.start;$('admission').value=x.admission||'';loadHistory(x.history||[]);renderHistoryList();renderHistorySummary();syncDays(x.days);
     $('calendarHint').textContent='✏️ Registro carregado para alteração.';
     $('calendarHint').className='calendar-hint';
     const [y,m]=x.start.split('-').map(Number);calendarMonth=new Date(Date.UTC(y,m-1,1));
@@ -661,14 +626,14 @@ button,input{font:inherit}button{cursor:pointer}
     }
     const a=local(), id=editId||Date.now();
     const old=a.find(r=>String(r.id)===String(id));
-    const record={id,name,start:$('start').value,admission:$('admission').value||'',history:collectHistory(),historyComplete:$('historyComplete').checked,days:c.n,status:old?.status==='aprovada'?'pendente':'pendente',reason:'',updatedAt:Date.now()};
+    const record={id,name,start:$('start').value,admission:$('admission').value||'',history:collectHistory(),historyComplete:false,days:c.n,status:old?.status==='aprovada'?'pendente':'pendente',reason:'',updatedAt:Date.now()};
     const i=a.findIndex(r=>String(r.id)===String(id));
     if(i>=0)a[i]=record;else a.unshift(record);
     saveLocal(a); reset(); renderRecords(); alert('Salvo neste aparelho.');
   }
 
   function reset(){
-    editId=null;$('name').value='';$('start').value='';$('admission').value='';$('historyComplete').checked=false;loadHistory([]);syncDays(12);
+    editId=null;$('name').value='';$('start').value='';$('admission').value='';loadHistory([]);syncDays(12);
     ['rs','re','rb','ws','we','wb'].forEach(id=>$(id).textContent='—');
     $('notice').textContent='Escolha uma data para calcular.';
     $('calendarHint').textContent='Toque em uma data para escolher o início das férias.';
@@ -700,7 +665,6 @@ button,input{font:inherit}button{cursor:pointer}
   $('historyToggle').onclick=()=>{const open=$('historyList').classList.toggle('open');$('addHistory').classList.toggle('open',open);$('historyToggle').textContent=open?'Ocultar histórico ▴':'Ver histórico ▾';};
   $('addHistory').onclick=()=>{ openHistoryEditor(); $('historyList').classList.add('open'); $('addHistory').classList.add('open'); $('historyToggle').textContent='Ocultar histórico ▴'; setTimeout(()=>$('newHistoryMonth')?.focus(),50); };
   $('admission').addEventListener('change',renderHistorySummary);
-  $('historyComplete').addEventListener('change',renderHistorySummary);
 
   $('start').onchange=()=>{
     const v=$('start').value;
