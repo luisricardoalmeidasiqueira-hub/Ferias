@@ -302,6 +302,7 @@ button,input{font:inherit}button{cursor:pointer}
   const LEGACY_KEYS = ['ferias_app_v2_clean','ferias_registros'];
   const DB_NAME = 'controle_ferias_dados';
   const DB_STORE = 'backup';
+  const CONTROL_DB_KEY = 'controles';
   const $ = id => document.getElementById(id);
   const pad = n => String(n).padStart(2,'0');
   const date = iso => new Date(iso + 'T00:00:00Z');
@@ -613,7 +614,45 @@ button,input{font:inherit}button{cursor:pointer}
   function readControls(){
     try{ const raw=JSON.parse(localStorage.getItem(CONTROL_KEY)||'[]'); return Array.isArray(raw)?raw:[]; }catch{return [];}
   }
-  function saveControls(a){ localStorage.setItem(CONTROL_KEY,JSON.stringify(a)); }
+  async function writeControlBackup(a){
+    try{
+      const db=await openBackupDB(); if(!db)return;
+      await new Promise((resolve,reject)=>{
+        const tx=db.transaction(DB_STORE,'readwrite');
+        tx.objectStore(DB_STORE).put({controls:a,savedAt:Date.now()},CONTROL_DB_KEY);
+        tx.oncomplete=resolve; tx.onerror=()=>reject(tx.error);
+      });
+      db.close();
+    }catch(e){console.warn('Backup dos controles indisponível',e)}
+  }
+  async function readControlBackup(){
+    try{
+      const db=await openBackupDB(); if(!db)return [];
+      const item=await new Promise((resolve,reject)=>{
+        const tx=db.transaction(DB_STORE,'readonly');
+        const req=tx.objectStore(DB_STORE).get(CONTROL_DB_KEY);
+        req.onsuccess=()=>resolve(req.result||null); req.onerror=()=>reject(req.error);
+      });
+      db.close();
+      return Array.isArray(item?.controls)?item.controls:[];
+    }catch(e){return []}
+  }
+  function saveControls(a){
+    localStorage.setItem(CONTROL_KEY,JSON.stringify(a));
+    writeControlBackup(a);
+  }
+  function mergeControls(...sets){
+    const map=new Map();
+    sets.flat().forEach(x=>{
+      if(!x || !x.key) return;
+      const k=String(x.key);
+      const prev=map.get(k);
+      if(!prev){ map.set(k,{...x,history:normalizeHistory(x.history||[])}); return; }
+      const hist=normalizeHistory([...(prev.history||[]),...(x.history||[])]);
+      map.set(k,{...prev,...x,history:hist,updatedAt:Math.max(Number(prev.updatedAt||0),Number(x.updatedAt||0))});
+    });
+    return [...map.values()];
+  }
   function controlKey(name, admission){ return `${String(name||'').trim().toLowerCase()}|${admission||''}`; }
   function saveVacationControl(){
     const name=$('name').value.trim(), admission=$('admission').value||'', history=collectHistory();
@@ -626,14 +665,8 @@ button,input{font:inherit}button{cursor:pointer}
     const i=a.findIndex(x=>x.key===key);
     if(i>=0)a[i]=record;else a.unshift(record);
     saveControls(a);
-    // Mantém o mesmo controle também associado ao registro de férias, se já existir.
-    const vacations=local();
-    const matches=vacations.filter(x=>String(x.name||'').trim().toLowerCase()===name.toLowerCase() && (!admission || x.admission===admission));
-    if(matches.length){
-      matches.forEach(x=>{x.admission=admission;x.history=history;});
-      saveLocal(vacations);
-      renderRecords();
-    }
+    // Controle de períodos é independente dos lançamentos de férias.
+    // Salvar aqui não altera nenhum registro de férias já lançado.
     $('controlSaved').classList.add('show');
     setTimeout(()=>$('controlSaved').classList.remove('show'),3000);
     renderHistorySummary();
@@ -764,7 +797,10 @@ button,input{font:inherit}button{cursor:pointer}
 
   function editRecord(id){
     const x=local().find(r=>String(r.id)===String(id));if(!x)return;
-    editId=x.id;$('name').value=x.name;$('start').value=x.start;$('admission').value=x.admission||'';loadHistory(x.history||[]);renderHistoryList();renderHistorySummary();syncDays(x.days);
+    editId=x.id;$('name').value=x.name;$('start').value=x.start;syncDays(x.days);
+    const ctl=readControls().find(r=>String(r.name||'').trim().toLowerCase()===String(x.name||'').trim().toLowerCase());
+    if(ctl){ $('admission').value=ctl.admission||''; loadHistory(ctl.history||[]); } else { $('admission').value=''; loadHistory([]); }
+    renderHistoryList();renderHistorySummary();
     $('calendarHint').textContent='✏️ Registro carregado para alteração.';
     $('calendarHint').className='calendar-hint';
     const [y,m]=x.start.split('-').map(Number);calendarMonth=new Date(Date.UTC(y,m-1,1));
@@ -794,7 +830,7 @@ button,input{font:inherit}button{cursor:pointer}
     }
     const a=local(), id=editId||Date.now();
     const old=a.find(r=>String(r.id)===String(id));
-    const record={id,name,start:$('start').value,admission:$('admission').value||'',history:collectHistory(),historyComplete:false,days:c.n,status:old?.status==='aprovada'?'pendente':'pendente',reason:'',updatedAt:Date.now()};
+    const record={id,name,start:$('start').value,days:c.n,status:'pendente',reason:'',updatedAt:Date.now()};
     const i=a.findIndex(r=>String(r.id)===String(id));
     if(i>=0)a[i]=record;else a.unshift(record);
     saveLocal(a); reset(); renderRecords(); alert('Salvo neste aparelho.');
@@ -896,6 +932,17 @@ button,input{font:inherit}button{cursor:pointer}
   loadHistory([]);
   renderRecords();
   renderControls();
+  // Recupera controles somente se o armazenamento principal estiver vazio;
+  // se ambos existirem, faz uma união sem apagar dados.
+  readControlBackup().then(backup=>{
+    const current=readControls();
+    const merged=mergeControls(current,backup);
+    if(JSON.stringify(merged)!==JSON.stringify(current)){
+      localStorage.setItem(CONTROL_KEY,JSON.stringify(merged));
+      renderControls();
+      writeControlBackup(merged);
+    }
+  }).catch(()=>{});
 })();
 </script>
 </body>
