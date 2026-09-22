@@ -7,6 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Férias">
 <title>Controle de Férias</title>
+<meta name="app-version" content="2026-09-22-v3-protecao-dados">
 <style>
 :root{
   --blue:#0797e6;--blue2:#1976df;--ink:#12375d;--line:#d8e9f3;
@@ -360,15 +361,18 @@ button,input{font:inherit}button{cursor:pointer}
   // Junta versões antigas do mesmo registro sem deixar uma versão vazia
   // apagar o histórico que já existe em outra cópia local/backup.
   function mergeRecordData(base, extra){
-    const out={...(base||{}),...(extra||{})};
-    const hist=normalizeHistory([...(base?.history||[]),...(extra?.history||[]) ]);
-    if(hist.length) out.history=hist;
-    else out.history=[];
-    out.historyComplete=Boolean(base?.historyComplete || extra?.historyComplete);
-    if(!out.admission) out.admission=base?.admission || extra?.admission || '';
-    if(!out.name) out.name=base?.name || extra?.name || '';
-    if(!out.start) out.start=base?.start || extra?.start || '';
-    if(!out.days) out.days=base?.days || extra?.days || 12;
+    const b=base||{}, e=extra||{};
+    const bt=Number(b.updatedAt||0), et=Number(e.updatedAt||0);
+    const newest=et>=bt?e:b;
+    const older=et>=bt?b:e;
+    const out={...older,...newest};
+    const hist=normalizeHistory([...(b.history||[]),...(e.history||[]) ]);
+    if(hist.length) out.history=hist; else out.history=[];
+    out.historyComplete=Boolean(b.historyComplete || e.historyComplete);
+    if(!out.admission) out.admission=older.admission || newest.admission || '';
+    if(!out.name) out.name=older.name || newest.name || '';
+    if(!out.start) out.start=older.start || newest.start || '';
+    if(!out.days) out.days=older.days || newest.days || 12;
     return out;
   }
 
@@ -644,12 +648,15 @@ button,input{font:inherit}button{cursor:pointer}
   function mergeControls(...sets){
     const map=new Map();
     sets.flat().forEach(x=>{
-      if(!x || !x.key) return;
-      const k=String(x.key);
+      if(!x || !x.name) return;
+      const k=String(x.name).trim().toLowerCase();
       const prev=map.get(k);
       if(!prev){ map.set(k,{...x,history:normalizeHistory(x.history||[])}); return; }
+      const pt=Number(prev.updatedAt||0), xt=Number(x.updatedAt||0);
+      const newest=xt>=pt?x:prev;
+      const older=xt>=pt?prev:x;
       const hist=normalizeHistory([...(prev.history||[]),...(x.history||[])]);
-      map.set(k,{...prev,...x,history:hist,updatedAt:Math.max(Number(prev.updatedAt||0),Number(x.updatedAt||0))});
+      map.set(k,{...older,...newest,history:hist,updatedAt:Math.max(pt,xt)});
     });
     return [...map.values()];
   }
@@ -660,10 +667,12 @@ button,input{font:inherit}button{cursor:pointer}
     if(!admission && !history.length){
       alert('Preencha a data de admissão ou registre pelo menos um período de férias.'); return;
     }
-    const a=readControls(), key=controlKey(name,admission);
-    const record={id:key,key,name,admission,history,updatedAt:Date.now()};
-    const i=a.findIndex(x=>x.key===key);
-    if(i>=0)a[i]=record;else a.unshift(record);
+    const a=readControls();
+    const existingIndex=a.findIndex(x=>String(x.name||'').trim().toLowerCase()===name.toLowerCase());
+    const existing=existingIndex>=0?a[existingIndex]:null;
+    const key=existing?.key || controlKey(name,admission);
+    const record={id:key,key,name,admission,history,historyComplete:Boolean(existing?.historyComplete),updatedAt:Date.now()};
+    if(existingIndex>=0)a[existingIndex]=record;else a.unshift(record);
     saveControls(a);
     // Controle de períodos é independente dos lançamentos de férias.
     // Salvar aqui não altera nenhum registro de férias já lançado.
@@ -830,7 +839,9 @@ button,input{font:inherit}button{cursor:pointer}
     }
     const a=local(), id=editId||Date.now();
     const old=a.find(r=>String(r.id)===String(id));
-    const record={id,name,start:$('start').value,days:c.n,status:'pendente',reason:'',updatedAt:Date.now()};
+    let nextStatus='pendente';
+    if(old) nextStatus = old.status==='recusada' ? 'pendente' : (old.status || 'pendente');
+    const record={id,name,start:$('start').value,days:c.n,status:nextStatus,reason:nextStatus==='recusada'?'':(old?.reason||''),updatedAt:Date.now()};
     const i=a.findIndex(r=>String(r.id)===String(id));
     if(i>=0)a[i]=record;else a.unshift(record);
     saveLocal(a); reset(); renderRecords(); alert('Salvo neste aparelho.');
