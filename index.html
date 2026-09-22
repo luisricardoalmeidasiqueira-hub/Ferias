@@ -141,6 +141,13 @@ button,input{font:inherit}button{cursor:pointer}
 .admin-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.admin-card{padding:13px;border-radius:15px;background:#eef8ff;border:1px solid #d5ebf7;font-size:13px}
 .admin-card strong{display:block;font-size:22px;color:#075b8a;margin-top:3px}
 .admin-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+
+.control-record{padding:14px;border:1px solid #d8eaf4;background:#f8fcff;border-radius:16px;margin-top:9px}
+.control-record .control-top{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.control-record .control-name{font-size:16px;font-weight:950;color:#173d57}
+.control-meta{font-size:12px;color:#60788b;font-weight:750;margin-top:6px;line-height:1.45}
+.control-actions{display:flex;gap:8px;margin-top:10px}
+.control-actions button{border:0;border-radius:10px;padding:9px 11px;font-weight:900;background:#e8f4fb;color:#075b8a}
 @media(max-width:650px){
   .grid,.results{grid-template-columns:1fr}
   .result{display:flex;align-items:center;justify-content:space-between}
@@ -274,6 +281,11 @@ button,input{font:inherit}button{cursor:pointer}
     <button class="filter" data-filter="encerrada">🏁 Realizadas</button>
   </div>
   <div id="records"><div style="text-align:center;color:#71879a;padding:14px">Nenhum registro.</div></div>
+</section>
+
+<section class="card" id="controlsCard">
+  <div class="head"><h2>👤 Controles salvos</h2><span class="count" id="controlCount">0 controles</span></div>
+  <div id="controlsList"><div style="text-align:center;color:#71879a;padding:14px">Nenhum controle salvo.</div></div>
 </section>
 
 <section class="card">
@@ -625,6 +637,7 @@ button,input{font:inherit}button{cursor:pointer}
     $('controlSaved').classList.add('show');
     setTimeout(()=>$('controlSaved').classList.remove('show'),3000);
     renderHistorySummary();
+    renderControls();
   }
 
   function loadSavedControl(){
@@ -646,6 +659,34 @@ button,input{font:inherit}button{cursor:pointer}
     return st==='aprovada'?'✅ Férias aprovadas':
            st==='recusada'?'❌ Férias recusadas':
            st==='encerrada'?'🏁 Férias realizadas':'🟡 Aguardando aprovação';
+  }
+
+  function renderControls(){
+    const all=readControls();
+    $('controlCount').textContent=all.length+' '+(all.length===1?'controle':'controles');
+    if(!all.length){
+      $('controlsList').innerHTML='<div style="text-align:center;color:#71879a;padding:14px">Nenhum controle salvo.</div>';
+      return;
+    }
+    $('controlsList').innerHTML=all.map(x=>{
+      const hist=normalizeHistory(x.history||[]);
+      const adm=x.admission?fmt(date(x.admission)):'Não informada';
+      const range=x.admission?`${x.admission.slice(0,4)} → ${new Date().getFullYear()}`:'Período não informado';
+      return `<div class="control-record">
+        <div class="control-top"><div class="control-name">👤 ${escapeHtml(x.name)}</div><span class="badge">Controle salvo</span></div>
+        <div class="control-meta">🏢 Admissão: <b>${adm}</b><br>📚 Histórico: <b>${hist.length} ${hist.length===1?'período':'períodos'}</b> · ${range}</div>
+        <div class="control-actions"><button type="button" data-load-control="${escapeHtml(x.key)}">✏️ Abrir controle</button></div>
+      </div>`;
+    }).join('');
+    $('controlsList').querySelectorAll('[data-load-control]').forEach(btn=>btn.onclick=()=>{
+      const x=readControls().find(r=>r.key===btn.dataset.loadControl);
+      if(!x)return;
+      $('name').value=x.name||'';
+      $('admission').value=x.admission||'';
+      loadHistory(x.history||[]);
+      $('historyList').classList.add('open');$('addHistory').classList.add('open');$('historyToggle').textContent='Ocultar histórico ▴';
+      document.querySelector('#controlsCard')?.scrollIntoView({behavior:'smooth',block:'center'});
+    });
   }
 
   function renderRecords(){
@@ -846,6 +887,7 @@ button,input{font:inherit}button{cursor:pointer}
   renderCalendar();
   loadHistory([]);
   renderRecords();
+  renderControls();
 })();
 </script>
 </body>
