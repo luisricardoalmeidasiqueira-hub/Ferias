@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Férias">
 <title>Controle de Férias</title>
-<meta name="app-version" content="2026-09-22-v7-final">
+<meta name="app-version" content="2026-09-22-v8-login">
 <style>
 :root{
   --blue:#0797e6;--blue2:#1976df;--ink:#12375d;--line:#d8e9f3;
@@ -122,6 +122,20 @@ button,input{font:inherit}button{cursor:pointer}
 .developer-area{width:min(826px,calc(100% - 24px));margin:10px auto 16px;display:flex;justify-content:flex-end;position:relative;z-index:20}
 .developer-btn{border:0;border-radius:14px;padding:10px 14px;background:#075b8a;color:#fff;font-weight:800;position:relative;z-index:21}
 
+
+.auth-gate{width:min(826px,calc(100% - 24px));margin:12px auto 18px;position:relative;z-index:30}
+.auth-card{background:#fffffff5;border:1px solid #fff;border-radius:22px;padding:18px;box-shadow:0 10px 28px #07508018}
+.auth-card h2{margin:0 0 6px;font-size:22px;color:var(--ink)}
+.auth-note{margin:0 0 12px;color:#61798c;font-size:12px;font-weight:800}
+.auth-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.auth-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}
+.auth-btn{border:0;border-radius:13px;padding:12px;color:#fff;font-weight:900;background:#0d78a8}
+.auth-btn.secondary{background:#7355e8}
+.auth-status{margin-top:10px;padding:9px 11px;border-radius:10px;background:#eef8ff;color:#45677f;font-size:11px;font-weight:800;display:none}
+.auth-status.show{display:block}
+.auth-user{margin-top:9px;font-size:11px;color:#60788b;font-weight:800}
+#appContent.auth-locked{display:none}
+@media(max-width:650px){.auth-row,.auth-actions{grid-template-columns:1fr}}
 .reject-modal{display:none;position:fixed;inset:0;z-index:9999;background:#0008;align-items:center;justify-content:center;padding:18px}
 .reject-modal.open{display:flex}
 .reject-box{width:min(520px,100%);background:#fff;border-radius:22px;padding:20px;box-shadow:0 20px 60px #0006}
@@ -171,6 +185,24 @@ button,input{font:inherit}button{cursor:pointer}
   <p>Planeje hoje, aproveite amanhã!</p><div class="chair">🏖️</div>
 </header>
 
+<div class="auth-gate" id="authGate">
+  <div class="auth-card">
+    <h2>🔐 Acesso ao Controle de Férias</h2>
+    <p class="auth-note">Entre com seu e-mail e senha. No primeiro acesso, você pode criar sua própria conta.</p>
+    <div class="auth-row">
+      <input class="input" id="loginEmail" type="email" autocomplete="username" placeholder="Seu e-mail">
+      <input class="input" id="loginPassword" type="password" autocomplete="current-password" placeholder="Sua senha">
+    </div>
+    <div class="auth-actions">
+      <button class="auth-btn" id="loginBtn" type="button">🔑 Entrar</button>
+      <button class="auth-btn secondary" id="registerBtn" type="button">👤 Criar minha conta</button>
+    </div>
+    <div class="auth-status" id="authStatus"></div>
+    <div class="auth-user" id="authUserInfo"></div>
+  </div>
+</div>
+
+<div id="appContent" class="auth-locked">
 <div class="developer-area">
   <button class="developer-btn" id="developerBtn">👨‍💻 Desenvolvedor</button>
 </div>
@@ -319,6 +351,7 @@ button,input{font:inherit}button{cursor:pointer}
 
 <footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.</footer>
 </main>
+</div>
 
 <script>
 (() => {
@@ -341,6 +374,9 @@ button,input{font:inherit}button{cursor:pointer}
   let firebaseReady = false, firebaseAuth = null, firebaseDb = null, firebaseFns = null;
   let firebaseUser = null;
   let firebaseSyncing = false;
+  // Permissão visual para ações administrativas. Começa bloqueada até o Firebase
+  // confirmar que a sessão é do Desenvolvedor ou de um administrador.
+  let canManageRecords = false;
 
   async function initFirebase(){
     try{
@@ -354,23 +390,94 @@ button,input{font:inherit}button{cursor:pointer}
       firebaseDb = fsMod.getFirestore(app);
       firebaseFns = { ...authMod, ...fsMod };
       firebaseReady = true;
+      setAuthStatus('Firebase pronto. Entre ou crie sua conta para continuar.','info');
       authMod.onAuthStateChanged(firebaseAuth, async user=>{
         firebaseUser=user||null;
         if(user){
+          $('authGate').style.display='none';
+          $('appContent').classList.remove('auth-locked');
+          $('authUserInfo').textContent='👤 Conectado como: '+(user.email||'Usuário');
           setFirebaseStatus('☁️ Firebase conectado');
+          await ensureUserProfile(user);
+          await refreshRecordPermissions();
           await pullFirebase();
           if(document.getElementById('adminPanel')?.classList.contains('open')) refreshDeveloperPanel();
         }else{
-          try{
-            await authMod.signInAnonymously(firebaseAuth);
-          }catch(e){
-            setFirebaseStatus('☁️ Firebase pronto — login necessário para sincronizar');
-          }
+          canManageRecords=false;
+          applyRecordPermissions();
+          $('appContent').classList.add('auth-locked');
+          $('authGate').style.display='block';
+          $('authUserInfo').textContent='';
+          setFirebaseStatus('🔐 Login necessário para sincronizar');
         }
       });
     }catch(err){
       console.warn('Firebase indisponível',err);
-      setFirebaseStatus('☁️ Dados locais — Firebase indisponível');
+      setFirebaseStatus('☁️ Firebase indisponível');
+      setAuthStatus('Não foi possível iniciar o Firebase. Verifique a conexão e tente novamente.','error');
+    }
+  }
+
+  function setAuthStatus(message,type='info'){
+    const el=$('authStatus');
+    if(!el)return;
+    el.textContent=message;
+    el.className='auth-status show'+(type==='error'?' err':'');
+  }
+
+  async function ensureUserProfile(user){
+    if(!firebaseDb || !firebaseFns || !user?.uid)return;
+    try{
+      await firebaseFns.setDoc(
+        firebaseFns.doc(firebaseDb,'usuarios',user.uid),
+        {uid:user.uid,email:user.email||'',updatedAt:Date.now()},
+        {merge:true}
+      );
+    }catch(err){
+      console.warn('Perfil do usuário não foi salvo',err);
+    }
+  }
+
+  async function doLogin(){
+    const email=($('loginEmail').value||'').trim().toLowerCase();
+    const password=$('loginPassword').value||'';
+    if(!email || !email.includes('@')){setAuthStatus('Digite um e-mail válido.','error');return;}
+    if(password.length<6){setAuthStatus('A senha precisa ter pelo menos 6 caracteres.','error');return;}
+    if(!firebaseReady || !firebaseAuth || !firebaseFns){setAuthStatus('Firebase ainda está iniciando. Aguarde alguns segundos.','error');return;}
+    setAuthStatus('Entrando...');
+    try{
+      await firebaseFns.signInWithEmailAndPassword(firebaseAuth,email,password);
+      $('loginPassword').value='';
+    }catch(err){
+      console.warn('Login falhou',err);
+      const code=String(err?.code||'');
+      if(code.includes('invalid-credential') || code.includes('wrong-password') || code.includes('user-not-found')){
+        setAuthStatus('E-mail ou senha incorretos. Se for o primeiro acesso, toque em “Criar minha conta”.','error');
+      }else{
+        setAuthStatus('Não foi possível entrar. Verifique o e-mail e a senha.','error');
+      }
+    }
+  }
+
+  async function doRegister(){
+    const email=($('loginEmail').value||'').trim().toLowerCase();
+    const password=$('loginPassword').value||'';
+    if(!email || !email.includes('@')){setAuthStatus('Digite um e-mail válido.','error');return;}
+    if(password.length<6){setAuthStatus('A senha precisa ter pelo menos 6 caracteres.','error');return;}
+    if(!firebaseReady || !firebaseAuth || !firebaseFns){setAuthStatus('Firebase ainda está iniciando. Aguarde alguns segundos.','error');return;}
+    if(!confirm('Criar uma conta com este e-mail?'))return;
+    setAuthStatus('Criando sua conta...');
+    try{
+      const cred=await firebaseFns.createUserWithEmailAndPassword(firebaseAuth,email,password);
+      await ensureUserProfile(cred.user);
+      $('loginPassword').value='';
+    }catch(err){
+      console.warn('Cadastro falhou',err);
+      const code=String(err?.code||'');
+      if(code.includes('email-already-in-use')) setAuthStatus('Este e-mail já possui uma conta. Use “Entrar”.','error');
+      else if(code.includes('invalid-email')) setAuthStatus('E-mail inválido.','error');
+      else if(code.includes('weak-password')) setAuthStatus('Escolha uma senha mais forte, com pelo menos 6 caracteres.','error');
+      else setAuthStatus('Não foi possível criar a conta. Verifique os dados e tente novamente.','error');
     }
   }
 
@@ -380,6 +487,32 @@ button,input{font:inherit}button{cursor:pointer}
     // Mantém o aviso visual simples e não interfere no cálculo de férias.
     if(!el.dataset.firebaseBase) el.dataset.firebaseBase=el.textContent||'';
     el.textContent=text;
+  }
+
+  async function refreshRecordPermissions(){
+    canManageRecords=false;
+    if(!firebaseUser) { applyRecordPermissions(); return; }
+    const email=String(firebaseUser.email||'').trim().toLowerCase();
+    if(email==='luissiqueir@hotmail.com'){
+      canManageRecords=true;
+      applyRecordPermissions();
+      return;
+    }
+    if(email && firebaseDb && firebaseFns){
+      try{
+        const snap=await firebaseFns.getDoc(firebaseFns.doc(firebaseDb,'admins',email));
+        canManageRecords=snap.exists() && snap.data()?.role==='admin';
+      }catch(err){
+        console.warn('Não foi possível verificar a permissão de administrador',err);
+      }
+    }
+    applyRecordPermissions();
+  }
+
+  function applyRecordPermissions(){
+    const del=$('del');
+    if(del) del.style.display=canManageRecords?'':'none';
+    if(typeof renderRecords==='function' && document.getElementById('records')) renderRecords();
   }
 
   async function pullFirebase(){
@@ -903,9 +1036,9 @@ button,input{font:inherit}button{cursor:pointer}
       const s=date(x.start),e=new Date(s);e.setUTCDate(e.getUTCDate()+Number(x.days||1)-1);
       const b=new Date(e);b.setUTCDate(b.getUTCDate()+1);
       const st=state(x);
-      const actions = st==='pendente'
+      const actions = canManageRecords && st==='pendente'
         ? `<div class="approval"><button class="approve" data-approve="${x.id}">🟢 Aprovar férias</button><button class="reject" data-reject="${x.id}">🔴 Recusar férias</button></div>`
-        : st==='aprovada'
+        : canManageRecords && st==='aprovada'
         ? `<div class="approval"><button class="approve" data-realizada="${x.id}">🏁 Marcar como realizada</button></div>`
         : st==='recusada'
         ? `<div class="approval"><button class="approve" data-edit="${x.id}">✏️ Alterar e reenviar</button></div>`
@@ -919,7 +1052,7 @@ button,input{font:inherit}button{cursor:pointer}
           <div>☀️ Último dia<b>${fmt(e)}</b></div>
           <div>✈️ Retorno<b>${fmt(b)}</b></div>
         </div>
-        <div class="ra"><button data-edit="${x.id}">✏️ Editar</button><button data-delete="${x.id}">🗑️ Apagar</button></div>
+        <div class="ra"><button data-edit="${x.id}">✏️ Editar</button>${canManageRecords?`<button data-delete="${x.id}">🗑️ Apagar</button>`:''}</div>
         <div class="status ${st==='aprovada'?'ok':st==='recusada'?'err':st==='encerrada'?'closed':''}">${label(st)}</div>
         ${st==='recusada' && x.reason ? `<div class="status err">📝 Motivo: ${escapeHtml(x.reason)}</div>` : ''}
         ${actions}
@@ -1089,7 +1222,7 @@ button,input{font:inherit}button{cursor:pointer}
   $('calc').onclick=calc;
   $('save').onclick=saveRecord;
   $('edit').onclick=()=>{const a=local();if(a.length)editRecord(a[0].id);else alert('Não há registros.')};
-  $('del').onclick=()=>{if(editId)removeRecord(editId);else alert('Selecione um registro para apagar.')};
+  $('del').onclick=()=>{if(!canManageRecords){alert('Somente o Desenvolvedor ou um administrador pode apagar registros.');return;} if(editId)removeRecord(editId);else alert('Selecione um registro para apagar.')};
   $('share').onclick=async()=>{
     const url=location.href;
     if(navigator.share){try{await navigator.share({title:'🏖️ Controle de Férias',text:'Abra o aplicativo Controle de Férias:',url});return}catch(e){if(e?.name==='AbortError')return}}
@@ -1105,6 +1238,11 @@ button,input{font:inherit}button{cursor:pointer}
   $('rejectReason').oninput=()=>$('rejectError').classList.remove('show');
   $('rejectReason').onkeydown=e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter')confirmReject()};
   $('rejectModal').onclick=e=>{if(e.target===$('rejectModal'))closeReject()};
+
+  $('loginBtn').onclick=doLogin;
+  $('registerBtn').onclick=doRegister;
+  $('loginPassword').onkeydown=e=>{if(e.key==='Enter')doLogin()};
+  $('loginEmail').onkeydown=e=>{if(e.key==='Enter')doLogin()};
 
   // Desenvolvedor — login real pelo Firebase
   const OWNER_EMAIL='luissiqueir@hotmail.com';
