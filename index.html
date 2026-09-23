@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Férias">
 <title>Controle de Férias</title>
-<meta name="app-version" content="2026-09-23-v13-login-avisos">
+<meta name="app-version" content="2026-09-23-v14-autoupdate">
 <style>
 :root{
   --blue:#0797e6;--blue2:#1976df;--ink:#12375d;--line:#d8e9f3;
@@ -396,7 +396,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   <div class="quote">🌊 “Descanso hoje para voltar com mais energia amanhã!”<span>Férias fazem bem.</span></div>
 </section>
 
-<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.</footer>
+<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 14</span></footer>
 </main>
 </div>
 
@@ -1673,6 +1673,26 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     }
   };
   $('adminExportBtn').onclick=exportBackup;
+
+  // Atualização automática: busca a versão publicada no GitHub sem cache.
+  // Se for diferente desta, recarrega com a versão nova (serve também
+  // para o app instalado na tela de início do iPhone).
+  async function checkForUpdate(){
+    try{
+      const cur=document.querySelector('meta[name="app-version"]')?.content||'';
+      const res=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});
+      if(!res.ok) return;
+      const html=await res.text();
+      const m=html.match(/name="app-version"\s+content="([^"]+)"/);
+      const latest=m?m[1]:'';
+      if(!latest || latest===cur) return;
+      if(sessionStorage.getItem('ferias_update_tried')===latest) return;
+      sessionStorage.setItem('ferias_update_tried',latest);
+      location.replace(location.pathname+'?v='+encodeURIComponent(latest));
+    }catch(e){ console.warn('Verificação de atualização falhou',e); }
+  }
+  checkForUpdate();
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') checkForUpdate(); });
 
   // Inicialização
   setRequestDateDisplay();
