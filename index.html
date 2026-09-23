@@ -135,6 +135,8 @@ button,input{font:inherit}button{cursor:pointer}
 .auth-status.show{display:block}
 .auth-user{margin-top:9px;font-size:11px;color:#60788b;font-weight:800}
 #appContent.auth-locked{display:none}
+.admin-csv-btn{display:block;width:100%;margin:12px 0 0;padding:14px 16px;border:0;border-radius:16px;background:#0f78a8;color:#fff;font-size:18px;font-weight:900;box-shadow:0 8px 18px rgba(15,120,168,.18);cursor:pointer}
+.admin-csv-btn:active{transform:scale(.99)}
 @media(max-width:650px){.auth-row,.auth-actions{grid-template-columns:1fr}}
 .reject-modal{display:none;position:fixed;inset:0;z-index:9999;background:#0008;align-items:center;justify-content:center;padding:18px}
 .reject-modal.open{display:flex}
@@ -197,6 +199,8 @@ button,input{font:inherit}button{cursor:pointer}
       <button class="auth-btn" id="loginBtn" type="button">🔑 Entrar</button>
       <button class="auth-btn secondary" id="registerBtn" type="button">👤 Criar minha conta</button>
     </div>
+    <label class="remember-row" style="margin-top:12px"><input type="checkbox" id="rememberLogin" checked> <span>Manter meu login salvo neste dispositivo</span></label>
+    <div class="auth-note" style="margin-top:6px">🔒 O aplicativo mantém a sessão do Firebase; sua senha não é gravada pelo aplicativo.</div>
     <div class="auth-status" id="authStatus"></div>
     <div class="auth-user" id="authUserInfo"></div>
   </div>
@@ -321,6 +325,7 @@ button,input{font:inherit}button{cursor:pointer}
     <div class="result back" id="rbx"><small>✈️ RETORNO</small><strong id="rb">—</strong><span id="wb">—</span></div>
   </div>
   <div class="notice" id="notice">Escolha uma data para calcular.</div>
+  <button type="button" id="csvExportBtn" class="admin-csv-btn" style="display:none">📊 Exportar CSV</button>
   <div class="actions">
     <button class="act save" id="save">💾 Salvar</button>
     <button class="act edit" id="edit">✏️ Editar</button>
@@ -392,6 +397,13 @@ button,input{font:inherit}button{cursor:pointer}
       firebaseReady = true;
       setAuthStatus('Firebase pronto. Entre ou crie sua conta para continuar.','info');
       authMod.onAuthStateChanged(firebaseAuth, async user=>{
+        // Sessões anônimas da versão antiga não podem liberar o aplicativo.
+        // Se este aparelho ainda tiver uma sessão anônima salva, encerramos essa sessão
+        // e mantemos a tela de login aberta para o usuário entrar com e-mail e senha.
+        if(user && user.isAnonymous){
+          try{ await authMod.signOut(firebaseAuth); }catch(err){ console.warn('Não foi possível encerrar a sessão anônima antiga',err); }
+          return;
+        }
         firebaseUser=user||null;
         if(user){
           $('authGate').style.display='none';
@@ -438,6 +450,19 @@ button,input{font:inherit}button{cursor:pointer}
     }
   }
 
+  async function applyLoginPersistence(){
+    if(!firebaseAuth || !firebaseFns || !firebaseFns.setPersistence) return;
+    const keep=!!$('rememberLogin')?.checked;
+    try{
+      await firebaseFns.setPersistence(
+        firebaseAuth,
+        keep ? firebaseFns.browserLocalPersistence : firebaseFns.browserSessionPersistence
+      );
+    }catch(err){
+      console.warn('Não foi possível definir a persistência do login',err);
+    }
+  }
+
   async function doLogin(){
     const email=($('loginEmail').value||'').trim().toLowerCase();
     const password=$('loginPassword').value||'';
@@ -446,6 +471,7 @@ button,input{font:inherit}button{cursor:pointer}
     if(!firebaseReady || !firebaseAuth || !firebaseFns){setAuthStatus('Firebase ainda está iniciando. Aguarde alguns segundos.','error');return;}
     setAuthStatus('Entrando...');
     try{
+      await applyLoginPersistence();
       await firebaseFns.signInWithEmailAndPassword(firebaseAuth,email,password);
       $('loginPassword').value='';
     }catch(err){
@@ -468,6 +494,7 @@ button,input{font:inherit}button{cursor:pointer}
     if(!confirm('Criar uma conta com este e-mail?'))return;
     setAuthStatus('Criando sua conta...');
     try{
+      await applyLoginPersistence();
       const cred=await firebaseFns.createUserWithEmailAndPassword(firebaseAuth,email,password);
       await ensureUserProfile(cred.user);
       $('loginPassword').value='';
@@ -511,7 +538,9 @@ button,input{font:inherit}button{cursor:pointer}
 
   function applyRecordPermissions(){
     const del=$('del');
+    const csv=$('csvExportBtn');
     if(del) del.style.display=canManageRecords?'':'none';
+    if(csv) csv.style.display=canManageRecords?'block':'none';
     if(typeof renderRecords==='function' && document.getElementById('records')) renderRecords();
   }
 
@@ -1188,9 +1217,46 @@ button,input{font:inherit}button{cursor:pointer}
   }
 
   function exportBackup(){
+    if(!canManageRecords){alert('Somente o Desenvolvedor ou um administrador pode exportar os dados.');return;}
     const blob=new Blob([JSON.stringify({version:2,exportadoEm:new Date().toISOString(),ferias:local()},null,2)],{type:'application/json'});
     const url=URL.createObjectURL(blob), a=document.createElement('a');
     a.href=url;a.download='backup-controle-ferias.json';document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
+
+  function csvCell(value){
+    const text=String(value??'');
+    return '"'+text.replace(/"/g,'""')+'"';
+  }
+
+  function exportCSV(){
+    if(!canManageRecords){alert('Somente o Desenvolvedor ou um administrador pode exportar o CSV.');return;}
+    const rows=local();
+    const header=['Nome','Data da solicitação','Data de admissão','Início','Dias','Último dia','Retorno','Status','Motivo da recusa','E-mail da conta'];
+    const lines=[header.map(csvCell).join(';')];
+    for(const x of rows){
+      const start=x.start?date(x.start):null;
+      const last=start?new Date(start):null;
+      if(last) last.setUTCDate(last.getUTCDate()+Number(x.days||1)-1);
+      const back=last?new Date(last):null;
+      if(back) back.setUTCDate(back.getUTCDate()+1);
+      const requested=x.requestedAt||x.createdAt||x.updatedAt;
+      lines.push([
+        x.name||'',
+        requested?fmt(new Date(Number(requested))):'',
+        x.admission?fmt(date(x.admission)):'',
+        start?fmt(start):'',
+        x.days||'',
+        last?fmt(last):'',
+        back?fmt(back):'',
+        label(state(x)).replace(/^[^A-Za-zÀ-ÿ]+/,'').trim(),
+        x.reason||'',
+        x.ownerEmail||''
+      ].map(csvCell).join(';'));
+    }
+    const blob=new Blob(['\ufeff'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
+    const url=URL.createObjectURL(blob), a=document.createElement('a');
+    a.href=url;a.download='ferias-controle-'+new Date().toISOString().slice(0,10)+'.csv';document.body.appendChild(a);a.click();a.remove();
     setTimeout(()=>URL.revokeObjectURL(url),1000);
   }
 
@@ -1241,6 +1307,11 @@ button,input{font:inherit}button{cursor:pointer}
 
   $('loginBtn').onclick=doLogin;
   $('registerBtn').onclick=doRegister;
+  $('rememberLogin').onchange=()=>{
+    localStorage.setItem('ferias_remember_login', $('rememberLogin').checked ? '1' : '0');
+  };
+  const rememberLoginSaved=localStorage.getItem('ferias_remember_login');
+  if(rememberLoginSaved!==null) $('rememberLogin').checked=rememberLoginSaved==='1';
   $('loginPassword').onkeydown=e=>{if(e.key==='Enter')doLogin()};
   $('loginEmail').onkeydown=e=>{if(e.key==='Enter')doLogin()};
 
@@ -1324,6 +1395,7 @@ button,input{font:inherit}button{cursor:pointer}
     }
   };
   $('adminExportBtn').onclick=exportBackup;
+  $('csvExportBtn').onclick=exportCSV;
 
   // Inicialização
   setRequestDateDisplay();
