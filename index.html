@@ -395,6 +395,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   // Permissão visual para ações administrativas. Começa bloqueada até o Firebase
   // confirmar que a sessão é do Desenvolvedor ou de um administrador.
   let canManageRecords = false;
+  let agendaRecords = [];
 
   async function initFirebase(){
     try{
@@ -616,6 +617,8 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
         renderRecords();
       }
       await pushLocalToFirebase(merged);
+      await pullAgenda();
+      await pushAgenda(merged);
       setFirebaseStatus('☁️ Firebase sincronizado');
     }catch(err){
       console.warn('Leitura do Firebase falhou',err);
@@ -632,6 +635,40 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       const payload={...r, ownerUid:r.ownerUid||firebaseUser.uid, ownerEmail:r.ownerEmail||firebaseUser.email||''};
       try{ await setDoc(doc(firebaseDb,'ferias',String(r.id)),payload,{merge:true}); }
       catch(err){ console.warn('Registro não enviado ao Firebase',r.id,err); }
+    }
+  }
+
+  function vacationRange(r){
+    const start=date(r.start); const end=new Date(start);
+    end.setUTCDate(end.getUTCDate()+Number(r.days||1)-1); return {start,end};
+  }
+  function conflictType(r){
+    const a=vacationRange(r); let near=false;
+    for(const o of agendaRecords){
+      if(!o || String(o.id)===String(r.id) || o.status==='recusada') continue;
+      const b=vacationRange(o);
+      if(a.start<=b.end && a.end>=b.start) return 'r';
+      const gap=Math.min(Math.abs(a.start-b.end),Math.abs(b.start-a.end))/86400000;
+      if(gap<=3) near=true;
+    }
+    return near?'o':'g';
+  }
+  async function pullAgenda(){
+    if(!firebaseReady || !firebaseUser || !firebaseDb || !firebaseFns) return;
+    try{
+      const {collection,getDocs}=firebaseFns;
+      const snap=await getDocs(collection(firebaseDb,'ferias_agenda'));
+      agendaRecords=snap.docs.map(d=>({id:d.id,...d.data()}));
+      if(document.getElementById('records')) renderRecords();
+    }catch(err){ console.warn('Agenda de conflitos indisponível',err); agendaRecords=[]; }
+  }
+  async function pushAgenda(records){
+    if(!firebaseReady || !firebaseUser || !firebaseDb || !firebaseFns) return;
+    const {doc,setDoc}=firebaseFns;
+    const source = canManageRecords ? (records||[]) : (records||[]).filter(recordBelongsToCurrentUser);
+    for(const r of source){
+      if(!r || r.id==null) continue;
+      try{ await setDoc(doc(firebaseDb,'ferias_agenda',String(r.id)),{start:r.start||'',days:Number(r.days||1),status:r.status||'pendente',ownerUid:r.ownerUid||firebaseUser.uid,updatedAt:r.updatedAt||Date.now()},{merge:true}); }catch(err){ console.warn('Agenda não enviada',r.id,err); }
     }
   }
 
@@ -1134,7 +1171,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       const requestTs=Number(x.requestedAt||x.createdAt||x.updatedAt||Date.now());
       const requestDate=fmt(new Date(requestTs));
       return `<div class="record">
-        <div class="top"><div><div class="name">👤 ${escapeHtml(x.name)}</div><div class="request-date">📅 Data da solicitação: ${requestDate}</div></div><span class="badge">Sem conflito</span></div>
+        <div class="top"><div><div class="name">👤 ${escapeHtml(x.name)}</div><div class="request-date">📅 Data da solicitação: ${requestDate}</div></div><span class="badge ${conflictType(x)==='r'?'err':conflictType(x)==='o'?'warn':''}">${conflictType(x)==='r'?'⚠️ Conflito de período':conflictType(x)==='o'?'🟠 Período próximo':'Sem conflito'}</span></div>
         <div class="info">
           <div>🏖️ Início<b>${fmt(s)}</b></div>
           <div>☀️ Último dia<b>${fmt(e)}</b></div>
@@ -1169,14 +1206,14 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     if(!reason){$('rejectError').classList.add('show');$('rejectReason').focus();return;}
     const a=local(), x=a.find(r=>String(r.id)===String(rejectId));
     if(!x){closeReject();return;}
-    x.status='recusada'; x.reason=reason; x.updatedAt=Date.now(); saveLocal(a); closeReject(); renderRecords();
+    x.status='recusada'; x.reason=reason; x.updatedAt=Date.now(); saveLocal(a); closeReject(); renderRecords(); pushAgenda(a); pullAgenda();
   }
   function setStatus(id,status){
     const a=local(), x=a.find(r=>String(r.id)===String(id)); if(!x)return;
     if(status==='recusada'){openReject(id);return;}
     if(status==='aprovada'){x.status='aprovada';x.reason='';}
     else if(status==='encerrada'){x.status='encerrada';}
-    x.updatedAt=Date.now(); saveLocal(a); renderRecords();
+    x.updatedAt=Date.now(); saveLocal(a); renderRecords(); pushAgenda(a); pullAgenda();
   }
 
   function editRecord(id){
@@ -1210,6 +1247,8 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     }
     const filtered=local().filter(r=>String(r.id)!==idStr);
     saveLocal(filtered);
+    if(firebaseReady && firebaseUser && firebaseDb && firebaseFns){ try{ await firebaseFns.deleteDoc(firebaseFns.doc(firebaseDb,'ferias_agenda',idStr)); }catch(e){} }
+    agendaRecords=agendaRecords.filter(r=>String(r.id)!==idStr);
     if(String(editId)===idStr) reset();
     renderRecords();
   }
@@ -1232,7 +1271,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     const record={id,name,start:$('start').value,days:c.n,status:nextStatus,reason:nextStatus==='recusada'?'':(old?.reason||''),requestedAt:old?.requestedAt||now,updatedAt:now,ownerUid:old?.ownerUid||firebaseUser?.uid||'',ownerEmail:old?.ownerEmail||firebaseUser?.email||''};
     const i=a.findIndex(r=>String(r.id)===String(id));
     if(i>=0)a[i]=record;else a.unshift(record);
-    saveLocal(a); reset(); renderRecords(); alert('Salvo neste aparelho.');
+    saveLocal(a); reset(); renderRecords(); pushAgenda(a); pullAgenda(); alert('Salvo neste aparelho.');
   }
 
   function reset(){
