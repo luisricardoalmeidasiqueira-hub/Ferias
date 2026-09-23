@@ -1350,8 +1350,19 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   };
   $('loginBtn').onclick=doLogin;
   $('registerBtn').onclick=doRegister;
-  $('rememberLogin').onchange=()=>{
-    localStorage.setItem('ferias_remember_login', $('rememberLogin').checked ? '1' : '0');
+  $('rememberLogin').onchange=async()=>{
+    const keep=$('rememberLogin').checked;
+    localStorage.setItem('ferias_remember_login', keep ? '1' : '0');
+    // Aplica a preferência imediatamente ao Firebase, inclusive se a pessoa
+    // já estiver conectada. Assim a escolha não fica apenas marcada na tela.
+    if(firebaseAuth && firebaseFns?.setPersistence){
+      try{
+        await firebaseFns.setPersistence(
+          firebaseAuth,
+          keep ? firebaseFns.browserLocalPersistence : firebaseFns.browserSessionPersistence
+        );
+      }catch(err){ console.warn('Não foi possível atualizar a persistência do login',err); }
+    }
   };
   const rememberLoginSaved=localStorage.getItem('ferias_remember_login');
   if(rememberLoginSaved!==null) $('rememberLogin').checked=rememberLoginSaved==='1';
