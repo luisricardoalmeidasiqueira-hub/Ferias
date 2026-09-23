@@ -178,6 +178,12 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
 </style>
 
 
+
+<!-- Ícone oficial para Adicionar à Tela de Início (iPhone/iPad) -->
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="180x180" href="./apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="Férias">
+
 </head>
 <body>
 
@@ -199,7 +205,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       <button class="auth-btn" id="loginBtn" type="button">🔑 Entrar</button>
       <button class="auth-btn secondary" id="registerBtn" type="button">👤 Criar minha conta</button>
     </div>
-    <label class="remember-row" style="margin-top:12px"><input type="checkbox" id="rememberLogin" checked> <span>Manter meu login salvo neste dispositivo</span></label>
+    <label class="remember-row" style="margin-top:12px"><input type="checkbox" id="rememberLogin"> <span>Manter meu login salvo neste dispositivo</span></label>
     <div class="auth-note" style="margin-top:6px">🔒 O aplicativo mantém a sessão do Firebase; sua senha não é gravada pelo aplicativo.</div>
     <div class="auth-status" id="authStatus"></div>
     <div class="auth-user" id="authUserInfo"></div>
@@ -409,6 +415,22 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
           try{ await authMod.signOut(firebaseAuth); }catch(err){ console.warn('Não foi possível encerrar a sessão anônima antiga',err); }
           return;
         }
+        // Só entra automaticamente quando o usuário escolheu explicitamente
+        // manter o login salvo neste dispositivo. Sessões antigas do Firebase
+        // não podem pular a tela de login sem essa escolha.
+        const rememberExplicit = localStorage.getItem('ferias_remember_login') === '1';
+        if(user && !rememberExplicit){
+          try{ await authMod.signOut(firebaseAuth); }catch(err){ console.warn('Não foi possível encerrar a sessão não lembrada',err); }
+          firebaseUser=null;
+          canManageRecords=false;
+          applyRecordPermissions();
+          $('appContent').classList.add('auth-locked');
+          $('authGate').style.display='block';
+          $('authUserInfo').textContent='';
+          if($('appLogoutBtn')) $('appLogoutBtn').style.display='none';
+          setFirebaseStatus('🔐 Login necessário para continuar');
+          return;
+        }
         firebaseUser=user||null;
         if(user){
           $('authGate').style.display='none';
@@ -478,6 +500,8 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     if(!firebaseReady || !firebaseAuth || !firebaseFns){setAuthStatus('Firebase ainda está iniciando. Aguarde alguns segundos.','error');return;}
     setAuthStatus('Entrando...');
     try{
+      // Grava somente a preferência de sessão; a senha nunca é gravada pelo app.
+      localStorage.setItem('ferias_remember_login', $('rememberLogin').checked ? '1' : '0');
       await applyLoginPersistence();
       await firebaseFns.signInWithEmailAndPassword(firebaseAuth,email,password);
       $('loginPassword').value='';
@@ -501,6 +525,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     if(!confirm('Criar uma conta com este e-mail?'))return;
     setAuthStatus('Criando sua conta...');
     try{
+      localStorage.setItem('ferias_remember_login', $('rememberLogin').checked ? '1' : '0');
       await applyLoginPersistence();
       const cred=await firebaseFns.createUserWithEmailAndPassword(firebaseAuth,email,password);
       await ensureUserProfile(cred.user);
@@ -1376,6 +1401,9 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   $('appLogoutBtn').onclick=async()=>{
     if(!firebaseAuth || !firebaseFns?.signOut){setAuthStatus('Firebase ainda está iniciando. Aguarde alguns segundos.','error');return;}
     try{
+      // Sair significa voltar de fato para a tela de login e não entrar novamente sozinho.
+      localStorage.setItem('ferias_remember_login','0');
+      $('rememberLogin').checked=false;
       await firebaseFns.signOut(firebaseAuth);
       $('adminPanel').classList.remove('open');
     }catch(err){
@@ -1386,6 +1414,8 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   $('adminLogoutBtn').onclick=async()=>{
     if(!firebaseAuth || !firebaseFns?.signOut){ alert('Firebase ainda está iniciando. Aguarde alguns segundos e tente novamente.'); return; }
     try{
+      localStorage.setItem('ferias_remember_login','0');
+      $('rememberLogin').checked=false;
       await firebaseFns.signOut(firebaseAuth);
       $('adminPanel').classList.remove('open');
       refreshDeveloperPanel();
