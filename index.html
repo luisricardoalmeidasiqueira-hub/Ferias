@@ -114,7 +114,7 @@ button,input{font:inherit}button{cursor:pointer}
 .history-remove{border:0;border-radius:10px;padding:8px 10px;background:#ef4444;color:#fff;font-weight:800}
 .history-add{display:none;margin-top:10px}
 .history-add.open{display:block}
-.history-save{display:flex;gap:8px;align-items:center;margin-top:10px}.history-save button{border:0;border-radius:12px;padding:11px 14px;background:var(--green);color:#fff;font-weight:900}.history-save-note{font-size:11px;color:#71879a;font-weight:800}.control-saved{display:none;margin-top:9px;padding:9px 11px;border-radius:10px;background:#e7f8ee;color:#087446;font-size:11px;font-weight:800}.control-saved.show{display:block}.manual-modal{display:none;position:fixed;inset:0;z-index:10000;background:#0008;align-items:center;justify-content:center;padding:18px}.manual-modal.open{display:flex}.manual-box{width:min(560px,100%);max-height:82vh;overflow:auto;background:#fff;border-radius:22px;padding:20px;box-shadow:0 20px 60px #0006;color:var(--ink)}.manual-box h3{margin:0 0 8px;font-size:20px}.manual-box p{margin:7px 0;color:#60788b;font-size:13px;font-weight:700;line-height:1.45}.manual-box ul{margin:10px 0;padding-left:20px;color:#45677f;font-size:13px;font-weight:700;line-height:1.55}.manual-box li{margin:5px 0}.manual-close{width:100%;margin-top:12px;border:0;border-radius:12px;padding:12px;background:#075b8a;color:#fff;font-weight:900}
+.history-save{display:flex;gap:8px;align-items:center;margin-top:10px}.history-save button{border:0;border-radius:12px;padding:11px 14px;background:var(--green);color:#fff;font-weight:900}.history-save-note{font-size:11px;color:#71879a;font-weight:800}.control-saved{display:none;margin-top:9px;padding:9px 11px;border-radius:10px;background:#e7f8ee;color:#087446;font-size:11px;font-weight:800}.control-saved.show{display:block}
 .history-complete{display:flex;gap:8px;align-items:flex-start;margin-top:10px;font-size:12px;color:#587186;font-weight:700;line-height:1.35}
 .history-complete input{margin-top:2px;width:18px;height:18px;accent-color:var(--blue)}
 .quote span{display:block;color:#6b8092;font-size:11px;margin-top:5px}
@@ -294,30 +294,13 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
           <div id="historyRange" class="history-range">—</div>
           <div id="historyCount" class="history-count">Nenhum período registrado</div>
         </div>
-        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
-          <button type="button" id="historyHelp" class="history-toggle">❓ Como usar</button>
-          <button type="button" id="historyToggle" class="history-toggle">Ver histórico ▾</button>
-        </div>
+        <button type="button" id="historyToggle" class="history-toggle">Ver histórico ▾</button>
       </div>
       <div id="historyList" class="history-list"></div>
       <button type="button" id="addHistory" class="history-toggle history-add">➕ Adicionar férias realizadas</button>
       <div id="historySummary" class="status" style="margin-top:10px">Registre os períodos de férias já realizados. O controle de vencimento será calculado depois, com o histórico completo.</div>
       <div class="history-save"><button type="button" id="saveControl">💾 Salvar controle</button><span class="history-save-note">Opcional: salva admissão e histórico sem lançar férias.</span></div>
       <div id="controlSaved" class="control-saved">✅ Controle de férias salvo neste aparelho.</div>
-      <div class="manual-modal" id="historyHelpModal" aria-hidden="true">
-        <div class="manual-box">
-          <h3>❓ Como usar este controle?</h3>
-          <p><strong>Esta parte é opcional.</strong> Ela serve para guardar a data de admissão e um resumo das férias que a pessoa já realizou.</p>
-          <ul>
-            <li><strong>🏢 Data de admissão:</strong> informe a data em que o funcionário entrou na empresa. Ela pode ficar em branco.</li>
-            <li><strong>📚 Histórico:</strong> toque em <strong>Ver histórico</strong> e adicione o mês e o ano das férias já realizadas.</li>
-            <li><strong>💾 Salvar controle:</strong> salva essas informações sem criar um novo pedido de férias.</li>
-            <li><strong>👤 Controles salvos:</strong> depois, o funcionário pode ser encontrado pelo filtro <strong>Controles salvos</strong>.</li>
-          </ul>
-          <p>💡 <strong>Se você não tiver essas informações, não precisa preencher esta parte.</strong> Ela não impede o lançamento normal das férias.</p>
-          <button type="button" class="manual-close" id="historyHelpClose">Entendi</button>
-        </div>
-      </div>
     </div>
   </div>
 
@@ -393,7 +376,6 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   const KEY = 'ferias_app';
   const CONTROL_KEY = 'ferias_controle';
   const LEGACY_KEYS = ['ferias_app_v2_clean','ferias_registros'];
-  const DELETED_KEY = 'ferias_registros_excluidos';
   const DB_NAME = 'controle_ferias_dados';
   const DB_STORE = 'backup';
   const CONTROL_DB_KEY = 'controles';
@@ -599,23 +581,36 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     if(typeof renderRecords==='function' && document.getElementById('records')) renderRecords();
   }
 
+  function recordBelongsToCurrentUser(r){
+    if(!r || !firebaseUser) return false;
+    return String(r.ownerUid||'')===String(firebaseUser.uid||'') ||
+      (!!firebaseUser.email && String(r.ownerEmail||'').trim().toLowerCase()===String(firebaseUser.email).trim().toLowerCase());
+  }
+
+  function visibleRecords(){
+    const all=mergeRecords();
+    return canManageRecords ? all : all.filter(recordBelongsToCurrentUser);
+  }
+
   async function pullFirebase(){
     if(!firebaseReady || !firebaseUser || !firebaseDb || firebaseSyncing) return;
     firebaseSyncing=true;
     try{
-      const {collection,getDocs}=firebaseFns;
-      const snap=await getDocs(collection(firebaseDb,'ferias'));
-      const deletedCloud=new Set();
-      const cloud=snap.docs.filter(d=>d.id!=='config').map(d=>{
-        const data=d.data()||{};
-        if(data.deleted===true){ deletedCloud.add(String(d.id)); return null; }
-        return {id:d.id,...data};
-      }).filter(Boolean);
-      const deletedLocal=new Set(JSON.parse(localStorage.getItem(DELETED_KEY)||'[]').map(String));
-      deletedCloud.forEach(id=>deletedLocal.add(id));
-      localStorage.setItem(DELETED_KEY,JSON.stringify([...deletedLocal]));
-      const local=mergeRecords().filter(r=>!deletedLocal.has(String(r.id)));
-      const merged=mergeRecordSets(local,cloud).filter(r=>!deletedLocal.has(String(r.id)));
+      let cloud=[];
+      if(canManageRecords){
+        const {collection,getDocs}=firebaseFns;
+        const snap=await getDocs(collection(firebaseDb,'ferias'));
+        cloud=snap.docs.filter(d=>d.id!=='config').map(d=>({id:d.id,...d.data()}));
+      }else{
+        // Funcionário comum recebe somente os próprios documentos.
+        // A regra do Firestore reforça essa mesma restrição no servidor.
+        const {collection,getDocs,query,where}=firebaseFns;
+        const q=query(collection(firebaseDb,'ferias'),where('ownerUid','==',firebaseUser.uid));
+        const snap=await getDocs(q);
+        cloud=snap.docs.filter(d=>d.id!=='config').map(d=>({id:d.id,...d.data()}));
+      }
+      const local=visibleRecords();
+      const merged=mergeRecordSets(local,cloud);
       if(JSON.stringify(merged)!==JSON.stringify(local)){
         saveLocal(merged);
         renderRecords();
@@ -631,10 +626,10 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   async function pushLocalToFirebase(records){
     if(!firebaseReady || !firebaseUser || !firebaseDb) return;
     const {doc,setDoc}=firebaseFns;
-    const deletedLocal=new Set(JSON.parse(localStorage.getItem(DELETED_KEY)||'[]').map(String));
     for(const r of records){
-      if(!r || r.id==null || deletedLocal.has(String(r.id))) continue;
-      const payload={...r, ownerUid:firebaseUser.uid, ownerEmail:firebaseUser.email||''};
+      if(!r || r.id==null) continue;
+      // Nunca troca o dono de um registro já existente.
+      const payload={...r, ownerUid:r.ownerUid||firebaseUser.uid, ownerEmail:r.ownerEmail||firebaseUser.email||''};
       try{ await setDoc(doc(firebaseDb,'ferias',String(r.id)),payload,{merge:true}); }
       catch(err){ console.warn('Registro não enviado ao Firebase',r.id,err); }
     }
@@ -1118,7 +1113,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     $('records').style.display='block';
     $('controlsView').style.display='none';
     $('listTitle').textContent='📋 Férias cadastradas';
-    const all=local();
+    const all=visibleRecords();
     const filtered=filter==='todos'?all:all.filter(x=>state(x)===filter);
     $('count').textContent=filtered.length+' '+(filtered.length===1?'registro':'registros');
     if(!filtered.length){
@@ -1170,7 +1165,6 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     $('rejectReason').value=''; $('rejectError').classList.remove('show');
   }
   function confirmReject(){
-    if(!canManageRecords){ closeReject(); alert('Somente o Desenvolvedor ou um administrador pode recusar férias.'); return; }
     const reason=$('rejectReason').value.trim();
     if(!reason){$('rejectError').classList.add('show');$('rejectReason').focus();return;}
     const a=local(), x=a.find(r=>String(r.id)===String(rejectId));
@@ -1178,7 +1172,6 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     x.status='recusada'; x.reason=reason; x.updatedAt=Date.now(); saveLocal(a); closeReject(); renderRecords();
   }
   function setStatus(id,status){
-    if(!canManageRecords){ alert('Somente o Desenvolvedor ou um administrador pode aprovar ou finalizar férias.'); return; }
     const a=local(), x=a.find(r=>String(r.id)===String(id)); if(!x)return;
     if(status==='recusada'){openReject(id);return;}
     if(status==='aprovada'){x.status='aprovada';x.reason='';}
@@ -1203,27 +1196,18 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   }
 
   async function removeRecord(id){
-    if(!canManageRecords){ alert('Somente o Desenvolvedor ou um administrador pode apagar registros.'); return; }
     if(!confirm('Apagar este registro?'))return;
     const idStr=String(id);
-    // Marca a exclusão no Firebase em vez de apagar fisicamente o documento.
-    // Assim outros aparelhos e backups não conseguem trazer o registro de volta.
+    // Apaga primeiro no Firebase para que a sincronização não traga o registro de volta.
     if(firebaseReady && firebaseUser && firebaseDb && firebaseFns){
       try{
-        await firebaseFns.setDoc(
-          firebaseFns.doc(firebaseDb,'ferias',idStr),
-          {deleted:true,deletedAt:Date.now(),deletedBy:firebaseUser.email||'',updatedAt:Date.now()},
-          {merge:true}
-        );
+        await firebaseFns.deleteDoc(firebaseFns.doc(firebaseDb,'ferias',idStr));
       }catch(err){
-        console.error('Erro ao marcar exclusão no Firebase',err);
+        console.error('Erro ao apagar no Firebase',err);
         alert('Não foi possível apagar este registro do Firebase. Nada foi removido localmente.');
         return;
       }
     }
-    const deleted=new Set(JSON.parse(localStorage.getItem(DELETED_KEY)||'[]').map(String));
-    deleted.add(idStr);
-    localStorage.setItem(DELETED_KEY,JSON.stringify([...deleted]));
     const filtered=local().filter(r=>String(r.id)!==idStr);
     saveLocal(filtered);
     if(String(editId)===idStr) reset();
@@ -1245,7 +1229,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     let nextStatus='pendente';
     if(old) nextStatus = old.status==='recusada' ? 'pendente' : (old.status || 'pendente');
     const now=Date.now();
-    const record={id,name,start:$('start').value,days:c.n,status:nextStatus,reason:nextStatus==='recusada'?'':(old?.reason||''),requestedAt:old?.requestedAt||now,updatedAt:now};
+    const record={id,name,start:$('start').value,days:c.n,status:nextStatus,reason:nextStatus==='recusada'?'':(old?.reason||''),requestedAt:old?.requestedAt||now,updatedAt:now,ownerUid:old?.ownerUid||firebaseUser?.uid||'',ownerEmail:old?.ownerEmail||firebaseUser?.email||''};
     const i=a.findIndex(r=>String(r.id)===String(id));
     if(i>=0)a[i]=record;else a.unshift(record);
     saveLocal(a); reset(); renderRecords(); alert('Salvo neste aparelho.');
@@ -1319,9 +1303,6 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   $('calNext').onclick=()=>{calendarMonth.setUTCMonth(calendarMonth.getUTCMonth()+1);renderCalendar()};
   $('quickMonth').onchange=()=>{calendarMonth.setUTCMonth(Number($('quickMonth').value));renderCalendar();};
   $('quickYear').onchange=()=>{calendarMonth.setUTCFullYear(Number($('quickYear').value));renderCalendar();};
-  $('historyHelp').onclick=()=>{ $('historyHelpModal').classList.add('open'); $('historyHelpModal').setAttribute('aria-hidden','false'); };
-  $('historyHelpClose').onclick=()=>{ $('historyHelpModal').classList.remove('open'); $('historyHelpModal').setAttribute('aria-hidden','true'); };
-  $('historyHelpModal').onclick=e=>{ if(e.target===$('historyHelpModal')) $('historyHelpClose').click(); };
   $('historyToggle').onclick=()=>{const open=$('historyList').classList.toggle('open');$('addHistory').classList.toggle('open',open);$('historyToggle').textContent=open?'Ocultar histórico ▴':'Ver histórico ▾';};
   $('addHistory').onclick=()=>{ openHistoryEditor(); $('historyList').classList.add('open'); $('addHistory').classList.add('open'); $('historyToggle').textContent='Ocultar histórico ▴'; setTimeout(()=>$('newHistoryMonth')?.focus(),50); };
   $('saveControl').onclick=saveVacationControl;
@@ -1371,19 +1352,8 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   };
   $('loginBtn').onclick=doLogin;
   $('registerBtn').onclick=doRegister;
-  $('rememberLogin').onchange=async()=>{
-    const keep=$('rememberLogin').checked;
-    localStorage.setItem('ferias_remember_login', keep ? '1' : '0');
-    // Aplica a preferência imediatamente ao Firebase, inclusive se a pessoa
-    // já estiver conectada. Assim a escolha não fica apenas marcada na tela.
-    if(firebaseAuth && firebaseFns?.setPersistence){
-      try{
-        await firebaseFns.setPersistence(
-          firebaseAuth,
-          keep ? firebaseFns.browserLocalPersistence : firebaseFns.browserSessionPersistence
-        );
-      }catch(err){ console.warn('Não foi possível atualizar a persistência do login',err); }
-    }
+  $('rememberLogin').onchange=()=>{
+    localStorage.setItem('ferias_remember_login', $('rememberLogin').checked ? '1' : '0');
   };
   const rememberLoginSaved=localStorage.getItem('ferias_remember_login');
   if(rememberLoginSaved!==null) $('rememberLogin').checked=rememberLoginSaved==='1';
