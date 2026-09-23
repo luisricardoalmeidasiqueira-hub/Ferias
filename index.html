@@ -216,7 +216,10 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
 
 <div id="appContent" class="auth-locked">
 <div class="developer-area">
-  <button class="developer-btn" id="developerBtn">👨‍💻 Desenvolvedor</button>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+    <button class="developer-btn" id="developerBtn">👨‍💻 Desenvolvedor</button>
+    <button type="button" class="auth-logout" id="appLogoutBtn" style="display:none">🚪 Sair</button>
+  </div>
 </div>
 
 <div class="admin-panel" id="adminPanel">
@@ -410,6 +413,10 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
         // e mantemos a tela de login aberta para o usuário entrar com e-mail e senha.
         if(user && user.isAnonymous){
           try{ await authMod.signOut(firebaseAuth); }catch(err){ console.warn('Não foi possível encerrar a sessão anônima antiga',err); }
+          canManageRecords=false;
+          $('appContent').classList.add('auth-locked');
+          $('authGate').style.display='block';
+          if($('appLogoutBtn')) $('appLogoutBtn').style.display='none';
           return;
         }
         firebaseUser=user||null;
@@ -419,6 +426,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
           $('appContent').classList.remove('auth-locked');
           $('authUserInfo').textContent='👤 Conectado como: '+(user.email||'Usuário');
           $('userLogoutBtn').style.display='inline-block';
+          if($('appLogoutBtn')) $('appLogoutBtn').style.display='inline-block';
           setFirebaseStatus('☁️ Firebase conectado');
           await ensureUserProfile(user);
           await refreshRecordPermissions();
@@ -431,6 +439,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
           $('authGate').style.display='block';
           $('authUserInfo').textContent='';
           $('userLogoutBtn').style.display='none';
+          if($('appLogoutBtn')) $('appLogoutBtn').style.display='none';
           setFirebaseStatus('🔐 Login necessário para sincronizar');
         }
       });
@@ -1318,6 +1327,30 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
 
   $('loginBtn').onclick=doLogin;
   $('registerBtn').onclick=doRegister;
+  $('userLogoutBtn').onclick=async()=>{
+    if(!firebaseAuth || !firebaseFns?.signOut){setAuthStatus('Firebase ainda está iniciando. Aguarde alguns segundos.','error');return;}
+    try{
+      await firebaseFns.signOut(firebaseAuth);
+      canManageRecords=false;
+      applyRecordPermissions();
+      $('adminPanel').classList.remove('open');
+    }catch(err){
+      console.error('Erro ao sair da conta',err);
+      setAuthStatus('Não foi possível sair agora.','error');
+    }
+  };
+  $('appLogoutBtn').onclick=async()=>{
+    if(!firebaseAuth || !firebaseFns?.signOut){alert('Firebase ainda está iniciando. Aguarde alguns segundos.');return;}
+    try{
+      await firebaseFns.signOut(firebaseAuth);
+      canManageRecords=false;
+      applyRecordPermissions();
+      $('adminPanel').classList.remove('open');
+    }catch(err){
+      console.error('Erro ao sair da conta',err);
+      alert('Não foi possível sair agora.');
+    }
+  };
   $('rememberLogin').onchange=()=>{
     localStorage.setItem('ferias_remember_login', $('rememberLogin').checked ? '1' : '0');
   };
