@@ -133,7 +133,7 @@ button,input{font:inherit}button{cursor:pointer}
 .auth-btn.secondary{background:#7355e8}
 .auth-status{margin-top:10px;padding:9px 11px;border-radius:10px;background:#eef8ff;color:#45677f;font-size:11px;font-weight:800;display:none}
 .auth-status.show{display:block}
-.auth-user{margin-top:9px;font-size:11px;color:#60788b;font-weight:800}
+.auth-user{margin-top:9px;font-size:11px;color:#60788b;font-weight:800;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}.auth-logout{border:0;border-radius:10px;padding:8px 11px;background:#e9eef2;color:#234;font-weight:900;cursor:pointer}
 #appContent.auth-locked{display:none}
 .admin-csv-btn{display:block;width:100%;margin:12px 0 0;padding:14px 16px;border:0;border-radius:16px;background:#0f78a8;color:#fff;font-size:18px;font-weight:900;box-shadow:0 8px 18px rgba(15,120,168,.18);cursor:pointer}
 .admin-csv-btn:active{transform:scale(.99)}
@@ -203,6 +203,7 @@ button,input{font:inherit}button{cursor:pointer}
     <div class="auth-note" style="margin-top:6px">🔒 O aplicativo mantém a sessão do Firebase; sua senha não é gravada pelo aplicativo.</div>
     <div class="auth-status" id="authStatus"></div>
     <div class="auth-user" id="authUserInfo"></div>
+    <button type="button" class="auth-logout" id="userLogoutBtn" style="display:none">🚪 Sair da conta</button>
   </div>
 </div>
 
@@ -406,9 +407,11 @@ button,input{font:inherit}button{cursor:pointer}
         }
         firebaseUser=user||null;
         if(user){
+          // Somente uma conta permanente pode liberar o aplicativo.
           $('authGate').style.display='none';
           $('appContent').classList.remove('auth-locked');
           $('authUserInfo').textContent='👤 Conectado como: '+(user.email||'Usuário');
+          $('userLogoutBtn').style.display='inline-block';
           setFirebaseStatus('☁️ Firebase conectado');
           await ensureUserProfile(user);
           await refreshRecordPermissions();
@@ -420,6 +423,7 @@ button,input{font:inherit}button{cursor:pointer}
           $('appContent').classList.add('auth-locked');
           $('authGate').style.display='block';
           $('authUserInfo').textContent='';
+          $('userLogoutBtn').style.display='none';
           setFirebaseStatus('🔐 Login necessário para sincronizar');
         }
       });
@@ -1314,6 +1318,16 @@ button,input{font:inherit}button{cursor:pointer}
   if(rememberLoginSaved!==null) $('rememberLogin').checked=rememberLoginSaved==='1';
   $('loginPassword').onkeydown=e=>{if(e.key==='Enter')doLogin()};
   $('loginEmail').onkeydown=e=>{if(e.key==='Enter')doLogin()};
+  $('userLogoutBtn').onclick=async()=>{
+    if(!firebaseAuth || !firebaseFns?.signOut) return;
+    try{
+      await firebaseFns.signOut(firebaseAuth);
+      setAuthStatus('Você saiu da conta. Entre novamente para acessar o aplicativo.','info');
+    }catch(err){
+      console.error('Erro ao sair da conta',err);
+      setAuthStatus('Não foi possível sair agora.','error');
+    }
+  };
 
   // Desenvolvedor — login real pelo Firebase
   const OWNER_EMAIL='luissiqueir@hotmail.com';
