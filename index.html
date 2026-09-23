@@ -361,6 +361,10 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     <button class="filter" data-filter="encerrada">🏁 Realizadas</button>
     <button class="filter" data-filter="controles">👤 Controles salvos</button>
   </div>
+  <div class="notice" style="margin:12px 0 4px;background:#fff6dc;color:#805d00;border:1px solid #f1d58a">
+    ⚠️ <strong>Importante:</strong> a aprovação das férias neste aplicativo <strong>não lança as férias no sistema da empresa</strong>.
+    Cada funcionário é responsável por lançar suas férias no sistema/prontuário da empresa após a aprovação.
+  </div>
   <div id="records"><div style="text-align:center;color:#71879a;padding:14px">Nenhum registro.</div></div>
   <div id="controlsView" style="display:none">
     <div id="controlsList"><div style="text-align:center;color:#71879a;padding:14px">Nenhum controle salvo.</div></div>
@@ -1367,7 +1371,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   $('quickMonth').onchange=()=>{calendarMonth.setUTCMonth(Number($('quickMonth').value));renderCalendar();};
   $('quickYear').onchange=()=>{calendarMonth.setUTCFullYear(Number($('quickYear').value));renderCalendar();};
   $('historyHelp').onclick=()=>{
-    alert('❓ COMO USAR O HISTÓRICO\n\nEsta parte é OPCIONAL. Ela serve para informar a data de admissão e registrar férias que o funcionário já realizou.\n\n📚 Para que serve?\n• Ajuda o aplicativo a entender o histórico de férias do funcionário.\n• Com o histórico completo, será possível calcular os períodos de vencimento com mais segurança.\n\n💾 Salvar controle\nUse “Salvar controle” para guardar a admissão e o histórico sem lançar uma nova férias.\n\nSe você não precisar controlar o histórico, pode deixar esta parte vazia e usar normalmente o lançamento das próximas férias.');
+    alert('❓ COMO USAR O HISTÓRICO\n\nEsta parte é OPCIONAL. Ela serve para informar a data de admissão e registrar férias que o funcionário já realizou.\n\n📚 Para que serve?\n• Ajuda o aplicativo a entender o histórico de férias do funcionário.\n• Com o histórico completo, será possível calcular os períodos de vencimento com mais segurança.\n\n💾 Salvar controle\nUse “Salvar controle” para guardar a admissão e o histórico sem lançar uma nova férias.\n\nSe você não precisar controlar o histórico, pode deixar esta parte vazia e usar normalmente o lançamento das próximas férias.\n\n⚠️ IMPORTANTE SOBRE A APROVAÇÃO\nA aprovação feita neste aplicativo NÃO lança as férias no sistema da empresa. Cada funcionário é responsável por lançar suas próprias férias no sistema/prontuário da empresa depois da aprovação.');
   };
   $('historyToggle').onclick=()=>{const open=$('historyList').classList.toggle('open');$('addHistory').classList.toggle('open',open);$('historyToggle').textContent=open?'Ocultar histórico ▴':'Ver histórico ▾';};
   $('addHistory').onclick=()=>{ openHistoryEditor(); $('historyList').classList.add('open'); $('addHistory').classList.add('open'); $('historyToggle').textContent='Ocultar histórico ▴'; setTimeout(()=>$('newHistoryMonth')?.focus(),50); };
