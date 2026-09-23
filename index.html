@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Férias">
 <title>Controle de Férias</title>
-<meta name="app-version" content="2026-09-23-v15-botao-menor">
+<meta name="app-version" content="2026-09-23-v16-usuarios">
 <style>
 :root{
   --blue:#0797e6;--blue2:#1976df;--ink:#12375d;--line:#d8e9f3;
@@ -181,6 +181,15 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
 .admin-card strong{display:block;font-size:22px;color:#075b8a;margin-top:3px}
 .admin-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 
+.user-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 10px;background:#fff;border:1px solid #dcecf5;border-radius:10px;margin-top:7px}
+.user-row.blocked{background:#f4f5f6;opacity:.75}
+.user-info{min-width:0;display:flex;flex-direction:column;gap:2px}
+.user-info b{font-size:13px;color:#173d57}
+.user-info span{font-size:12px;color:#35566b;word-break:break-all}
+.user-info small{font-size:10px;color:#71879a;font-weight:700}
+.user-row button{border:0;border-radius:9px;padding:7px 9px;font-weight:800;font-size:12px;white-space:nowrap;flex:0 0 auto}
+.user-del{background:#ffe8e8;color:#a52222}.user-back{background:#e7f8ee;color:#087446}
+.user-tag{font-size:11px;font-weight:900;color:#075b8a;background:#e7f5ff;border-radius:999px;padding:5px 9px;flex:0 0 auto}
 .control-record{padding:14px;border:1px solid #d8eaf4;background:#f8fcff;border-radius:16px;margin-top:9px}
 .control-record .control-top{display:flex;justify-content:space-between;gap:10px;align-items:center}
 .control-record .control-name{font-size:16px;font-weight:950;color:#173d57}
@@ -276,6 +285,11 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
         <h3>🛡️ Administradores cadastrados</h3>
         <div id="adminList"><div class="admin-note">Nenhum administrador cadastrado.</div></div>
       </div>
+    </div>
+    <div class="admin-manager">
+      <h3>👥 Usuários cadastrados (<span id="userCount">0</span>)</h3>
+      <div id="userList"><div class="admin-note">Carregando...</div></div>
+      <div class="admin-note">🗑️ Excluir bloqueia o acesso ao app na hora. Para apagar o e-mail de vez, use Authentication no console do Firebase.</div>
     </div>
     <div class="admin-actions">
       <button class="admin-main" id="adminExportBtn">💾 Exportar dados</button>
@@ -398,7 +412,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   <div class="quote">🌊 “Descanso hoje para voltar com mais energia amanhã!”<span>Férias fazem bem.</span></div>
 </section>
 
-<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 15</span></footer>
+<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 16</span></footer>
 </main>
 </div>
 
@@ -483,6 +497,20 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
           setFirebaseStatus('🔐 Login necessário para continuar');
           return;
         }
+        // Usuário excluído pelo desenvolvedor não entra.
+        if(user){
+          try{
+            const b=await firebaseFns.getDoc(firebaseFns.doc(firebaseDb,'bloqueados',user.uid));
+            if(b.exists()){
+              stopLiveSync();
+              localStorage.setItem('ferias_remember_login','0');
+              sessionStorage.removeItem('ferias_session_ok');
+              await authMod.signOut(firebaseAuth);
+              setAuthStatus('🚫 Seu acesso ao Controle de Férias foi removido. Fale com o responsável.','error');
+              return;
+            }
+          }catch(err){ console.warn('Não foi possível verificar bloqueio',err); }
+        }
         firebaseUser=user||null;
         if(user){
           $('authStatus').className='auth-status';
@@ -530,7 +558,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     try{
       await firebaseFns.setDoc(
         firebaseFns.doc(firebaseDb,'usuarios',user.uid),
-        {uid:user.uid,email:user.email||'',name,updatedAt:Date.now()},
+        {uid:user.uid,email:user.email||'',name,updatedAt:Date.now(),lastLoginAt:Date.now()},
         {merge:true}
       );
     }catch(err){
@@ -1487,6 +1515,51 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     }catch(err){ console.warn('Não foi possível listar administradores',err); }
   }
 
+  async function renderUserList(){
+    const box=$('userList');
+    if(!box || !isDeveloperLogged() || !firebaseDb || !firebaseFns) return;
+    try{
+      const {collection,getDocs}=firebaseFns;
+      const [us,bl]=await Promise.all([
+        getDocs(collection(firebaseDb,'usuarios')),
+        getDocs(collection(firebaseDb,'bloqueados'))
+      ]);
+      const blocked=new Set(bl.docs.map(d=>d.id));
+      const users=us.docs.map(d=>({uid:d.id,...d.data()}))
+        .sort((a,b)=>String(a.name||a.email||'').localeCompare(String(b.name||b.email||''),'pt-BR'));
+      $('userCount').textContent=users.length;
+      if(!users.length){ box.innerHTML='<div class="admin-note">Nenhum usuário cadastrado.</div>'; return; }
+      const when=ts=>ts?new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}).format(new Date(Number(ts))):'—';
+      box.innerHTML=users.map(u=>{
+        const isB=blocked.has(u.uid);
+        const isOwner=String(u.email||'').toLowerCase()===OWNER_EMAIL;
+        const btn=isOwner?'<span class="user-tag">Você</span>'
+          :isB?`<button type="button" class="user-back" data-unblock="${escapeHtml(u.uid)}">↩️ Reativar</button>`
+          :`<button type="button" class="user-del" data-block="${escapeHtml(u.uid)}">🗑️ Excluir</button>`;
+        return `<div class="user-row${isB?' blocked':''}"><div class="user-info"><b>👤 ${escapeHtml(u.name||'Sem nome')}</b><span>${escapeHtml(u.email||'')}</span><small>${isB?'🚫 Acesso excluído':'Último acesso: '+when(u.lastLoginAt||u.updatedAt)}</small></div>${btn}</div>`;
+      }).join('');
+      box.querySelectorAll('[data-block]').forEach(b=>b.onclick=async()=>{
+        const u=users.find(x=>x.uid===b.dataset.block); if(!u) return;
+        if(!confirm(`Excluir o acesso de ${u.name||u.email}?\n\nA pessoa não vai mais conseguir entrar no app. As férias dela continuam registradas.`)) return;
+        try{
+          await firebaseFns.setDoc(firebaseFns.doc(firebaseDb,'bloqueados',u.uid),{uid:u.uid,email:u.email||'',name:u.name||'',blockedAt:Date.now(),blockedBy:OWNER_EMAIL});
+          const em=String(u.email||'').toLowerCase();
+          if(em){ try{ await firebaseFns.deleteDoc(firebaseFns.doc(firebaseDb,'admins',em)); }catch(e){} }
+          await renderUserList(); renderAdminList();
+        }catch(err){ console.error(err); alert('Não foi possível excluir o acesso. Confira se as regras novas foram publicadas.'); }
+      });
+      box.querySelectorAll('[data-unblock]').forEach(b=>b.onclick=async()=>{
+        const u=users.find(x=>x.uid===b.dataset.unblock); if(!u) return;
+        if(!confirm(`Reativar o acesso de ${u.name||u.email}?`)) return;
+        try{ await firebaseFns.deleteDoc(firebaseFns.doc(firebaseDb,'bloqueados',u.uid)); await renderUserList(); }
+        catch(err){ console.error(err); alert('Não foi possível reativar o acesso.'); }
+      });
+    }catch(err){
+      console.warn('Lista de usuários indisponível',err);
+      box.innerHTML='<div class="admin-note">Não foi possível carregar os usuários. Confira se as regras novas foram publicadas no Firebase.</div>';
+    }
+  }
+
   function adminRefresh(){
     const a=local();
     $('adminVacations').textContent=a.length;
@@ -1494,6 +1567,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     $('adminPending').textContent=a.filter(x=>state(x)==='pendente').length;
     $('adminClosed').textContent=a.filter(x=>state(x)==='encerrada').length;
     renderAdminList();
+    renderUserList();
   }
 
   function exportBackup(){
