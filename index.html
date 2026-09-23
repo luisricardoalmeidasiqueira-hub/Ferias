@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Férias">
 <title>Controle de Férias</title>
-<meta name="app-version" content="2026-09-22-v8-login">
+<meta name="app-version" content="2026-09-23-v9-compact">
 <style>
 :root{
   --blue:#0797e6;--blue2:#1976df;--ink:#12375d;--line:#d8e9f3;
@@ -29,29 +29,31 @@ button,input{font:inherit}button{cursor:pointer}
   position:relative;z-index:2;display:inline-block;background:linear-gradient(#8f5c2e,#c4873d);
   border:4px solid #dfa35d;border-radius:12px;padding:8px 14px;box-shadow:0 8px 15px #07508055;transform:rotate(-2deg)
 }
-.board h1{margin:0;font-size:27px;text-shadow:0 2px 2px #0005}
-.hero p{position:relative;z-index:3;font-weight:900;font-size:16px;margin:14px 0;text-shadow:0 2px 2px #075080}
+.board h1{margin:0;font-size:24px;text-shadow:0 2px 2px #0005}
+.hero p{position:relative;z-index:3;font-weight:900;font-size:14px;margin:14px 0;text-shadow:0 2px 2px #075080}
 .chair{position:absolute;right:28px;bottom:25px;font-size:70px;z-index:3}
 
 .wrap{max-width:850px;margin:0 auto;padding:0 12px 35px;position:relative;z-index:5}
 .card{background:#fffffff5;border:1px solid #fff;border-radius:22px;padding:16px;margin-bottom:14px;box-shadow:0 10px 28px #07508018}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}
-.field label{display:block;font-weight:900;font-size:13px;margin-bottom:7px}
-.input{width:100%;height:50px;border:1.5px solid var(--line);border-radius:13px;padding:0 13px;background:#fbfeff;color:var(--ink);outline:none}
+.field label{display:block;font-weight:900;font-size:12px;margin-bottom:7px}
+.firebase-indicator{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;background:#fff5df;font-size:21px;line-height:1;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.firebase-indicator.ok{background:#e8f8ee}.firebase-indicator.off{background:#ffe9e9}.firebase-indicator.sync{background:#fff5df}
+.input{width:100%;height:46px;border:1.5px solid var(--line);border-radius:13px;padding:0 13px;background:#fbfeff;color:var(--ink);outline:none}
 .input:focus{border-color:var(--blue);box-shadow:0 0 0 3px #0797e61a}
 
-.vacation-date-title{font-weight:900;font-size:13px;margin:10px 0 6px;color:#075b8a}
+.vacation-date-title{font-weight:900;font-size:12px;margin:10px 0 6px;color:#075b8a}
 .calendar-card{margin-top:0;border:1px solid var(--line);border-radius:12px;background:#fafdff;padding:6px}
-.calendar-head{display:grid;grid-template-columns:28px 1fr 28px;align-items:center;text-align:center;margin-bottom:3px}
+.calendar-head{display:grid;grid-template-columns:24px 1fr 24px;align-items:center;text-align:center;margin-bottom:3px}
 .calendar-selects{display:flex;justify-content:center;gap:5px}
-.calendar-selects select{height:28px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);font-weight:900;font-size:11px;padding:0 5px;min-width:92px}
-.calendar-selects select:last-child{min-width:70px}
-.cal-nav{width:26px;height:26px;border:0;border-radius:50%;background:#e6f4fc;color:var(--ink);font-size:19px;font-weight:900}
+.calendar-selects select{height:25px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);font-weight:900;font-size:11px;padding:0 5px;min-width:82px}
+.calendar-selects select:last-child{min-width:62px}
+.cal-nav{width:23px;height:23px;border:0;border-radius:50%;background:#e6f4fc;color:var(--ink);font-size:19px;font-weight:900}
 .calendar-week,.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
 .calendar-week span{text-align:center;font-size:7px;font-weight:900;color:#71879a;padding:1px 0}
 .cal-day{
-  position:relative;min-height:27px;border:0;border-radius:6px;background:#fff;color:var(--ink);
-  font-weight:900;font-size:10px;padding:2px
+  position:relative;min-height:23px;border:0;border-radius:6px;background:#fff;color:var(--ink);
+  font-weight:900;font-size:9px;padding:1px
 }
 .cal-day.selected{box-shadow:0 0 0 3px var(--blue) inset;background:#e8f5ff;color:#075b8a}
 .cal-day.blocked{background:#fff7f7;color:#a52222}
@@ -77,21 +79,21 @@ button,input{font:inherit}button{cursor:pointer}
 .back.red{outline:3px solid var(--red)}.back.orange{outline:3px solid var(--orange)}
 .notice{text-align:center;background:#eef8ff;border-radius:13px;padding:11px;margin-top:10px;font-weight:800}
 .actions{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:11px}
-.act{border:0;border-radius:13px;color:#fff;padding:13px 6px;font-weight:900}
+.act{border:0;border-radius:13px;color:#fff;padding:11px 6px;font-weight:900;font-size:14px
 .save{background:var(--green)}.edit{background:#f2a20b}.delete{background:var(--red)}.share{background:var(--purple)}
 
 .head{display:flex;justify-content:space-between;align-items:center}
-.head h2{font-size:18px;margin:0}.count{font-size:11px;font-weight:900;color:#71879a}
+.head h2{font-size:16px;margin:0}.count{font-size:11px;font-weight:900;color:#71879a}
 .filters{display:flex;gap:6px;overflow-x:auto;padding:10px 0 2px;scrollbar-width:none}
 .filters::-webkit-scrollbar{display:none}
 .filter{border:0;border-radius:999px;padding:7px 10px;background:#edf4f8;color:#31536d;font-size:10px;font-weight:900;white-space:nowrap}
 .filter.active{background:#0d6f9f;color:#fff}
 .record{border:1px solid var(--line);border-radius:15px;padding:12px;margin-top:9px;background:#fbfdff}
 .top{display:flex;justify-content:space-between;gap:8px}
-.name{font-weight:900}.request-date{font-size:10px;color:#71879a;font-weight:800;margin-top:3px}.badge{font-size:10px;font-weight:900;padding:5px 8px;border-radius:999px;background:#e4f8ed;color:#087446}
+.name{font-weight:900;font-size:15px}.request-date{font-size:10px;color:#71879a;font-weight:800;margin-top:3px}.badge{font-size:10px;font-weight:900;padding:5px 8px;border-radius:999px;background:#e4f8ed;color:#087446}
 .info{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:9px}
 .info div{font-size:10px;color:#70859a;background:#f2f7fa;border-radius:9px;padding:7px}
-.info b{display:block;color:var(--ink);font-size:12px;margin-top:2px}
+.info b{display:block;color:var(--ink);font-size:11px;margin-top:2px}
 .ra{display:flex;gap:7px;margin-top:9px}
 .ra button{border:0;border-radius:9px;padding:8px 11px;font-weight:800}
 .approval{display:flex;gap:7px;margin-top:9px}
@@ -220,6 +222,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
 <div id="appContent" class="auth-locked">
 <div class="developer-area">
   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+    <span id="firebaseIndicator" class="firebase-indicator sync" title="Status da sincronização" aria-label="Status da sincronização">⏳</span>
     <button class="developer-btn" id="developerBtn">👨‍💻 Desenvolvedor</button>
     <button type="button" class="auth-logout" id="appLogoutBtn" style="display:none">🚪 Sair</button>
   </div>
@@ -599,11 +602,16 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   }
 
   function setFirebaseStatus(text){
-    const el=$('notice');
+    const el=$('firebaseIndicator');
     if(!el) return;
-    // Mantém o aviso visual simples e não interfere no cálculo de férias.
-    if(!el.dataset.firebaseBase) el.dataset.firebaseBase=el.textContent||'';
-    el.textContent=text;
+    const s=String(text||'');
+    let icon='⏳', cls='sync';
+    if(/sincronizado|conectado/i.test(s)){ icon='☁️'; cls='ok'; }
+    else if(/indisponível|sem conexão|erro/i.test(s)){ icon='🚫'; cls='off'; }
+    el.textContent=icon;
+    el.className='firebase-indicator '+cls;
+    el.title=s;
+    el.setAttribute('aria-label',s);
   }
 
   async function refreshRecordPermissions(){
@@ -1260,19 +1268,41 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     rejectId=null; $('rejectModal').classList.remove('open'); $('rejectModal').setAttribute('aria-hidden','true');
     $('rejectReason').value=''; $('rejectError').classList.remove('show');
   }
-  function confirmReject(){
+  async function confirmReject(){
     const reason=$('rejectReason').value.trim();
     if(!reason){$('rejectError').classList.add('show');$('rejectReason').focus();return;}
+    if(!canManageRecords){ closeReject(); alert('Somente o administrador pode recusar férias.'); return; }
     const a=local(), x=a.find(r=>String(r.id)===String(rejectId));
     if(!x){closeReject();return;}
-    x.status='recusada'; x.reason=reason; x.updatedAt=Date.now(); saveLocal(a); closeReject(); renderRecords(); pushAgenda(a); pullAgenda();
+    x.status='recusada'; x.reason=reason; x.updatedAt=Date.now();
+    saveLocal(a); closeReject(); renderRecords();
+    try{
+      await pushLocalToFirebase([x]);
+      await pushAgenda([x]);
+      await pullAgenda();
+      setFirebaseStatus('☁️ Firebase sincronizado');
+    }catch(err){
+      console.error('Erro ao sincronizar recusa',err);
+      alert('A recusa foi salva neste aparelho, mas não foi possível sincronizar com o Firebase. Tente sincronizar novamente.');
+    }
   }
-  function setStatus(id,status){
+  async function setStatus(id,status){
+    if(!canManageRecords){ alert('Somente o administrador pode alterar o status das férias.'); return; }
     const a=local(), x=a.find(r=>String(r.id)===String(id)); if(!x)return;
     if(status==='recusada'){openReject(id);return;}
     if(status==='aprovada'){x.status='aprovada';x.reason='';}
     else if(status==='encerrada'){x.status='encerrada';}
-    x.updatedAt=Date.now(); saveLocal(a); renderRecords(); pushAgenda(a); pullAgenda();
+    else return;
+    x.updatedAt=Date.now(); saveLocal(a); renderRecords();
+    try{
+      await pushLocalToFirebase([x]);
+      await pushAgenda([x]);
+      await pullAgenda();
+      setFirebaseStatus('☁️ Firebase sincronizado');
+    }catch(err){
+      console.error('Erro ao sincronizar status',err);
+      alert('O status foi alterado neste aparelho, mas não foi possível sincronizar com o Firebase. Tente sincronizar novamente.');
+    }
   }
 
   function editRecord(id){
