@@ -114,7 +114,7 @@ button,input{font:inherit}button{cursor:pointer}
 .history-remove{border:0;border-radius:10px;padding:8px 10px;background:#ef4444;color:#fff;font-weight:800}
 .history-add{display:none;margin-top:10px}
 .history-add.open{display:block}
-.history-save{display:flex;gap:8px;align-items:center;margin-top:10px}.history-save button{border:0;border-radius:12px;padding:11px 14px;background:var(--green);color:#fff;font-weight:900}.history-save-note{font-size:11px;color:#71879a;font-weight:800}.control-saved{display:none;margin-top:9px;padding:9px 11px;border-radius:10px;background:#e7f8ee;color:#087446;font-size:11px;font-weight:800}.control-saved.show{display:block}
+.history-save{display:flex;gap:8px;align-items:center;margin-top:10px}.history-save button{border:0;border-radius:12px;padding:11px 14px;background:var(--green);color:#fff;font-weight:900}.history-save-note{font-size:11px;color:#71879a;font-weight:800}.control-saved{display:none;margin-top:9px;padding:9px 11px;border-radius:10px;background:#e7f8ee;color:#087446;font-size:11px;font-weight:800}.control-saved.show{display:block}.manual-modal{display:none;position:fixed;inset:0;z-index:10000;background:#0008;align-items:center;justify-content:center;padding:18px}.manual-modal.open{display:flex}.manual-box{width:min(560px,100%);max-height:82vh;overflow:auto;background:#fff;border-radius:22px;padding:20px;box-shadow:0 20px 60px #0006;color:var(--ink)}.manual-box h3{margin:0 0 8px;font-size:20px}.manual-box p{margin:7px 0;color:#60788b;font-size:13px;font-weight:700;line-height:1.45}.manual-box ul{margin:10px 0;padding-left:20px;color:#45677f;font-size:13px;font-weight:700;line-height:1.55}.manual-box li{margin:5px 0}.manual-close{width:100%;margin-top:12px;border:0;border-radius:12px;padding:12px;background:#075b8a;color:#fff;font-weight:900}
 .history-complete{display:flex;gap:8px;align-items:flex-start;margin-top:10px;font-size:12px;color:#587186;font-weight:700;line-height:1.35}
 .history-complete input{margin-top:2px;width:18px;height:18px;accent-color:var(--blue)}
 .quote span{display:block;color:#6b8092;font-size:11px;margin-top:5px}
@@ -294,13 +294,30 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
           <div id="historyRange" class="history-range">—</div>
           <div id="historyCount" class="history-count">Nenhum período registrado</div>
         </div>
-        <button type="button" id="historyToggle" class="history-toggle">Ver histórico ▾</button>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+          <button type="button" id="historyHelp" class="history-toggle">❓ Como usar</button>
+          <button type="button" id="historyToggle" class="history-toggle">Ver histórico ▾</button>
+        </div>
       </div>
       <div id="historyList" class="history-list"></div>
       <button type="button" id="addHistory" class="history-toggle history-add">➕ Adicionar férias realizadas</button>
       <div id="historySummary" class="status" style="margin-top:10px">Registre os períodos de férias já realizados. O controle de vencimento será calculado depois, com o histórico completo.</div>
       <div class="history-save"><button type="button" id="saveControl">💾 Salvar controle</button><span class="history-save-note">Opcional: salva admissão e histórico sem lançar férias.</span></div>
       <div id="controlSaved" class="control-saved">✅ Controle de férias salvo neste aparelho.</div>
+      <div class="manual-modal" id="historyHelpModal" aria-hidden="true">
+        <div class="manual-box">
+          <h3>❓ Como usar este controle?</h3>
+          <p><strong>Esta parte é opcional.</strong> Ela serve para guardar a data de admissão e um resumo das férias que a pessoa já realizou.</p>
+          <ul>
+            <li><strong>🏢 Data de admissão:</strong> informe a data em que o funcionário entrou na empresa. Ela pode ficar em branco.</li>
+            <li><strong>📚 Histórico:</strong> toque em <strong>Ver histórico</strong> e adicione o mês e o ano das férias já realizadas.</li>
+            <li><strong>💾 Salvar controle:</strong> salva essas informações sem criar um novo pedido de férias.</li>
+            <li><strong>👤 Controles salvos:</strong> depois, o funcionário pode ser encontrado pelo filtro <strong>Controles salvos</strong>.</li>
+          </ul>
+          <p>💡 <strong>Se você não tiver essas informações, não precisa preencher esta parte.</strong> Ela não impede o lançamento normal das férias.</p>
+          <button type="button" class="manual-close" id="historyHelpClose">Entendi</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1281,6 +1298,9 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   $('calNext').onclick=()=>{calendarMonth.setUTCMonth(calendarMonth.getUTCMonth()+1);renderCalendar()};
   $('quickMonth').onchange=()=>{calendarMonth.setUTCMonth(Number($('quickMonth').value));renderCalendar();};
   $('quickYear').onchange=()=>{calendarMonth.setUTCFullYear(Number($('quickYear').value));renderCalendar();};
+  $('historyHelp').onclick=()=>{ $('historyHelpModal').classList.add('open'); $('historyHelpModal').setAttribute('aria-hidden','false'); };
+  $('historyHelpClose').onclick=()=>{ $('historyHelpModal').classList.remove('open'); $('historyHelpModal').setAttribute('aria-hidden','true'); };
+  $('historyHelpModal').onclick=e=>{ if(e.target===$('historyHelpModal')) $('historyHelpClose').click(); };
   $('historyToggle').onclick=()=>{const open=$('historyList').classList.toggle('open');$('addHistory').classList.toggle('open',open);$('historyToggle').textContent=open?'Ocultar histórico ▴':'Ver histórico ▾';};
   $('addHistory').onclick=()=>{ openHistoryEditor(); $('historyList').classList.add('open'); $('addHistory').classList.add('open'); $('historyToggle').textContent='Ocultar histórico ▴'; setTimeout(()=>$('newHistoryMonth')?.focus(),50); };
   $('saveControl').onclick=saveVacationControl;
