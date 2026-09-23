@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Férias">
 <title>Controle de Férias</title>
-<meta name="app-version" content="2026-09-22-v8-login">
+<meta name="app-version" content="2026-09-23-v13-login-avisos">
 <style>
 :root{
   --blue:#0797e6;--blue2:#1976df;--ink:#12375d;--line:#d8e9f3;
@@ -29,34 +29,48 @@ button,input{font:inherit}button{cursor:pointer}
   position:relative;z-index:2;display:inline-block;background:linear-gradient(#8f5c2e,#c4873d);
   border:4px solid #dfa35d;border-radius:12px;padding:8px 14px;box-shadow:0 8px 15px #07508055;transform:rotate(-2deg)
 }
-.board h1{margin:0;font-size:27px;text-shadow:0 2px 2px #0005}
-.hero p{position:relative;z-index:3;font-weight:900;font-size:16px;margin:14px 0;text-shadow:0 2px 2px #075080}
+.board h1{margin:0;font-size:24px;text-shadow:0 2px 2px #0005}
+.hero p{position:relative;z-index:3;font-weight:900;font-size:14px;margin:14px 0;text-shadow:0 2px 2px #075080}
 .chair{position:absolute;right:28px;bottom:25px;font-size:70px;z-index:3}
 
 .wrap{max-width:850px;margin:0 auto;padding:0 12px 35px;position:relative;z-index:5}
 .card{background:#fffffff5;border:1px solid #fff;border-radius:22px;padding:16px;margin-bottom:14px;box-shadow:0 10px 28px #07508018}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}
-.field label{display:block;font-weight:900;font-size:13px;margin-bottom:7px}
-.input{width:100%;height:50px;border:1.5px solid var(--line);border-radius:13px;padding:0 13px;background:#fbfeff;color:var(--ink);outline:none}
+.field label{display:block;font-weight:900;font-size:12px;margin-bottom:7px}
+.firebase-indicator{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;background:#fff5df;font-size:21px;line-height:1;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.firebase-indicator.ok{background:#e8f8ee}.firebase-indicator.off{background:#ffe9e9}.firebase-indicator.sync{background:#fff5df}
+.input{width:100%;height:46px;border:1.5px solid var(--line);border-radius:13px;padding:0 13px;background:#fbfeff;color:var(--ink);outline:none}
 .input:focus{border-color:var(--blue);box-shadow:0 0 0 3px #0797e61a}
 
-.vacation-date-title{font-weight:900;font-size:13px;margin:10px 0 6px;color:#075b8a}
-.calendar-card{margin-top:0;border:1px solid var(--line);border-radius:12px;background:#fafdff;padding:6px}
-.calendar-head{display:grid;grid-template-columns:28px 1fr 28px;align-items:center;text-align:center;margin-bottom:3px}
-.calendar-selects{display:flex;justify-content:center;gap:5px}
-.calendar-selects select{height:28px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);font-weight:900;font-size:11px;padding:0 5px;min-width:92px}
-.calendar-selects select:last-child{min-width:70px}
-.cal-nav{width:26px;height:26px;border:0;border-radius:50%;background:#e6f4fc;color:var(--ink);font-size:19px;font-weight:900}
-.calendar-week,.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
-.calendar-week span{text-align:center;font-size:7px;font-weight:900;color:#71879a;padding:1px 0}
-.cal-day{
-  position:relative;min-height:27px;border:0;border-radius:6px;background:#fff;color:var(--ink);
-  font-weight:900;font-size:10px;padding:2px
+/* ===== CALENDÁRIO COMPACTO (abre ao tocar no campo) ===== */
+.vacation-date-title{font-weight:900;font-size:12px;margin:10px 0 7px;color:var(--ink)}
+.date-pick{
+  width:100%;height:46px;display:flex;align-items:center;justify-content:space-between;gap:8px;
+  border:1.5px solid var(--line);border-radius:13px;padding:0 13px;background:#fbfeff;color:var(--ink);
+  font-weight:900;font-size:14px;text-align:left
 }
-.cal-day.selected{box-shadow:0 0 0 3px var(--blue) inset;background:#e8f5ff;color:#075b8a}
-.cal-day.blocked{background:#fff7f7;color:#a52222}
-.cal-day.empty{background:transparent}
-.calendar-hint{text-align:center;margin-top:4px;font-size:8px;font-weight:800;color:#60788b;background:#eef8ff;border-radius:7px;padding:4px}
+.date-pick.open{border-color:var(--blue);box-shadow:0 0 0 3px #0797e61a}
+.date-pick .ph{color:#8aa0b2;font-weight:700}
+.date-pick .arrow{font-size:12px;color:#60788b;transition:transform .15s}
+.date-pick.open .arrow{transform:rotate(180deg)}
+.calendar-card{
+  display:none;width:250px;max-width:100%;margin:8px auto 0;
+  border:1px solid var(--line);border-radius:14px;background:#fff;padding:7px;
+  box-shadow:0 8px 22px #07508022
+}
+.calendar-card.open{display:block}
+.calendar-head{display:grid;grid-template-columns:24px 1fr 24px;align-items:center;gap:3px;margin-bottom:4px}
+.calendar-selects{display:flex;justify-content:center;gap:4px}
+.calendar-selects select{height:24px;border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--ink);font-weight:800;font-size:11px;padding:0 3px}
+.cal-nav{width:24px;height:24px;border:0;border-radius:50%;background:#e6f4fc;color:var(--ink);font-size:16px;font-weight:900;line-height:1;padding:0}
+.calendar-week,.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.calendar-week span{text-align:center;font-size:9px;font-weight:900;color:#71879a;padding:2px 0}
+.cal-day{height:28px;border:0;border-radius:7px;background:transparent;color:var(--ink);font-weight:800;font-size:11px;padding:0}
+.cal-day:active{background:#e6f4fc}
+.cal-day.today{color:var(--blue);box-shadow:0 0 0 1px #0797e666 inset}
+.cal-day.selected{background:var(--blue);color:#fff;box-shadow:none}
+.cal-day.empty{visibility:hidden}
+.calendar-hint{text-align:center;margin-top:6px;font-size:11px;font-weight:800;color:#60788b;background:#eef8ff;border-radius:9px;padding:6px 8px}
 .calendar-hint.ok{background:#e7f8ee;color:#087446}
 .calendar-hint.err{background:#ffe8e8;color:#a52222}
 
@@ -75,23 +89,25 @@ button,input{font:inherit}button{cursor:pointer}
 .result span{display:block;font-size:12px;margin-top:3px;color:#61768a;font-weight:700}
 .start{background:#e8f8ee}.end{background:#fff3dc}.back{background:#e5f2ff}
 .back.red{outline:3px solid var(--red)}.back.orange{outline:3px solid var(--orange)}
+.mini-warn{margin:10px 0 12px;padding:8px 10px;border-radius:11px;background:#fff6dc;border:1px solid #f1d58a;color:#7a5700;font-size:11px;font-weight:700;line-height:1.35}
 .notice{text-align:center;background:#eef8ff;border-radius:13px;padding:11px;margin-top:10px;font-weight:800}
 .actions{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:11px}
-.act{border:0;border-radius:13px;color:#fff;padding:13px 6px;font-weight:900}
+.act{border:0;border-radius:13px;color:#fff;padding:11px 6px;font-weight:900;font-size:14px}
 .save{background:var(--green)}.edit{background:#f2a20b}.delete{background:var(--red)}.share{background:var(--purple)}
 
 .head{display:flex;justify-content:space-between;align-items:center}
-.head h2{font-size:18px;margin:0}.count{font-size:11px;font-weight:900;color:#71879a}
+.head h2{font-size:16px;margin:0}.count{font-size:11px;font-weight:900;color:#71879a}
 .filters{display:flex;gap:6px;overflow-x:auto;padding:10px 0 2px;scrollbar-width:none}
 .filters::-webkit-scrollbar{display:none}
 .filter{border:0;border-radius:999px;padding:7px 10px;background:#edf4f8;color:#31536d;font-size:10px;font-weight:900;white-space:nowrap}
 .filter.active{background:#0d6f9f;color:#fff}
 .record{border:1px solid var(--line);border-radius:15px;padding:12px;margin-top:9px;background:#fbfdff}
 .top{display:flex;justify-content:space-between;gap:8px}
-.name{font-weight:900}.request-date{font-size:10px;color:#71879a;font-weight:800;margin-top:3px}.badge{font-size:10px;font-weight:900;padding:5px 8px;border-radius:999px;background:#e4f8ed;color:#087446}
+.name{font-weight:900;font-size:15px}.request-date{font-size:10px;color:#71879a;font-weight:800;margin-top:3px}.badge{font-size:10px;font-weight:900;padding:5px 8px;border-radius:999px;background:#e4f8ed;color:#087446}
+.badge.err{background:#ffe8e8;color:#a52222}.badge.warn{background:#fff4d8;color:#8a6500}
 .info{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:9px}
 .info div{font-size:10px;color:#70859a;background:#f2f7fa;border-radius:9px;padding:7px}
-.info b{display:block;color:var(--ink);font-size:12px;margin-top:2px}
+.info b{display:block;color:var(--ink);font-size:11px;margin-top:2px}
 .ra{display:flex;gap:7px;margin-top:9px}
 .ra button{border:0;border-radius:9px;padding:8px 11px;font-weight:800}
 .approval{display:flex;gap:7px;margin-top:9px}
@@ -220,6 +236,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
 <div id="appContent" class="auth-locked">
 <div class="developer-area">
   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+    <span id="firebaseIndicator" class="firebase-indicator sync" title="Status da sincronização" aria-label="Status da sincronização">⏳</span>
     <button class="developer-btn" id="developerBtn">👨‍💻 Desenvolvedor</button>
     <button type="button" class="auth-logout" id="appLogoutBtn" style="display:none">🚪 Sair</button>
   </div>
@@ -309,24 +326,26 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     </div>
   </div>
 
-  <div class="notice" style="margin:12px 0 16px;background:#fff3d6;color:#7a5700;border:1px solid #f0cf73;border-radius:18px;padding:14px 16px;font-weight:700;line-height:1.45;text-align:left">
-    ⚠️ <strong>ATENÇÃO:</strong> a aprovação das férias neste aplicativo <strong>não lança as férias no sistema da empresa</strong>. Depois de aprovadas, <strong>cada funcionário é responsável por lançar suas próprias férias no sistema/prontuário da empresa</strong>.
-  </div>
+  <div class="mini-warn">⚠️ A aprovação aqui não lança as férias no sistema da empresa. Depois de aprovadas, cada funcionário lança as suas no sistema/prontuário.</div>
 
-  <div class="vacation-date-title">🏖️ Data das férias</div>
-  <div class="calendar-card">
+  <div class="vacation-date-title">🏖️ Início das férias</div>
+  <button type="button" class="date-pick" id="datePick" aria-expanded="false" aria-controls="calendarCard">
+    <span id="datePickText" class="ph">Toque para escolher a data</span>
+    <span class="arrow">📅 ▾</span>
+  </button>
+  <div class="calendar-card" id="calendarCard">
     <div class="calendar-head">
-      <button type="button" class="cal-nav" id="calPrev">‹</button>
+      <button type="button" class="cal-nav" id="calPrev" aria-label="Mês anterior">‹</button>
       <div class="calendar-selects">
         <select id="quickMonth" aria-label="Escolher mês"></select>
         <select id="quickYear" aria-label="Escolher ano"></select>
       </div>
-      <button type="button" class="cal-nav" id="calNext">›</button>
+      <button type="button" class="cal-nav" id="calNext" aria-label="Próximo mês">›</button>
     </div>
-    <div class="calendar-week"><span>DOM</span><span>SEG</span><span>TER</span><span>QUA</span><span>QUI</span><span>SEX</span><span>SÁB</span></div>
+    <div class="calendar-week"><span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div>
     <div class="calendar-grid" id="calendarGrid"></div>
-    <div class="calendar-hint" id="calendarHint">Toque em uma data para escolher o início das férias.</div>
   </div>
+  <div class="calendar-hint" id="calendarHint">Toque no campo acima para escolher o início das férias.</div>
 
   <div class="days">
     <label>🏖️ Quantidade de dias</label>
@@ -366,10 +385,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     <button class="filter" data-filter="encerrada">🏁 Realizadas</button>
     <button class="filter" data-filter="controles">👤 Controles salvos</button>
   </div>
-  <div class="notice" style="margin:12px 0 4px;background:#fff6dc;color:#805d00;border:1px solid #f1d58a">
-    ⚠️ <strong>Importante:</strong> a aprovação das férias neste aplicativo <strong>não lança as férias no sistema da empresa</strong>.
-    Cada funcionário é responsável por lançar suas férias no sistema/prontuário da empresa após a aprovação.
-  </div>
+  <div class="mini-warn" style="margin:10px 0 4px">⚠️ Aprovado aqui não significa lançado no sistema da empresa.</div>
   <div id="records"><div style="text-align:center;color:#71879a;padding:14px">Nenhum registro.</div></div>
   <div id="controlsView" style="display:none">
     <div id="controlsList"><div style="text-align:center;color:#71879a;padding:14px">Nenhum controle salvo.</div></div>
@@ -442,19 +458,19 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       setAuthStatus('Firebase pronto. Entre ou crie sua conta para continuar.','info');
       authMod.onAuthStateChanged(firebaseAuth, async user=>{
         // Sessões anônimas da versão antiga não podem liberar o aplicativo.
-        // Se este aparelho ainda tiver uma sessão anônima salva, encerramos essa sessão
-        // e mantemos a tela de login aberta para o usuário entrar com e-mail e senha.
         if(user && user.isAnonymous){
           if($('appLogoutBtn')) $('appLogoutBtn').style.display='none';
           try{ await authMod.signOut(firebaseAuth); }catch(err){ console.warn('Não foi possível encerrar a sessão anônima antiga',err); }
           return;
         }
-        // Só entra automaticamente quando o usuário escolheu explicitamente
-        // manter o login salvo neste dispositivo. Sessões antigas do Firebase
-        // não podem pular a tela de login sem essa escolha.
-        const rememberExplicit = localStorage.getItem('ferias_remember_login') === '1';
+        // Só entra automaticamente quando o usuário escolheu manter o login salvo.
+        // Entra se marcou "manter login" OU se acabou de entrar nesta sessão.
+        // Sem a caixa marcada, ao fechar o app o login é pedido de novo.
+        const rememberExplicit = localStorage.getItem('ferias_remember_login') === '1'
+          || sessionStorage.getItem('ferias_session_ok') === '1';
         if(user && !rememberExplicit){
           try{ await authMod.signOut(firebaseAuth); }catch(err){ console.warn('Não foi possível encerrar a sessão não lembrada',err); }
+          stopLiveSync();
           firebaseUser=null;
           canManageRecords=false;
           applyRecordPermissions();
@@ -467,6 +483,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
         }
         firebaseUser=user||null;
         if(user){
+          $('authStatus').className='auth-status';
           $('authGate').style.display='none';
           $('appContent').classList.remove('auth-locked');
           $('authUserInfo').textContent='👤 Conectado como: '+(user.email||'Usuário');
@@ -478,8 +495,10 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
           if(savedName && !$('name').value.trim()) $('name').value=savedName;
           await refreshRecordPermissions();
           await pullFirebase();
+          startLiveSync();
           if(document.getElementById('adminPanel')?.classList.contains('open')) refreshDeveloperPanel();
         }else{
+          stopLiveSync();
           canManageRecords=false;
           applyRecordPermissions();
           $('appContent').classList.add('auth-locked');
@@ -554,14 +573,15 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     if(!firebaseReady || !firebaseAuth || !firebaseFns){setAuthStatus('Firebase ainda está iniciando. Aguarde alguns segundos.','error');return;}
     setAuthStatus('Entrando...');
     try{
-      // Grava somente a preferência de sessão; a senha nunca é gravada pelo app.
       localStorage.setItem('ferias_remember_login', $('rememberLogin').checked ? '1' : '0');
+      sessionStorage.setItem('ferias_session_ok','1');
       await applyLoginPersistence();
       const cred=await firebaseFns.signInWithEmailAndPassword(firebaseAuth,email,password);
       if(loginName) await applyUserNameToAccount(cred.user,loginName);
       $('loginPassword').value='';
     }catch(err){
       console.warn('Login falhou',err);
+      sessionStorage.removeItem('ferias_session_ok');
       const code=String(err?.code||'');
       if(code.includes('invalid-credential') || code.includes('wrong-password') || code.includes('user-not-found')){
         setAuthStatus('E-mail ou senha incorretos. Se for o primeiro acesso, toque em “Criar minha conta”.','error');
@@ -583,6 +603,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     setAuthStatus('Criando sua conta...');
     try{
       localStorage.setItem('ferias_remember_login', $('rememberLogin').checked ? '1' : '0');
+      sessionStorage.setItem('ferias_session_ok','1');
       await applyLoginPersistence();
       const cred=await firebaseFns.createUserWithEmailAndPassword(firebaseAuth,email,password);
       await applyUserNameToAccount(cred.user,loginName);
@@ -599,11 +620,16 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   }
 
   function setFirebaseStatus(text){
-    const el=$('notice');
+    const el=$('firebaseIndicator');
     if(!el) return;
-    // Mantém o aviso visual simples e não interfere no cálculo de férias.
-    if(!el.dataset.firebaseBase) el.dataset.firebaseBase=el.textContent||'';
-    el.textContent=text;
+    const s=String(text||'');
+    let icon='⏳', cls='sync';
+    if(/sincronizado|conectado/i.test(s)){ icon='☁️'; cls='ok'; }
+    else if(/indisponível|sem conexão|erro/i.test(s)){ icon='🚫'; cls='off'; }
+    el.textContent=icon;
+    el.className='firebase-indicator '+cls;
+    el.title=s;
+    el.setAttribute('aria-label',s);
   }
 
   async function refreshRecordPermissions(){
@@ -659,15 +685,13 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
         cloudRaw=snap.docs.filter(d=>d.id!=='config').map(d=>({id:d.id,...d.data()}));
       }else{
         // Funcionário comum recebe somente os próprios documentos.
-        // A regra do Firestore reforça essa mesma restrição no servidor.
         const {collection,getDocs,query,where}=firebaseFns;
         const q=query(collection(firebaseDb,'ferias'),where('ownerUid','==',firebaseUser.uid));
         const snap=await getDocs(q);
         cloudRaw=snap.docs.filter(d=>d.id!=='config').map(d=>({id:d.id,...d.data()}));
       }
-      // Exclusão definitiva na tela, mas com tombstone no Firebase para que
-      // outro aparelho não recrie um registro apagado a partir do cache local.
       const cloudDeleted=new Set(cloudRaw.filter(r=>r.deleted===true).map(r=>String(r.id)));
+      cloudDeleted.forEach(markDeleted);
       cloud=filterDeleted(cloudRaw.filter(r=>r.deleted!==true));
       const local=visibleRecords().filter(r=>!cloudDeleted.has(String(r.id)));
       const merged=filterDeleted(mergeRecordSets(local,cloud));
@@ -675,7 +699,11 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
         saveLocal(merged);
         renderRecords();
       }
-      await pushLocalToFirebase(merged);
+      // Só envia o que for mais novo que a versão da nuvem.
+      // Assim uma cópia antiga do aparelho nunca desfaz uma recusa/aprovação.
+      const cloudMap=new Map(cloud.map(r=>[String(r.id),r]));
+      const toPush=merged.filter(r=>{const c=cloudMap.get(String(r.id)); return !c || Number(r.updatedAt||0)>Number(c.updatedAt||0);});
+      await pushLocalToFirebase(toPush);
       await pullAgenda();
       await pushAgenda(merged);
       setFirebaseStatus('☁️ Firebase sincronizado');
@@ -690,8 +718,12 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     const {doc,setDoc}=firebaseFns;
     for(const r of records){
       if(!r || r.id==null || isDeleted(r.id)) continue;
-      // Nunca troca o dono de um registro já existente.
-      const payload={...r, deleted:false, ownerUid:r.ownerUid||firebaseUser.uid, ownerEmail:r.ownerEmail||firebaseUser.email||''};
+      // Nunca troca o dono. Administrador não "assume" registro de outra pessoa.
+      const payload={...r, deleted:false};
+      if(!r.ownerUid){
+        if(canManageRecords){ delete payload.ownerUid; if(!r.ownerEmail) delete payload.ownerEmail; }
+        else { payload.ownerUid=firebaseUser.uid; payload.ownerEmail=r.ownerEmail||firebaseUser.email||''; }
+      }
       try{ await setDoc(doc(firebaseDb,'ferias',String(r.id)),payload,{merge:true}); }
       catch(err){ console.warn('Registro não enviado ao Firebase',r.id,err); }
     }
@@ -727,9 +759,43 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     const source = canManageRecords ? (records||[]) : (records||[]).filter(recordBelongsToCurrentUser);
     for(const r of source){
       if(!r || r.id==null || isDeleted(r.id)) continue;
-      try{ await setDoc(doc(firebaseDb,'ferias_agenda',String(r.id)),{start:r.start||'',days:Number(r.days||1),status:r.status||'pendente',ownerUid:r.ownerUid||firebaseUser.uid,updatedAt:r.updatedAt||Date.now(),deleted:false},{merge:true}); }catch(err){ console.warn('Agenda não enviada',r.id,err); }
+      const ag={start:r.start||'',days:Number(r.days||1),status:r.status||'pendente',updatedAt:r.updatedAt||Date.now(),deleted:false};
+      const owner=r.ownerUid||(canManageRecords?'':firebaseUser.uid);
+      if(owner) ag.ownerUid=owner;
+      try{ await setDoc(doc(firebaseDb,'ferias_agenda',String(r.id)),ag,{merge:true}); }catch(err){ console.warn('Agenda não enviada',r.id,err); }
     }
   }
+
+  // Tempo real: o celular do funcionário recebe aprovação/recusa na hora.
+  let liveUnsubs=[];
+  function stopLiveSync(){ liveUnsubs.forEach(u=>{try{u()}catch(e){}}); liveUnsubs=[]; }
+  function applyCloudSnapshot(cloudRaw){
+    cloudRaw.filter(r=>r.deleted===true).forEach(r=>markDeleted(r.id));
+    const cloud=cloudRaw.filter(r=>r.deleted!==true);
+    const merged=filterDeleted(mergeRecordSets(local(),cloud));
+    if(JSON.stringify(merged)!==JSON.stringify(protectedRecords)){
+      saveLocal(merged); renderRecords();
+      if(document.getElementById('adminPanel')?.classList.contains('open') && isDeveloperLogged()) adminRefresh();
+    }
+  }
+  function startLiveSync(){
+    stopLiveSync();
+    if(!firebaseReady || !firebaseUser || !firebaseDb || !firebaseFns?.onSnapshot) return;
+    const {collection,query,where,onSnapshot}=firebaseFns;
+    const ref=canManageRecords ? collection(firebaseDb,'ferias')
+      : query(collection(firebaseDb,'ferias'),where('ownerUid','==',firebaseUser.uid));
+    liveUnsubs.push(onSnapshot(ref,snap=>{
+      applyCloudSnapshot(snap.docs.filter(d=>d.id!=='config').map(d=>({id:d.id,...d.data()})));
+      setFirebaseStatus('☁️ Firebase sincronizado');
+    },err=>console.warn('Tempo real indisponível',err)));
+    liveUnsubs.push(onSnapshot(collection(firebaseDb,'ferias_agenda'),snap=>{
+      agendaRecords=filterDeleted(snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r.deleted!==true));
+      renderRecords();
+    },err=>console.warn('Agenda em tempo real indisponível',err)));
+  }
+  document.addEventListener('visibilitychange',()=>{
+    if(document.visibilityState==='visible' && firebaseUser){ pullFirebase(); startLiveSync(); }
+  });
 
   async function syncFirebaseNow(){
     if(!firebaseReady){alert('Firebase ainda está iniciando. Tente novamente em alguns segundos.');return;}
@@ -790,8 +856,6 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     }).filter(Boolean))].sort().reverse();
   }
 
-  // Junta versões antigas do mesmo registro sem deixar uma versão vazia
-  // apagar o histórico que já existe em outra cópia local/backup.
   function mergeRecordData(base, extra){
     const b=base||{}, e=extra||{};
     const bt=Number(b.updatedAt||0), et=Number(e.updatedAt||0);
@@ -868,16 +932,10 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     protectedRecords = filterDeleted(a);
     localStorage.setItem(KEY,JSON.stringify(protectedRecords));
     writeBackup(protectedRecords);
-    // O armazenamento local continua sendo a primeira camada. Quando houver
-    // sessão Firebase, a mesma informação é enviada para a nuvem.
-    if(firebaseReady && firebaseUser && !firebaseSyncing){
-      pushLocalToFirebase(protectedRecords).catch(()=>{});
-    }
+    // O envio para o Firebase é feito só do registro alterado
+    // (salvar, aprovar, recusar, realizar), nunca da lista inteira.
   }
 
-  // Sempre compara o backup protegido com o armazenamento principal.
-  // Isso é importante quando a versão nova do app tem o mesmo registro, mas
-  // uma cópia ainda antiga não possuía o campo de histórico.
   readBackup().then(backup=>{
     if(backup.length){
       const merged=filterDeleted(mergeRecordSets(protectedRecords,backup));
@@ -893,7 +951,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   function syncDays(v){v=clamp(v);$('days').value=v;$('range').value=v}
 
   function buildCalendarQuick(){
-    const ms=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    const ms=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
     const qm=$('quickMonth'), qy=$('quickYear');
     if(!qm||!qy)return;
     qm.innerHTML=ms.map((n,i)=>`<option value="${i}">${n}</option>`).join('');
@@ -913,33 +971,63 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     if($('quickYear'))$('quickYear').value=calendarMonth.getUTCFullYear();
   }
 
-  // CALENDÁRIO: visual limpo. Nenhuma bolinha fica marcada.
-  // A regra de feriado aparece somente quando a pessoa tenta selecionar a data.
+  // Campo que mostra a data escolhida e abre/fecha o calendário pequeno.
+  function updateDatePick(){
+    const v=$('start').value, t=$('datePickText');
+    if(!t) return;
+    if(v){
+      const d=date(v);
+      const wd=new Intl.DateTimeFormat('pt-BR',{weekday:'short',timeZone:'UTC'}).format(d).replace('.','');
+      t.textContent=wd.replace(/^./,c=>c.toUpperCase())+', '+fmt(d);
+      t.className='';
+    }else{
+      t.textContent='Toque para escolher a data';
+      t.className='ph';
+    }
+  }
+  function openCalendar(){
+    const v=$('start').value;
+    if(v){ const [y,m]=v.split('-').map(Number); calendarMonth=new Date(Date.UTC(y,m-1,1)); }
+    renderCalendar();
+    $('calendarCard').classList.add('open');
+    $('datePick').classList.add('open');
+    $('datePick').setAttribute('aria-expanded','true');
+  }
+  function closeCalendar(){
+    $('calendarCard').classList.remove('open');
+    $('datePick').classList.remove('open');
+    $('datePick').setAttribute('aria-expanded','false');
+  }
+
+  // CALENDÁRIO compacto: sem marcações de feriado.
+  // O bloqueio de 2 dias do feriado aparece somente ao tocar na data.
   function renderCalendar(){
     syncCalendarQuick();
-    const y=calendarMonth.getUTCFullYear(), m=calendarMonth.getUTCMonth(), h=holidays(y);
+    updateDatePick();
+    const y=calendarMonth.getUTCFullYear(), m=calendarMonth.getUTCMonth();
     const first=new Date(Date.UTC(y,m,1)).getUTCDay();
     const total=new Date(Date.UTC(y,m+1,0)).getUTCDate();
+    const now=new Date(), todayIso=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
     let html='';
     for(let i=0;i<first;i++) html+='<div class="cal-day empty"></div>';
     for(let day=1;day<=total;day++){
       const iso=`${y}-${pad(m+1)}-${pad(day)}`;
-      const selected=$('start').value===iso?' selected':'';
-      html+=`<button type="button" class="cal-day${selected}" data-date="${iso}">${day}</button>`;
+      const cls=($('start').value===iso?' selected':'')+(iso===todayIso?' today':'');
+      html+=`<button type="button" class="cal-day${cls}" data-date="${iso}">${day}</button>`;
     }
     $('calendarGrid').innerHTML=html;
     $('calendarGrid').querySelectorAll('[data-date]').forEach(btn=>{
       btn.onclick=()=>{
         const v=btn.dataset.date, h2=holidays(Number(v.slice(0,4))), near=nearHoliday(v,h2);
         if(near){
-          $('calendarHint').textContent='⚠️ Data não disponível. Está até 2 dias do feriado: '+h2[near]+'.';
+          $('calendarHint').textContent='⚠️ Data não disponível: até 2 dias do feriado '+h2[near]+'.';
           $('calendarHint').className='calendar-hint err';
           return;
         }
         $('start').value=v;
         $('calendarHint').textContent='✅ Data disponível. Início das férias selecionado.';
         $('calendarHint').className='calendar-hint ok';
-        renderCalendar(); calc();
+        renderCalendar(); calc(); closeCalendar();
       };
     });
   }
@@ -991,8 +1079,6 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   function legalVacationControl(){
     const adm=admissionDate(), hist=historyMonths(), today=new Date();
     if(!adm || !hist.length) return {ready:false, incomplete:true, overdue:[], pending:[], nearest:null, missing:0};
-    // Nesta etapa, o histórico é apenas cadastral. O cálculo legal de vencimento
-    // será ativado quando tivermos todos os períodos reais registrados.
     return {ready:false, incomplete:true, overdue:[], pending:[], nearest:null, missing:0};
   }
 
@@ -1131,8 +1217,6 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     const record={id:key,key,name,admission,history,historyComplete:Boolean(existing?.historyComplete),updatedAt:Date.now()};
     if(existingIndex>=0)a[existingIndex]=record;else a.unshift(record);
     saveControls(a);
-    // Controle de períodos é independente dos lançamentos de férias.
-    // Salvar aqui não altera nenhum registro de férias já lançado.
     $('controlSaved').classList.add('show');
     setTimeout(()=>$('controlSaved').classList.remove('show'),3000);
     renderHistorySummary();
@@ -1160,9 +1244,18 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
            st==='encerrada'?'🏁 Férias realizadas':'🟡 Aguardando aprovação';
   }
 
+  function scrollToDatePick(){
+    const form=document.querySelector('#formCard');
+    if(form){
+      form.scrollIntoView({behavior:'smooth',block:'start'});
+      setTimeout(()=>$('datePick')?.scrollIntoView({behavior:'smooth',block:'center'}),500);
+    }
+  }
+
   function renderControls(){
     const all=readControls();
-    $('controlCount').textContent=all.length+' '+(all.length===1?'controle':'controles');
+    const cc=$('controlCount');
+    if(cc) cc.textContent=all.length+' '+(all.length===1?'controle':'controles');
     if(!all.length){
       $('controlsList').innerHTML='<div style="text-align:center;color:#71879a;padding:14px">Nenhum controle salvo.</div>';
       return;
@@ -1186,13 +1279,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       $('historyList').classList.add('open');
       $('addHistory').classList.add('open');
       $('historyToggle').textContent='Ocultar histórico ▴';
-      const form=document.querySelector('#formCard');
-      if(form){
-        form.scrollIntoView({behavior:'smooth',block:'start'});
-        setTimeout(()=>{
-          document.querySelector('.calendar-card')?.scrollIntoView({behavior:'smooth',block:'center'});
-        },500);
-      }
+      scrollToDatePick();
     });
   }
 
@@ -1229,8 +1316,9 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
         : '';
       const requestTs=Number(x.requestedAt||x.createdAt||x.updatedAt||Date.now());
       const requestDate=fmt(new Date(requestTs));
+      const ct=conflictType(x);
       return `<div class="record">
-        <div class="top"><div><div class="name">👤 ${escapeHtml(x.name)}</div><div class="request-date">📅 Data da solicitação: ${requestDate}</div></div><span class="badge ${conflictType(x)==='r'?'err':conflictType(x)==='o'?'warn':''}">${conflictType(x)==='r'?'⚠️ Conflito de período':conflictType(x)==='o'?'🟠 Período próximo':'Sem conflito'}</span></div>
+        <div class="top"><div><div class="name">👤 ${escapeHtml(x.name)}</div><div class="request-date">📅 Data da solicitação: ${requestDate}</div></div><span class="badge ${ct==='r'?'err':ct==='o'?'warn':''}">${ct==='r'?'⚠️ Conflito de período':ct==='o'?'🟠 Período próximo':'Sem conflito'}</span></div>
         <div class="info">
           <div>🏖️ Início<b>${fmt(s)}</b></div>
           <div>☀️ Último dia<b>${fmt(e)}</b></div>
@@ -1303,14 +1391,11 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     const ctl=readControls().find(r=>String(r.name||'').trim().toLowerCase()===String(x.name||'').trim().toLowerCase());
     if(ctl){ $('admission').value=ctl.admission||''; loadHistory(ctl.history||[]); } else { $('admission').value=''; loadHistory([]); }
     renderHistoryList();renderHistorySummary();
-    $('calendarHint').textContent='✏️ Registro carregado para alteração.';
+    $('calendarHint').textContent='✏️ Registro carregado. Toque na data para alterar.';
     $('calendarHint').className='calendar-hint';
     const [y,m]=x.start.split('-').map(Number);calendarMonth=new Date(Date.UTC(y,m-1,1));
-    renderCalendar();calc();
-    const cal = document.querySelector('.calendar-card');
-    if(cal){
-      setTimeout(()=>cal.scrollIntoView({behavior:'smooth',block:'center'}),80);
-    }
+    closeCalendar();renderCalendar();calc();
+    setTimeout(()=>$('datePick')?.scrollIntoView({behavior:'smooth',block:'center'}),80);
   }
 
   async function removeRecord(id){
@@ -1318,8 +1403,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     const idStr=String(id);
     markDeleted(idStr);
     const now=Date.now();
-    // Em vez de apagar o documento da nuvem, gravamos um TOMBSTONE.
-    // Assim, outros aparelhos sabem que este ID foi excluído e não o recriam.
+    // Tombstone no Firebase para outros aparelhos não recriarem o registro.
     if(firebaseReady && firebaseUser && firebaseDb && firebaseFns){
       try{
         const ref=firebaseFns.doc(firebaseDb,'ferias',idStr);
@@ -1347,29 +1431,36 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     if(!name||!c){alert('Preencha o nome e a data de início.');return;}
     const h=holidays(c.s.getUTCFullYear()), near=nearHoliday($('start').value,h);
     if(near){
-      $('calendarHint').textContent='⚠️ Data não disponível. Está até 2 dias do feriado: '+h[near]+'.';
+      $('calendarHint').textContent='⚠️ Data não disponível: até 2 dias do feriado '+h[near]+'.';
       $('calendarHint').className='calendar-hint err';
       alert('Data indisponível: '+h[near]+'. Escolha outra data.');
       return;
     }
     const a=local(), id=editId||Date.now();
     const old=a.find(r=>String(r.id)===String(id));
+    if(old && !canManageRecords && ['aprovada','encerrada'].includes(old.status)){
+      alert('Estas férias já foram aprovadas. Para alterar a data, fale com o administrador.');
+      return;
+    }
     let nextStatus='pendente';
     if(old) nextStatus = old.status==='recusada' ? 'pendente' : (old.status || 'pendente');
     const now=Date.now();
     const record={id,name,start:$('start').value,days:c.n,status:nextStatus,reason:nextStatus==='recusada'?'':(old?.reason||''),requestedAt:old?.requestedAt||now,updatedAt:now,ownerUid:old?.ownerUid||firebaseUser?.uid||'',ownerEmail:old?.ownerEmail||firebaseUser?.email||''};
     const i=a.findIndex(r=>String(r.id)===String(id));
     if(i>=0)a[i]=record;else a.unshift(record);
-    saveLocal(a); reset(); renderRecords(); pushAgenda(a); pullAgenda(); alert('Salvo neste aparelho.');
+    saveLocal(a); reset(); renderRecords();
+    pushLocalToFirebase([record]).then(()=>pushAgenda([record])).then(()=>pullAgenda()).catch(err=>console.warn('Envio falhou',err));
+    alert('Salvo.');
   }
 
   function reset(){
     editId=null;$('controlSaved').classList.remove('show');$('name').value='';$('start').value='';setRequestDateDisplay();$('admission').value='';loadHistory([]);syncDays(12);
     ['rs','re','rb','ws','we','wb'].forEach(id=>$(id).textContent='—');
     $('notice').textContent='Escolha uma data para calcular.';
-    $('calendarHint').textContent='Toque em uma data para escolher o início das férias.';
+    $('calendarHint').textContent='Toque no campo acima para escolher o início das férias.';
     $('calendarHint').className='calendar-hint';
     calendarMonth=new Date();calendarMonth=new Date(Date.UTC(calendarMonth.getUTCFullYear(),calendarMonth.getUTCMonth(),1));
+    closeCalendar();
     renderCalendar();
   }
 
@@ -1427,6 +1518,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   }
 
   // Eventos
+  $('datePick').onclick=()=>{ $('calendarCard').classList.contains('open') ? closeCalendar() : openCalendar(); };
   $('calPrev').onclick=()=>{calendarMonth.setUTCMonth(calendarMonth.getUTCMonth()-1);renderCalendar()};
   $('calNext').onclick=()=>{calendarMonth.setUTCMonth(calendarMonth.getUTCMonth()+1);renderCalendar()};
   $('quickMonth').onchange=()=>{calendarMonth.setUTCMonth(Number($('quickMonth').value));renderCalendar();};
@@ -1440,16 +1532,6 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   $('name').addEventListener('blur',()=>{ if(!historyDraft.length && !$('admission').value) loadSavedControl(); });
   $('admission').addEventListener('change',()=>{ loadSavedControl(); renderHistorySummary(); });
 
-  $('start').onchange=()=>{
-    const v=$('start').value;
-    if(v){
-      const [y,m]=v.split('-').map(Number);calendarMonth=new Date(Date.UTC(y,m-1,1));
-      const near=nearHoliday(v,holidays(y));
-      $('calendarHint').textContent=near?'⚠️ Data está até 2 dias do feriado: '+holidays(y)[near]+'.':'✅ Data disponível. Início das férias selecionado.';
-      $('calendarHint').className=near?'calendar-hint err':'calendar-hint ok';
-    }
-    renderCalendar();calc();
-  };
   $('range').oninput=e=>{syncDays(e.target.value);calc()};
   $('days').oninput=e=>{syncDays(e.target.value);calc()};
   $('minus').onclick=()=>{syncDays(Number($('days').value)-1);calc()};
@@ -1517,6 +1599,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     if(!password){ alert('Digite a senha do desenvolvedor.'); return; }
     if(!firebaseReady || !firebaseFns || !firebaseAuth){ alert('Firebase ainda está iniciando. Aguarde alguns segundos e tente novamente.'); return; }
     try{
+      sessionStorage.setItem('ferias_session_ok','1');
       await firebaseFns.signInWithEmailAndPassword(firebaseAuth,email,password);
       $('adminPassword').value='';
       refreshDeveloperPanel();
@@ -1565,8 +1648,8 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   $('appLogoutBtn').onclick=async()=>{
     if(!firebaseAuth || !firebaseFns?.signOut){setAuthStatus('Firebase ainda está iniciando. Aguarde alguns segundos.','error');return;}
     try{
-      // Sair significa voltar de fato para a tela de login e não entrar novamente sozinho.
       localStorage.setItem('ferias_remember_login','0');
+      sessionStorage.removeItem('ferias_session_ok');
       $('rememberLogin').checked=false;
       await firebaseFns.signOut(firebaseAuth);
       $('adminPanel').classList.remove('open');
@@ -1579,6 +1662,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     if(!firebaseAuth || !firebaseFns?.signOut){ alert('Firebase ainda está iniciando. Aguarde alguns segundos e tente novamente.'); return; }
     try{
       localStorage.setItem('ferias_remember_login','0');
+      sessionStorage.removeItem('ferias_session_ok');
       $('rememberLogin').checked=false;
       await firebaseFns.signOut(firebaseAuth);
       $('adminPanel').classList.remove('open');
@@ -1598,8 +1682,6 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   loadHistory([]);
   renderRecords();
   renderControls();
-  // Recupera controles somente se o armazenamento principal estiver vazio;
-  // se ambos existirem, faz uma união sem apagar dados.
   readControlBackup().then(backup=>{
     const current=readControls();
     const merged=mergeControls(current,backup);
