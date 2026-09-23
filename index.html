@@ -154,7 +154,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
 
 .admin-panel{display:none;width:min(826px,calc(100% - 24px));margin:10px auto 16px;padding:16px;background:#fff;border-radius:22px;box-shadow:0 12px 30px #0002}
 .admin-panel.open{display:block}.admin-panel h2{margin:0 0 12px}
-.admin-login{display:flex;gap:8px;flex-wrap:wrap}.admin-login input{flex:1;min-width:160px;height:44px;padding:0 12px;border:1px solid #c8dbe7;border-radius:12px}.password-wrap{position:relative;flex:1;min-width:160px}.password-wrap input{width:100%;padding-right:48px}.password-toggle{position:absolute;right:6px;top:6px;width:36px;height:32px;border:0;border-radius:9px;background:#edf4f8;color:#075b8a;font-size:18px;cursor:pointer}.remember-row{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;color:#35566b}.remember-row input{width:18px;height:18px;min-width:18px}.admin-manager{margin-top:14px;padding:14px;border:1px solid #cfe4ef;border-radius:14px;background:#f7fbfd}.admin-manager h3{margin:0 0 8px;color:#075b8a;font-size:16px}.admin-manager-row{display:flex;gap:8px;flex-wrap:wrap}.admin-manager-row input{flex:1;min-width:220px;height:42px;padding:0 12px;border:1px solid #c8dbe7;border-radius:11px}
+.admin-login{display:flex;gap:8px;flex-wrap:wrap}.admin-login input{flex:1;min-width:160px;height:44px;padding:0 12px;border:1px solid #c8dbe7;border-radius:12px}.password-wrap{position:relative;flex:1;min-width:160px}.password-wrap input{width:100%;padding-right:48px}.auth-password-wrap{width:100%;min-width:0}.auth-password-wrap .password-toggle{top:6px}.password-toggle{position:absolute;right:6px;top:6px;width:36px;height:32px;border:0;border-radius:9px;background:#edf4f8;color:#075b8a;font-size:18px;cursor:pointer}.remember-row{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;color:#35566b}.remember-row input{width:18px;height:18px;min-width:18px}.admin-manager{margin-top:14px;padding:14px;border:1px solid #cfe4ef;border-radius:14px;background:#f7fbfd}.admin-manager h3{margin:0 0 8px;color:#075b8a;font-size:16px}.admin-manager-row{display:flex;gap:8px;flex-wrap:wrap}.admin-manager-row input{flex:1;min-width:220px;height:42px;padding:0 12px;border:1px solid #c8dbe7;border-radius:11px}
 .admin-main,.admin-close{border:0;border-radius:12px;padding:11px 14px;font-weight:800}
 .admin-main{background:#075b8a;color:#fff}.admin-close{background:#e9eef2;color:#234}
 .admin-note{font-size:12px;color:#60788b;margin-top:10px;line-height:1.4}
@@ -199,7 +199,10 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     <p class="auth-note">Entre com seu e-mail e senha. No primeiro acesso, você pode criar sua própria conta.</p>
     <div class="auth-row">
       <input class="input" id="loginEmail" type="email" autocomplete="username" placeholder="Seu e-mail">
-      <input class="input" id="loginPassword" type="password" autocomplete="current-password" placeholder="Sua senha">
+      <div class="password-wrap auth-password-wrap">
+        <input class="input" id="loginPassword" type="password" autocomplete="current-password" placeholder="Sua senha">
+        <button type="button" class="password-toggle" id="loginPasswordToggle" aria-label="Mostrar senha">🔒</button>
+      </div>
     </div>
     <div class="auth-actions">
       <button class="auth-btn" id="loginBtn" type="button">🔑 Entrar</button>
@@ -1318,6 +1321,13 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   $('rejectReason').onkeydown=e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter')confirmReject()};
   $('rejectModal').onclick=e=>{if(e.target===$('rejectModal'))closeReject()};
 
+  $('loginPasswordToggle').onclick=()=>{
+    const input=$('loginPassword');
+    const showing=input.type==='text';
+    input.type=showing?'password':'text';
+    $('loginPasswordToggle').textContent=showing?'🔒':'👁️';
+    $('loginPasswordToggle').setAttribute('aria-label',showing?'Mostrar senha':'Ocultar senha');
+  };
   $('loginBtn').onclick=doLogin;
   $('registerBtn').onclick=doRegister;
   $('rememberLogin').onchange=()=>{
