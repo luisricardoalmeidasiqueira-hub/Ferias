@@ -199,6 +199,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     <h2>🔐 Acesso ao Controle de Férias</h2>
     <p class="auth-note">Entre com seu e-mail e senha. No primeiro acesso, você pode criar sua própria conta.</p>
     <div class="auth-row">
+      <input class="input" id="loginName" type="text" autocomplete="name" placeholder="Nome completo">
       <input class="input" id="loginEmail" type="email" autocomplete="username" placeholder="Seu e-mail">
       <div class="password-wrap auth-password-wrap">
         <input class="input" id="loginPassword" type="password" autocomplete="current-password" placeholder="Sua senha">
@@ -409,6 +410,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   let canManageRecords = false;
   let agendaRecords = [];
   const DELETED_KEY='ferias_deleted_ids';
+  const SYNC_DELETE_VERSION=2;
   function deletedIds(){
     try{
       const a=JSON.parse(localStorage.getItem(DELETED_KEY)||'[]');
@@ -470,7 +472,10 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
           $('authUserInfo').textContent='👤 Conectado como: '+(user.email||'Usuário');
           if($('appLogoutBtn')) $('appLogoutBtn').style.display='inline-block';
           setFirebaseStatus('☁️ Firebase conectado');
-          await ensureUserProfile(user);
+          const savedName=String(user.displayName||'').trim();
+          if(savedName) $('loginName').value=savedName;
+          await ensureUserProfile(user,savedName);
+          if(savedName && !$('name').value.trim()) $('name').value=savedName;
           await refreshRecordPermissions();
           await pullFirebase();
           if(document.getElementById('adminPanel')?.classList.contains('open')) refreshDeveloperPanel();
@@ -498,16 +503,32 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     el.className='auth-status show'+(type==='error'?' err':'');
   }
 
-  async function ensureUserProfile(user){
+  async function ensureUserProfile(user, nameOverride=''){
     if(!firebaseDb || !firebaseFns || !user?.uid)return;
+    const name=String(nameOverride||user.displayName||'').trim();
     try{
       await firebaseFns.setDoc(
         firebaseFns.doc(firebaseDb,'usuarios',user.uid),
-        {uid:user.uid,email:user.email||'',updatedAt:Date.now()},
+        {uid:user.uid,email:user.email||'',name,updatedAt:Date.now()},
         {merge:true}
       );
     }catch(err){
       console.warn('Perfil do usuário não foi salvo',err);
+    }
+  }
+
+  async function applyUserNameToAccount(user, name){
+    const clean=String(name||'').trim();
+    if(!user || !clean || !firebaseFns?.updateProfile) return user?.displayName||'';
+    try{
+      if(String(user.displayName||'').trim()!==clean){
+        await firebaseFns.updateProfile(user,{displayName:clean});
+      }
+      await ensureUserProfile(user,clean);
+      return clean;
+    }catch(err){
+      console.warn('Nome do usuário não foi atualizado',err);
+      return String(user.displayName||clean);
     }
   }
 
@@ -525,6 +546,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   }
 
   async function doLogin(){
+    const loginName=($('loginName').value||'').trim();
     const email=($('loginEmail').value||'').trim().toLowerCase();
     const password=$('loginPassword').value||'';
     if(!email || !email.includes('@')){setAuthStatus('Digite um e-mail válido.','error');return;}
@@ -535,7 +557,8 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       // Grava somente a preferência de sessão; a senha nunca é gravada pelo app.
       localStorage.setItem('ferias_remember_login', $('rememberLogin').checked ? '1' : '0');
       await applyLoginPersistence();
-      await firebaseFns.signInWithEmailAndPassword(firebaseAuth,email,password);
+      const cred=await firebaseFns.signInWithEmailAndPassword(firebaseAuth,email,password);
+      if(loginName) await applyUserNameToAccount(cred.user,loginName);
       $('loginPassword').value='';
     }catch(err){
       console.warn('Login falhou',err);
@@ -549,8 +572,10 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   }
 
   async function doRegister(){
+    const loginName=($('loginName').value||'').trim();
     const email=($('loginEmail').value||'').trim().toLowerCase();
     const password=$('loginPassword').value||'';
+    if(!loginName){setAuthStatus('Digite seu nome completo para criar a conta.','error');return;}
     if(!email || !email.includes('@')){setAuthStatus('Digite um e-mail válido.','error');return;}
     if(password.length<6){setAuthStatus('A senha precisa ter pelo menos 6 caracteres.','error');return;}
     if(!firebaseReady || !firebaseAuth || !firebaseFns){setAuthStatus('Firebase ainda está iniciando. Aguarde alguns segundos.','error');return;}
@@ -560,7 +585,8 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       localStorage.setItem('ferias_remember_login', $('rememberLogin').checked ? '1' : '0');
       await applyLoginPersistence();
       const cred=await firebaseFns.createUserWithEmailAndPassword(firebaseAuth,email,password);
-      await ensureUserProfile(cred.user);
+      await applyUserNameToAccount(cred.user,loginName);
+      $('name').value=loginName;
       $('loginPassword').value='';
     }catch(err){
       console.warn('Cadastro falhou',err);
@@ -626,20 +652,24 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     firebaseSyncing=true;
     try{
       let cloud=[];
+      let cloudRaw=[];
       if(canManageRecords){
         const {collection,getDocs}=firebaseFns;
         const snap=await getDocs(collection(firebaseDb,'ferias'));
-        cloud=snap.docs.filter(d=>d.id!=='config').map(d=>({id:d.id,...d.data()}));
+        cloudRaw=snap.docs.filter(d=>d.id!=='config').map(d=>({id:d.id,...d.data()}));
       }else{
         // Funcionário comum recebe somente os próprios documentos.
         // A regra do Firestore reforça essa mesma restrição no servidor.
         const {collection,getDocs,query,where}=firebaseFns;
         const q=query(collection(firebaseDb,'ferias'),where('ownerUid','==',firebaseUser.uid));
         const snap=await getDocs(q);
-        cloud=snap.docs.filter(d=>d.id!=='config').map(d=>({id:d.id,...d.data()}));
+        cloudRaw=snap.docs.filter(d=>d.id!=='config').map(d=>({id:d.id,...d.data()}));
       }
-      cloud=filterDeleted(cloud);
-      const local=visibleRecords();
+      // Exclusão definitiva na tela, mas com tombstone no Firebase para que
+      // outro aparelho não recrie um registro apagado a partir do cache local.
+      const cloudDeleted=new Set(cloudRaw.filter(r=>r.deleted===true).map(r=>String(r.id)));
+      cloud=filterDeleted(cloudRaw.filter(r=>r.deleted!==true));
+      const local=visibleRecords().filter(r=>!cloudDeleted.has(String(r.id)));
       const merged=filterDeleted(mergeRecordSets(local,cloud));
       if(JSON.stringify(merged)!==JSON.stringify(local)){
         saveLocal(merged);
@@ -661,7 +691,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     for(const r of records){
       if(!r || r.id==null || isDeleted(r.id)) continue;
       // Nunca troca o dono de um registro já existente.
-      const payload={...r, ownerUid:r.ownerUid||firebaseUser.uid, ownerEmail:r.ownerEmail||firebaseUser.email||''};
+      const payload={...r, deleted:false, ownerUid:r.ownerUid||firebaseUser.uid, ownerEmail:r.ownerEmail||firebaseUser.email||''};
       try{ await setDoc(doc(firebaseDb,'ferias',String(r.id)),payload,{merge:true}); }
       catch(err){ console.warn('Registro não enviado ao Firebase',r.id,err); }
     }
@@ -687,7 +717,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     try{
       const {collection,getDocs}=firebaseFns;
       const snap=await getDocs(collection(firebaseDb,'ferias_agenda'));
-      agendaRecords=filterDeleted(snap.docs.map(d=>({id:d.id,...d.data()})));
+      agendaRecords=filterDeleted(snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r.deleted!==true));
       if(document.getElementById('records')) renderRecords();
     }catch(err){ console.warn('Agenda de conflitos indisponível',err); agendaRecords=[]; }
   }
@@ -697,7 +727,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     const source = canManageRecords ? (records||[]) : (records||[]).filter(recordBelongsToCurrentUser);
     for(const r of source){
       if(!r || r.id==null || isDeleted(r.id)) continue;
-      try{ await setDoc(doc(firebaseDb,'ferias_agenda',String(r.id)),{start:r.start||'',days:Number(r.days||1),status:r.status||'pendente',ownerUid:r.ownerUid||firebaseUser.uid,updatedAt:r.updatedAt||Date.now()},{merge:true}); }catch(err){ console.warn('Agenda não enviada',r.id,err); }
+      try{ await setDoc(doc(firebaseDb,'ferias_agenda',String(r.id)),{start:r.start||'',days:Number(r.days||1),status:r.status||'pendente',ownerUid:r.ownerUid||firebaseUser.uid,updatedAt:r.updatedAt||Date.now(),deleted:false},{merge:true}); }catch(err){ console.warn('Agenda não enviada',r.id,err); }
     }
   }
 
@@ -1264,29 +1294,34 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   async function removeRecord(id){
     if(!confirm('Apagar este registro?'))return;
     const idStr=String(id);
-    // Marca primeiro como excluído. Isso impede qualquer sincronização concorrente
-    // ou backup antigo de recriar o registro depois da exclusão.
     markDeleted(idStr);
-    // Apaga primeiro no Firebase para que a sincronização não traga o registro de volta.
+    const now=Date.now();
+    // Em vez de apagar o documento da nuvem, gravamos um TOMBSTONE.
+    // Assim, outros aparelhos sabem que este ID foi excluído e não o recriam.
     if(firebaseReady && firebaseUser && firebaseDb && firebaseFns){
       try{
-        await firebaseFns.deleteDoc(firebaseFns.doc(firebaseDb,'ferias',idStr));
+        const ref=firebaseFns.doc(firebaseDb,'ferias',idStr);
+        await firebaseFns.updateDoc(ref,{deleted:true,deletedAt:now,updatedAt:now});
       }catch(err){
-        console.error('Erro ao apagar no Firebase',err);
-        alert('Não foi possível apagar este registro do Firebase. Nada foi removido localmente.');
+        console.error('Erro ao registrar exclusão no Firebase',err);
+        alert('Não foi possível registrar a exclusão no Firebase.');
         return;
       }
+      try{
+        const agendaRef=firebaseFns.doc(firebaseDb,'ferias_agenda',idStr);
+        await firebaseFns.setDoc(agendaRef,{deleted:true,deletedAt:now,updatedAt:now},{merge:true});
+      }catch(err){ console.warn('Não foi possível marcar a agenda como excluída',err); }
     }
     const filtered=local().filter(r=>String(r.id)!==idStr);
     saveLocal(filtered);
-    if(firebaseReady && firebaseUser && firebaseDb && firebaseFns){ try{ await firebaseFns.deleteDoc(firebaseFns.doc(firebaseDb,'ferias_agenda',idStr)); }catch(e){} }
     agendaRecords=agendaRecords.filter(r=>String(r.id)!==idStr);
     if(String(editId)===idStr) reset();
     renderRecords();
   }
 
   function saveRecord(){
-    const c=calc(), name=$('name').value.trim();
+    const c=calc(), name=($('name').value.trim() || String(firebaseUser?.displayName||'').trim());
+    if(name && !$('name').value.trim()) $('name').value=name;
     if(!name||!c){alert('Preencha o nome e a data de início.');return;}
     const h=holidays(c.s.getUTCFullYear()), near=nearHoliday($('start').value,h);
     if(near){
@@ -1431,6 +1466,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   };
   const rememberLoginSaved=localStorage.getItem('ferias_remember_login');
   if(rememberLoginSaved!==null) $('rememberLogin').checked=rememberLoginSaved==='1';
+  $('loginName').onkeydown=e=>{if(e.key==='Enter')doLogin()};
   $('loginPassword').onkeydown=e=>{if(e.key==='Enter')doLogin()};
   $('loginEmail').onkeydown=e=>{if(e.key==='Enter')doLogin()};
 
