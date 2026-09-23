@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Férias">
 <title>Controle de Férias</title>
-<meta name="app-version" content="2026-09-23-v16-usuarios">
+<meta name="app-version" content="2026-09-23-v17-lista-limpa">
 <style>
 :root{
   --blue:#0797e6;--blue2:#1976df;--ink:#12375d;--line:#d8e9f3;
@@ -189,6 +189,8 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
 .user-info small{font-size:10px;color:#71879a;font-weight:700}
 .user-row button{border:0;border-radius:9px;padding:7px 9px;font-weight:800;font-size:12px;white-space:nowrap;flex:0 0 auto}
 .user-del{background:#ffe8e8;color:#a52222}.user-back{background:#e7f8ee;color:#087446}
+.user-others{margin-top:10px;font-size:12px;color:#60788b;font-weight:800}
+.user-others summary{cursor:pointer;padding:8px 10px;background:#eef3f6;border-radius:10px}
 .user-tag{font-size:11px;font-weight:900;color:#075b8a;background:#e7f5ff;border-radius:999px;padding:5px 9px;flex:0 0 auto}
 .control-record{padding:14px;border:1px solid #d8eaf4;background:#f8fcff;border-radius:16px;margin-top:9px}
 .control-record .control-top{display:flex;justify-content:space-between;gap:10px;align-items:center}
@@ -412,7 +414,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   <div class="quote">🌊 “Descanso hoje para voltar com mais energia amanhã!”<span>Férias fazem bem.</span></div>
 </section>
 
-<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 16</span></footer>
+<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 17</span></footer>
 </main>
 </div>
 
@@ -1527,17 +1529,24 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       const blocked=new Set(bl.docs.map(d=>d.id));
       const users=us.docs.map(d=>({uid:d.id,...d.data()}))
         .sort((a,b)=>String(a.name||a.email||'').localeCompare(String(b.name||b.email||''),'pt-BR'));
-      $('userCount').textContent=users.length;
+      // Pessoas com e-mail primeiro (ativas antes das excluídas).
+      // Registros sem e-mail não são contas do app de Férias: ficam num grupo fechado.
+      const withEmail=users.filter(u=>String(u.email||'').trim())
+        .sort((a,b)=>(blocked.has(a.uid)-blocked.has(b.uid)) || String(a.name||a.email).localeCompare(String(b.name||b.email),'pt-BR'));
+      const noEmail=users.filter(u=>!String(u.email||'').trim());
+      $('userCount').textContent=withEmail.length;
       if(!users.length){ box.innerHTML='<div class="admin-note">Nenhum usuário cadastrado.</div>'; return; }
       const when=ts=>ts?new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}).format(new Date(Number(ts))):'—';
-      box.innerHTML=users.map(u=>{
+      const row=u=>{
         const isB=blocked.has(u.uid);
         const isOwner=String(u.email||'').toLowerCase()===OWNER_EMAIL;
         const btn=isOwner?'<span class="user-tag">Você</span>'
           :isB?`<button type="button" class="user-back" data-unblock="${escapeHtml(u.uid)}">↩️ Reativar</button>`
           :`<button type="button" class="user-del" data-block="${escapeHtml(u.uid)}">🗑️ Excluir</button>`;
-        return `<div class="user-row${isB?' blocked':''}"><div class="user-info"><b>👤 ${escapeHtml(u.name||'Sem nome')}</b><span>${escapeHtml(u.email||'')}</span><small>${isB?'🚫 Acesso excluído':'Último acesso: '+when(u.lastLoginAt||u.updatedAt)}</small></div>${btn}</div>`;
-      }).join('');
+        return `<div class="user-row${isB?' blocked':''}"><div class="user-info"><b>👤 ${escapeHtml(u.name||'Sem nome')}</b><span>${escapeHtml(u.email||('Código: '+String(u.uid).slice(0,8)+'…'))}</span><small>${isB?'🚫 Acesso excluído':'Último acesso: '+when(u.lastLoginAt||u.updatedAt)}</small></div>${btn}</div>`;
+      };
+      box.innerHTML=(withEmail.length?withEmail.map(row).join(''):'<div class="admin-note">Nenhuma pessoa com e-mail cadastrada ainda.</div>')
+        + (noEmail.length?`<details class="user-others"><summary>📁 Outros registros sem e-mail (${noEmail.length})</summary>${noEmail.map(row).join('')}</details>`:'');
       box.querySelectorAll('[data-block]').forEach(b=>b.onclick=async()=>{
         const u=users.find(x=>x.uid===b.dataset.block); if(!u) return;
         if(!confirm(`Excluir o acesso de ${u.name||u.email}?\n\nA pessoa não vai mais conseguir entrar no app. As férias dela continuam registradas.`)) return;
