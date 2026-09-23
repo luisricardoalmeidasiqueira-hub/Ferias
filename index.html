@@ -106,6 +106,7 @@ button,input{font:inherit}button{cursor:pointer}
 .history-compact{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 14px;border:1.5px solid var(--line);border-radius:14px;background:#fbfeff}
 .history-range{font-weight:900;color:var(--ink);font-size:15px}
 .history-count{font-size:12px;color:#71879a;font-weight:800;margin-top:3px}
+.history-help{border:0;background:#eaf5ff;color:#0d5f8f;width:38px;height:38px;border-radius:50%;font-size:20px;font-weight:800;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.08);flex:0 0 auto}.history-help:active{transform:scale(.96)}
 .history-toggle{border:0;border-radius:12px;padding:10px 12px;background:#e7f5ff;color:#075b8a;font-weight:900;white-space:nowrap}
 .history-list{display:none;margin-top:10px;padding:10px;border-radius:14px;background:#f7fcff;border:1px solid #dcecf5}
 .history-list.open{display:grid;gap:7px}
@@ -288,7 +289,10 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     <input type="hidden" id="start">
     <div class="field"><label>🏢 Data de admissão <span style="font-weight:600;color:#71879a">(opcional)</span></label><input class="input" id="admission" type="date"></div>
     <div class="field" style="grid-column:1/-1">
-      <label>📚 Histórico de férias realizadas</label>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+        <label style="margin:0">📚 Histórico de férias realizadas</label>
+        <button type="button" id="historyHelp" class="history-help" aria-label="Como usar o histórico">❓</button>
+      </div>
       <div class="history-compact">
         <div>
           <div id="historyRange" class="history-range">—</div>
@@ -396,6 +400,22 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   // confirmar que a sessão é do Desenvolvedor ou de um administrador.
   let canManageRecords = false;
   let agendaRecords = [];
+  const DELETED_KEY='ferias_deleted_ids';
+  function deletedIds(){
+    try{
+      const a=JSON.parse(localStorage.getItem(DELETED_KEY)||'[]');
+      return new Set(Array.isArray(a)?a.map(String):[]);
+    }catch(e){ return new Set(); }
+  }
+  function markDeleted(id){
+    const s=deletedIds(); s.add(String(id));
+    localStorage.setItem(DELETED_KEY,JSON.stringify([...s]));
+  }
+  function isDeleted(id){ return deletedIds().has(String(id)); }
+  function filterDeleted(list){
+    const s=deletedIds();
+    return (Array.isArray(list)?list:[]).filter(x=>x && !s.has(String(x.id)));
+  }
 
   async function initFirebase(){
     try{
@@ -610,8 +630,9 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
         const snap=await getDocs(q);
         cloud=snap.docs.filter(d=>d.id!=='config').map(d=>({id:d.id,...d.data()}));
       }
+      cloud=filterDeleted(cloud);
       const local=visibleRecords();
-      const merged=mergeRecordSets(local,cloud);
+      const merged=filterDeleted(mergeRecordSets(local,cloud));
       if(JSON.stringify(merged)!==JSON.stringify(local)){
         saveLocal(merged);
         renderRecords();
@@ -630,7 +651,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     if(!firebaseReady || !firebaseUser || !firebaseDb) return;
     const {doc,setDoc}=firebaseFns;
     for(const r of records){
-      if(!r || r.id==null) continue;
+      if(!r || r.id==null || isDeleted(r.id)) continue;
       // Nunca troca o dono de um registro já existente.
       const payload={...r, ownerUid:r.ownerUid||firebaseUser.uid, ownerEmail:r.ownerEmail||firebaseUser.email||''};
       try{ await setDoc(doc(firebaseDb,'ferias',String(r.id)),payload,{merge:true}); }
@@ -658,7 +679,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     try{
       const {collection,getDocs}=firebaseFns;
       const snap=await getDocs(collection(firebaseDb,'ferias_agenda'));
-      agendaRecords=snap.docs.map(d=>({id:d.id,...d.data()}));
+      agendaRecords=filterDeleted(snap.docs.map(d=>({id:d.id,...d.data()})));
       if(document.getElementById('records')) renderRecords();
     }catch(err){ console.warn('Agenda de conflitos indisponível',err); agendaRecords=[]; }
   }
@@ -667,7 +688,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     const {doc,setDoc}=firebaseFns;
     const source = canManageRecords ? (records||[]) : (records||[]).filter(recordBelongsToCurrentUser);
     for(const r of source){
-      if(!r || r.id==null) continue;
+      if(!r || r.id==null || isDeleted(r.id)) continue;
       try{ await setDoc(doc(firebaseDb,'ferias_agenda',String(r.id)),{start:r.start||'',days:Number(r.days||1),status:r.status||'pendente',ownerUid:r.ownerUid||firebaseUser.uid,updatedAt:r.updatedAt||Date.now()},{merge:true}); }catch(err){ console.warn('Agenda não enviada',r.id,err); }
     }
   }
@@ -798,7 +819,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     }catch(e){return []}
   }
 
-  let protectedRecords = mergeRecords();
+  let protectedRecords = filterDeleted(mergeRecords());
   if(protectedRecords.length){
     localStorage.setItem(KEY,JSON.stringify(protectedRecords));
   }
@@ -806,7 +827,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   function local(){ return protectedRecords.slice(); }
 
   function saveLocal(a){
-    protectedRecords = Array.isArray(a) ? a.slice() : [];
+    protectedRecords = filterDeleted(a);
     localStorage.setItem(KEY,JSON.stringify(protectedRecords));
     writeBackup(protectedRecords);
     // O armazenamento local continua sendo a primeira camada. Quando houver
@@ -821,7 +842,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   // uma cópia ainda antiga não possuía o campo de histórico.
   readBackup().then(backup=>{
     if(backup.length){
-      const merged=mergeRecordSets(protectedRecords,backup);
+      const merged=filterDeleted(mergeRecordSets(protectedRecords,backup));
       const changed=JSON.stringify(merged)!==JSON.stringify(protectedRecords);
       protectedRecords=merged;
       localStorage.setItem(KEY,JSON.stringify(protectedRecords));
@@ -1235,6 +1256,9 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   async function removeRecord(id){
     if(!confirm('Apagar este registro?'))return;
     const idStr=String(id);
+    // Marca primeiro como excluído. Isso impede qualquer sincronização concorrente
+    // ou backup antigo de recriar o registro depois da exclusão.
+    markDeleted(idStr);
     // Apaga primeiro no Firebase para que a sincronização não traga o registro de volta.
     if(firebaseReady && firebaseUser && firebaseDb && firebaseFns){
       try{
@@ -1342,6 +1366,9 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   $('calNext').onclick=()=>{calendarMonth.setUTCMonth(calendarMonth.getUTCMonth()+1);renderCalendar()};
   $('quickMonth').onchange=()=>{calendarMonth.setUTCMonth(Number($('quickMonth').value));renderCalendar();};
   $('quickYear').onchange=()=>{calendarMonth.setUTCFullYear(Number($('quickYear').value));renderCalendar();};
+  $('historyHelp').onclick=()=>{
+    alert('❓ COMO USAR O HISTÓRICO\n\nEsta parte é OPCIONAL. Ela serve para informar a data de admissão e registrar férias que o funcionário já realizou.\n\n📚 Para que serve?\n• Ajuda o aplicativo a entender o histórico de férias do funcionário.\n• Com o histórico completo, será possível calcular os períodos de vencimento com mais segurança.\n\n💾 Salvar controle\nUse “Salvar controle” para guardar a admissão e o histórico sem lançar uma nova férias.\n\nSe você não precisar controlar o histórico, pode deixar esta parte vazia e usar normalmente o lançamento das próximas férias.');
+  };
   $('historyToggle').onclick=()=>{const open=$('historyList').classList.toggle('open');$('addHistory').classList.toggle('open',open);$('historyToggle').textContent=open?'Ocultar histórico ▴':'Ver histórico ▾';};
   $('addHistory').onclick=()=>{ openHistoryEditor(); $('historyList').classList.add('open'); $('addHistory').classList.add('open'); $('historyToggle').textContent='Ocultar histórico ▴'; setTimeout(()=>$('newHistoryMonth')?.focus(),50); };
   $('saveControl').onclick=saveVacationControl;
