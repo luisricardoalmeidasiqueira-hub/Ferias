@@ -210,6 +210,7 @@ button,input{font:inherit}button{cursor:pointer}
     </div>
     <div class="admin-actions">
       <button class="admin-main" id="adminExportBtn">💾 Exportar dados</button>
+      <button class="admin-close" id="adminLogoutBtn">🚪 Sair</button>
       <button class="admin-close" id="adminCloseBtn">Fechar</button>
     </div>
   </div>
@@ -973,10 +974,22 @@ button,input{font:inherit}button{cursor:pointer}
     }
   }
 
-  function removeRecord(id){
+  async function removeRecord(id){
     if(!confirm('Apagar este registro?'))return;
-    saveLocal(local().filter(r=>String(r.id)!==String(id)));
-    if(String(editId)===String(id)) reset();
+    const idStr=String(id);
+    // Apaga primeiro no Firebase para que a sincronização não traga o registro de volta.
+    if(firebaseReady && firebaseUser && firebaseDb && firebaseFns){
+      try{
+        await firebaseFns.deleteDoc(firebaseFns.doc(firebaseDb,'ferias',idStr));
+      }catch(err){
+        console.error('Erro ao apagar no Firebase',err);
+        alert('Não foi possível apagar este registro do Firebase. Nada foi removido localmente.');
+        return;
+      }
+    }
+    const filtered=local().filter(r=>String(r.id)!==idStr);
+    saveLocal(filtered);
+    if(String(editId)===idStr) reset();
     renderRecords();
   }
 
@@ -1161,6 +1174,17 @@ button,input{font:inherit}button{cursor:pointer}
     }
   };
   $('adminCloseBtn').onclick=()=>$('adminPanel').classList.remove('open');
+  $('adminLogoutBtn').onclick=async()=>{
+    if(!firebaseAuth || !firebaseFns?.signOut){ alert('Firebase ainda está iniciando. Aguarde alguns segundos e tente novamente.'); return; }
+    try{
+      await firebaseFns.signOut(firebaseAuth);
+      $('adminPanel').classList.remove('open');
+      refreshDeveloperPanel();
+    }catch(err){
+      console.error('Erro ao sair',err);
+      alert('Não foi possível sair agora.');
+    }
+  };
   $('adminExportBtn').onclick=exportBackup;
 
   // Inicialização
