@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Férias">
 <title>Controle de Férias</title>
-<meta name="app-version" content="2026-09-24-v24.0-botoes-menores">
+<meta name="app-version" content="2026-09-24-v24.1-periodo-proximo">
 <style>
 :root{
   --blue:#0797e6;--blue2:#1976df;--ink:#12375d;--line:#d8e9f3;
@@ -177,7 +177,8 @@ button,input{font:inherit}button{cursor:pointer}
 .record{border:1px solid var(--line);border-radius:15px;padding:12px;margin-top:9px;background:#fbfdff}
 .top{display:flex;justify-content:space-between;gap:8px}
 .name{font-weight:900;font-size:15px}.request-date{font-size:10px;color:#71879a;font-weight:800;margin-top:3px}.badge{font-size:10px;font-weight:900;padding:5px 8px;border-radius:999px;background:#e4f8ed;color:#087446}
-.badge.err{background:#ffe8e8;color:#a52222}.badge.warn{background:#fff4d8;color:#8a6500}
+.badge.err{background:#ffe8e8;color:#a52222}.badge.warn{background:#ffe6cc;color:#b45309}
+.status.near{background:#ffe6cc;color:#9a4a07}.status.clash{background:#ffe8e8;color:#a52222}
 .info{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:9px}
 .info div{font-size:10px;color:#70859a;background:#f2f7fa;border-radius:9px;padding:7px}
 .info b{display:block;color:var(--ink);font-size:11px;margin-top:2px}
@@ -544,7 +545,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   <div class="quote">🌊 “Descanso hoje para voltar com mais energia amanhã!”<span>Férias fazem bem.</span></div>
 </section>
 
-<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 24.0</span></footer>
+<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 24.1</span></footer>
 </main>
 </div>
 
@@ -927,20 +928,31 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     const used=Number(r.days||0)+(r.start2?Number(r.days2||0):0)+Number(r.sold||0);
     return Math.max(0,30-used);
   }
-  function conflictType(r){
-    const mine=vacationRanges(r); let near=false;
+  // Quantos dias entre o fim de umas férias e o começo de outras contam como "perto".
+  const NEAR_DAYS=7;
+  function conflictInfo(r){
+    const mine=vacationRanges(r), clash=[], near=[];
+    const byId=new Map(local().map(x=>[String(x.id),x]));
     for(const o of agendaRecords){
       if(!o || String(o.id)===String(r.id) || o.status==='recusada') continue;
+      let hit='';
       for(const a of mine){
         for(const b of vacationRanges(o)){
-          if(a.start<=b.end && a.end>=b.start) return 'r';
+          if(a.start<=b.end && a.end>=b.start){ hit='r'; break; }
           const gap=Math.min(Math.abs(a.start-b.end),Math.abs(b.start-a.end))/86400000;
-          if(gap<=3) near=true;
+          if(gap<=NEAR_DAYS && !hit) hit='o';
         }
+        if(hit==='r') break;
       }
+      if(!hit) continue;
+      const rec=byId.get(String(o.id));
+      const who=canManageRecords && rec?.name ? rec.name : 'outro colega';
+      const ranges=vacationRanges(o).map(p=>fmt(p.start)+' a '+fmt(p.end)).join(' e ');
+      (hit==='r'?clash:near).push({who,ranges});
     }
-    return near?'o':'g';
+    return {type:clash.length?'r':near.length?'o':'g',clash,near};
   }
+  function conflictType(r){ return conflictInfo(r).type; }
   async function pullAgenda(){
     if(!firebaseReady || !firebaseUser || !firebaseDb || !firebaseFns) return;
     try{
@@ -1692,9 +1704,11 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
         : '';
       const requestTs=Number(x.requestedAt||x.createdAt||x.updatedAt||Date.now());
       const requestDate=fmt(new Date(requestTs));
-      const ct=conflictType(x);
+      const ci=conflictInfo(x), ct=ci.type;
+      const ciLines=[...ci.clash.map(c=>`<div class="status clash">🔴 Mesmos dias das férias de <b>${escapeHtml(c.who)}</b> (${c.ranges}).</div>`),
+                     ...ci.near.map(c=>`<div class="status near">🟠 Perto das férias de <b>${escapeHtml(c.who)}</b> (${c.ranges}).</div>`)].join('');
       return `<div class="record">
-        <div class="top"><div><div class="name">👤 ${escapeHtml(x.name)}</div><div class="request-date">📅 Data da solicitação: ${requestDate}</div></div><span class="badge ${ct==='r'?'err':ct==='o'?'warn':''}">${ct==='r'?'⚠️ Conflito de período':ct==='o'?'🟠 Período próximo':'Sem conflito'}</span></div>
+        <div class="top"><div><div class="name">👤 ${escapeHtml(x.name)}</div><div class="request-date">📅 Data da solicitação: ${requestDate}</div></div><span class="badge ${ct==='r'?'err':ct==='o'?'warn':''}">${ct==='r'?'🔴 Conflito':ct==='o'?'🟠 Período próximo':'🟢 Sem conflito'}</span></div>
         ${(has2||miss>0)?`<div class="period-label">1º período · ${Number(x.days||1)} dias</div>`:''}
         <div class="info"${(has2||miss>0)?' style="margin-top:5px"':''}>
           <div>🏖️ Início<b>${fmt(s)}</b></div>
@@ -1702,6 +1716,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
           <div>✈️ Retorno<b>${fmt(b)}</b></div>
         </div>
         ${p2}
+        ${st!=='encerrada'?ciLines:''}
         ${miss>0 && st!=='encerrada'?`<div class="status warn">⚠️ Falta o 2º período (${miss} dias). Toque em ✏️ Editar e escolha a data.</div>`:''}
         ${Number(x.sold)>0?`<div class="sold-tag">🔒 ${Number(x.sold)} dias vendidos (abono)</div>`:''}
         <div class="ra"><button data-edit="${x.id}">✏️ Editar</button>${canManageRecords?`<button data-delete="${x.id}">🗑️ Apagar</button>`:''}</div>
