@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Férias">
 <title>Controle de Férias</title>
-<meta name="app-version" content="2026-09-24-v21-segundo-periodo">
+<meta name="app-version" content="2026-09-24-v22-vender-clt">
 <style>
 :root{
   --blue:#0797e6;--blue2:#1976df;--ink:#12375d;--line:#d8e9f3;
@@ -90,6 +90,13 @@ button,input{font:inherit}button{cursor:pointer}
 .period-title{font-size:12px;font-weight:900;color:#0d6f9f;margin:0 0 8px}
 .period-title.second{margin-top:14px}
 .period-label{font-size:11px;font-weight:900;color:#0d6f9f;margin-top:9px}
+.sell-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:12px;padding:9px 11px;border:1.5px solid var(--line);border-radius:13px;background:#fbfeff}
+.sell-row label{display:flex;align-items:center;gap:8px;font-weight:900;font-size:13px;margin:0}
+.sell-row input{width:20px;height:20px;accent-color:var(--green);margin:0}
+.clt-btn{border:0;border-radius:10px;padding:8px 10px;background:#eaf5ff;color:#0d5f8f;font-weight:900;font-size:12px;white-space:nowrap}
+.sell-note{display:none;margin-top:7px;padding:8px 10px;border-radius:11px;background:#e7f8ee;color:#087446;font-size:11px;font-weight:800;line-height:1.35}
+.clt-warn{display:none;margin-top:8px;padding:8px 10px;border-radius:11px;background:#ffe8e8;color:#a52222;font-size:12px;font-weight:800;line-height:1.35}
+.sold-tag{margin-top:9px;padding:7px 10px;border-radius:10px;background:#e7f8ee;color:#087446;font-size:11px;font-weight:900}
 
 .days{display:flex;align-items:center;gap:6px;margin-top:12px}
 .days label{font-weight:900;margin-right:auto;font-size:13px;white-space:nowrap}
@@ -392,7 +399,13 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     <button class="round" id="plus">+</button>
   </div>
   <input class="range" id="range" type="range" min="1" max="30" value="12">
-  <div class="scale"><span>1</span><span>30</span></div>
+  <div class="scale"><span>1</span><span id="scaleMax">30</span></div>
+  <div class="sell-row">
+    <label><input type="checkbox" id="sellDays"> 💰 Vender 10 dias</label>
+    <button type="button" class="clt-btn" id="cltHelp">📘 Regras da CLT</button>
+  </div>
+  <div class="sell-note" id="sellNote">💰 Você tira 20 dias de descanso e recebe os outros 10 em dinheiro (abono).</div>
+  <div class="clt-warn" id="cltWarn"></div>
 
   <!-- 2º período: aparece sozinho quando os dias forem menos de 30 -->
   <div class="second-period" id="secondPeriod">
@@ -466,7 +479,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   <div class="quote">🌊 “Descanso hoje para voltar com mais energia amanhã!”<span>Férias fazem bem.</span></div>
 </section>
 
-<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 21</span></footer>
+<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 22</span></footer>
 </main>
 </div>
 
@@ -903,7 +916,27 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   const date = iso => new Date(iso + 'T00:00:00Z');
   const fmt = d => d.toLocaleDateString('pt-BR',{timeZone:'UTC'});
   const week = d => new Intl.DateTimeFormat('pt-BR',{weekday:'long',timeZone:'UTC'}).format(d);
-  const clamp = n => Math.max(1,Math.min(30,Number(n)||1));
+  // Total de dias de descanso: 30, ou 20 quando vende 10 dias (abono).
+  const totalDays = () => (document.getElementById('sellDays')?.checked ? 20 : 30);
+  const clamp = n => Math.max(1,Math.min(totalDays(),Number(n)||1));
+  // CLT art. 134 §1º: um período com pelo menos 14 dias e os outros com pelo menos 5.
+  function splitRuleError(n,d2){
+    if(d2<=0) return '';
+    if(Math.max(n,d2)<14) return `⚠️ ${n} + ${d2} dias não pode: pela CLT, um dos períodos precisa ter pelo menos 14 dias.`;
+    if(Math.min(n,d2)<5) return `⚠️ ${n} + ${d2} dias não pode: pela CLT, cada período precisa ter pelo menos 5 dias.`;
+    return '';
+  }
+  function setSellUI(){
+    const t=totalDays();
+    $('range').max=t;
+    $('scaleMax').textContent=t;
+    $('sellNote').style.display=$('sellDays').checked?'block':'none';
+  }
+  function applySellMode(){
+    setSellUI();
+    syncDays($('days').value);
+    calc(); renderCalendar2();
+  }
 
   if(navigator.storage?.persist){ navigator.storage.persist().catch(()=>{}); }
 
@@ -1136,7 +1169,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   }
 
   // ===== 2º PERÍODO =====
-  function secondDays(){ return 30-clamp($('days').value); }
+  function secondDays(){ return totalDays()-clamp($('days').value); }
   function periodsOverlap(iso1,n1,iso2,n2){
     const s1=date(iso1), e1=addDaysUTC(s1,n1-1), s2=date(iso2), e2=addDaysUTC(s2,n2-1);
     return s1<=e2 && s2<=e1;
@@ -1147,7 +1180,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     return x>=s && x<=e;
   }
   function updateSecondPeriod(){
-    const n=clamp($('days').value), d2=30-n;
+    const n=clamp($('days').value), d2=totalDays()-n;
     $('secondPeriod').classList.toggle('open',d2>0);
     if(d2>0){
       $('days1Echo').textContent=n;
@@ -1238,7 +1271,10 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
 
   function calc(){
     updateSecondPeriod();
-    const start=$('start').value, n=clamp($('days').value), d2=30-n, start2=$('start2').value;
+    const start=$('start').value, n=clamp($('days').value), d2=totalDays()-n, start2=$('start2').value;
+    const ruleErr=splitRuleError(n,d2);
+    $('cltWarn').textContent=ruleErr;
+    $('cltWarn').style.display=ruleErr?'block':'none';
     $('p1title').style.display=d2>0?'':'none';
     $('results2').style.display=d2>0?'':'none';
     $('p1days').textContent=n; $('p2days').textContent=d2;
@@ -1545,6 +1581,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
           <div>✈️ Retorno<b>${fmt(b)}</b></div>
         </div>
         ${p2}
+        ${Number(x.sold)>0?`<div class="sold-tag">💰 ${Number(x.sold)} dias vendidos (abono)</div>`:''}
         <div class="ra"><button data-edit="${x.id}">✏️ Editar</button>${canManageRecords?`<button data-delete="${x.id}">🗑️ Apagar</button>`:''}</div>
         <div class="status ${st==='aprovada'?'ok':st==='recusada'?'err':st==='encerrada'?'closed':''}">${label(st)}</div>
         ${st==='recusada' && x.reason ? `<div class="status err">📝 Motivo: ${escapeHtml(x.reason)}</div>` : ''}
@@ -1608,7 +1645,8 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
 
   function editRecord(id){
     const x=local().find(r=>String(r.id)===String(id));if(!x)return;
-    editId=x.id;$('name').value=x.name;$('start').value=x.start;setRequestDateDisplay(x.requestedAt);syncDays(x.days);
+    editId=x.id;$('name').value=x.name;$('start').value=x.start;setRequestDateDisplay(x.requestedAt);
+    $('sellDays').checked=Number(x.sold)>0; setSellUI(); syncDays(x.days);
     $('start2').value=(x.start2 && Number(x.days2)>0)?x.start2:'';
     const ctl=readControls().find(r=>String(r.name||'').trim().toLowerCase()===String(x.name||'').trim().toLowerCase());
     if(ctl){ $('admission').value=ctl.admission||''; loadHistory(ctl.history||[]); } else { $('admission').value=''; loadHistory([]); }
@@ -1668,7 +1706,13 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       alert('Data indisponível: '+h[near]+'. Escolha outra data.');
       return;
     }
-    // 2º período obrigatório quando o 1º tiver menos de 30 dias.
+    const ruleErr=splitRuleError(c.n,c.d2);
+    if(ruleErr){
+      alert(ruleErr.replace('⚠️ ','')+'\n\nToque em 📘 Regras da CLT para ver a explicação.');
+      $('cltWarn').scrollIntoView({behavior:'smooth',block:'center'});
+      return;
+    }
+    // 2º período obrigatório quando o 1º não usar todos os dias.
     const d2=c.d2;
     let start2='';
     if(d2>0){
@@ -1699,7 +1743,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     let nextStatus='pendente';
     if(old) nextStatus = old.status==='recusada' ? 'pendente' : (old.status || 'pendente');
     const now=Date.now();
-    const record={id,name,start:$('start').value,days:c.n,start2,days2:d2>0?d2:0,status:nextStatus,reason:nextStatus==='recusada'?'':(old?.reason||''),requestedAt:old?.requestedAt||now,updatedAt:now,ownerUid:old?.ownerUid||firebaseUser?.uid||'',ownerEmail:old?.ownerEmail||firebaseUser?.email||''};
+    const record={id,name,start:$('start').value,days:c.n,start2,days2:d2>0?d2:0,sold:$('sellDays').checked?10:0,status:nextStatus,reason:nextStatus==='recusada'?'':(old?.reason||''),requestedAt:old?.requestedAt||now,updatedAt:now,ownerUid:old?.ownerUid||firebaseUser?.uid||'',ownerEmail:old?.ownerEmail||firebaseUser?.email||''};
     const i=a.findIndex(r=>String(r.id)===String(id));
     if(i>=0)a[i]=record;else a.unshift(record);
     saveLocal(a); reset(); renderRecords();
@@ -1708,7 +1752,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   }
 
   function reset(){
-    editId=null;$('controlSaved').classList.remove('show');$('name').value='';$('start').value='';$('start2').value='';setRequestDateDisplay();$('admission').value='';loadHistory([]);syncDays(12);
+    editId=null;$('controlSaved').classList.remove('show');$('name').value='';$('start').value='';$('start2').value='';setRequestDateDisplay();$('admission').value='';loadHistory([]);$('sellDays').checked=false;setSellUI();syncDays(12);
     ['rs','re','rb','ws','we','wb'].forEach(id=>$(id).textContent='—');
     $('notice').textContent='Escolha uma data para calcular.';
     $('calendarHint').textContent='Toque no campo acima para escolher o início das férias.';
@@ -1821,9 +1865,10 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
         const s2=date(x.start2), e2=addDaysUTC(s2,Number(x.days2)-1), b2=addDaysUTC(e2,1);
         p2=[fmt(s2),fmt(e2),fmt(b2),Number(x.days2)];
       }
+      p2.push(Number(x.sold||0));
       return [x.name||'',fmt(new Date(Number(x.requestedAt||x.createdAt||x.updatedAt||Date.now()))),x.admission||'',x.start||'',fmt(e),fmt(b),Number(x.days||1),...p2,state(x),x.reason||''];
     });
-    const header=['Nome','Data da solicitação','Data de admissão','Início','Último dia','Retorno','Dias','2º período - Início','2º período - Último dia','2º período - Retorno','2º período - Dias','Status','Motivo da recusa'];
+    const header=['Nome','Data da solicitação','Data de admissão','Início','Último dia','Retorno','Dias','2º período - Início','2º período - Último dia','2º período - Retorno','2º período - Dias','Dias vendidos','Status','Motivo da recusa'];
     const esc=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
     const csv='\ufeff'+[header,...rows].map(r=>r.map(esc).join(';')).join('\r\n');
     const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
@@ -1849,6 +1894,16 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   $('historyToggle').onclick=()=>{const open=$('historyList').classList.toggle('open');$('addHistory').classList.toggle('open',open);$('historyToggle').textContent=open?'Ocultar histórico ▴':'Ver histórico ▾';};
   $('addHistory').onclick=()=>{ openHistoryEditor(); $('historyList').classList.add('open'); $('addHistory').classList.add('open'); $('historyToggle').textContent='Ocultar histórico ▴'; setTimeout(()=>$('newHistoryMonth')?.focus(),50); };
   $('saveControl').onclick=saveVacationControl;
+  $('sellDays').onchange=applySellMode;
+  $('cltHelp').onclick=()=>{
+    alert('📘 REGRAS DA CLT SOBRE FÉRIAS\n\n'
+      +'🏖️ DIREITO\nA cada 12 meses de trabalho, o funcionário tem direito a 30 dias de férias.\n\n'
+      +'✂️ DIVIDIR AS FÉRIAS (art. 134, §1º)\nCom a concordância do funcionário, as férias podem ser divididas em até 3 períodos:\n• um deles precisa ter pelo menos 14 dias;\n• os outros, pelo menos 5 dias cada.\nExemplos que podem: 30 · 18 + 12 · 15 + 15 · 14 + 16.\nExemplos que não podem: 4 + 26 · 10 + 10 (vendendo 10 dias).\nNeste aplicativo dá para lançar até 2 períodos.\n\n'
+      +'💰 VENDER DIAS – ABONO (art. 143)\nO funcionário pode vender até 1/3 das férias: no máximo 10 dias de 30. Ele descansa 20 dias e recebe os outros 10 em dinheiro. O pedido deve ser feito até 15 dias antes de completar o período de 12 meses.\nVendendo 10, os 20 dias podem ser tirados direto ou divididos (ex.: 14 + 6 ou 15 + 5).\n\n'
+      +'📅 INÍCIO DAS FÉRIAS (art. 134, §3º)\nAs férias não podem começar nos 2 dias antes de um feriado ou do dia de descanso semanal.\n\n'
+      +'💵 PAGAMENTO (art. 145)\nO pagamento das férias deve ser feito até 2 dias antes do início.\n\n'
+      +'⚠️ A empresa ou o acordo coletivo pode ter regras próprias. Em caso de dúvida, confirme com o RH.');
+  };
   $('name').addEventListener('blur',()=>{ if(!historyDraft.length && !$('admission').value) loadSavedControl(); });
   $('admission').addEventListener('change',()=>{ loadSavedControl(); renderHistorySummary(); });
 
@@ -1859,7 +1914,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     if(v!==e.target.value) e.target.value=v;
     if(v==='') return;
     const n=Number(v);
-    if(n>30){ syncDays(30); calc(); return; }
+    if(n>totalDays()){ syncDays(totalDays()); calc(); return; }
     if(n>=1){ $('range').value=n; calc(); }
   };
   $('days').onblur=()=>{ syncDays($('days').value); calc(); renderCalendar2(); };
@@ -2053,6 +2108,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   // Inicialização
   setRequestDateDisplay();
   buildCalendarQuick();
+  setSellUI();
   renderCalendar();
   renderCalendar2();
   calc();
