@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Férias">
 <title>Controle de Férias</title>
-<meta name="app-version" content="2026-09-23-v20-dias-digitar">
+<meta name="app-version" content="2026-09-24-v21-segundo-periodo">
 <style>
 :root{
   --blue:#0797e6;--blue2:#1976df;--ink:#12375d;--line:#d8e9f3;
@@ -75,10 +75,21 @@ button,input{font:inherit}button{cursor:pointer}
 .cal-day:active{background:#e6f4fc}
 .cal-day.today{color:var(--blue);box-shadow:0 0 0 1px #0797e666 inset}
 .cal-day.selected{background:var(--blue);color:#fff;box-shadow:none}
+.cal-day.first-period{background:#e7f8ee;color:#087446}
 .cal-day.empty{visibility:hidden}
 .calendar-hint{text-align:center;margin-top:6px;font-size:11px;font-weight:800;color:#60788b;background:#eef8ff;border-radius:9px;padding:6px 8px}
 .calendar-hint.ok{background:#e7f8ee;color:#087446}
 .calendar-hint.err{background:#ffe8e8;color:#a52222}
+
+/* ===== 2º PERÍODO (abre sozinho quando os dias forem menos de 30) ===== */
+.second-period{display:none;margin-top:14px;padding:12px;border:2px dashed #9fd3f2;border-radius:16px;background:#f3fbff}
+.second-period.open{display:block}
+.second-head{display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:900;font-size:14px;margin-bottom:6px}
+.second-head span{font-size:11px;background:var(--blue);color:#fff;border-radius:999px;padding:4px 9px;white-space:nowrap}
+.second-note{font-size:12px;color:#45677f;font-weight:700;margin-bottom:9px;line-height:1.35}
+.period-title{font-size:12px;font-weight:900;color:#0d6f9f;margin:0 0 8px}
+.period-title.second{margin-top:14px}
+.period-label{font-size:11px;font-weight:900;color:#0d6f9f;margin-top:9px}
 
 .days{display:flex;align-items:center;gap:6px;margin-top:12px}
 .days label{font-weight:900;margin-right:auto;font-size:13px;white-space:nowrap}
@@ -330,6 +341,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     <div class="field"><label>👤 Nome</label><input class="input" id="name" placeholder="Digite o nome"></div>
     <div class="field"><label>📋 Data da solicitação</label><input class="input" id="requestDateDisplay" readonly></div>
     <input type="hidden" id="start">
+    <input type="hidden" id="start2">
     <div class="field"><label>🏢 Data de admissão <span style="font-weight:600;color:#71879a">(opcional)</span></label><input class="input" id="admission" type="date"></div>
     <div class="field" style="grid-column:1/-1">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
@@ -381,14 +393,47 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   </div>
   <input class="range" id="range" type="range" min="1" max="30" value="12">
   <div class="scale"><span>1</span><span>30</span></div>
+
+  <!-- 2º período: aparece sozinho quando os dias forem menos de 30 -->
+  <div class="second-period" id="secondPeriod">
+    <div class="second-head">🏖️ 2º período das férias <span id="days2Label">18 dias</span></div>
+    <div class="second-note">Você escolheu <b id="days1Echo">12</b> dias no 1º período. Escolha quando quer tirar os <b id="days2Echo">18</b> dias restantes.</div>
+    <button type="button" class="date-pick" id="datePick2" aria-expanded="false" aria-controls="calendarCard2">
+      <span id="datePickText2" class="ph">Toque para escolher a data</span>
+      <span class="arrow">📅 ▾</span>
+    </button>
+    <div class="calendar-card" id="calendarCard2">
+      <div class="calendar-head">
+        <button type="button" class="cal-nav" id="calPrev2" aria-label="Mês anterior">‹</button>
+        <div class="calendar-selects">
+          <select id="quickMonth2" aria-label="Escolher mês"></select>
+          <select id="quickYear2" aria-label="Escolher ano"></select>
+        </div>
+        <button type="button" class="cal-nav" id="calNext2" aria-label="Próximo mês">›</button>
+      </div>
+      <div class="calendar-week"><span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div>
+      <div class="calendar-grid" id="calendarGrid2"></div>
+    </div>
+    <div class="calendar-hint" id="calendarHint2">Os dias em verde são do 1º período.</div>
+  </div>
+
   <button class="calc" id="calc">☀️ Calcular minhas férias</button>
 </section>
 
 <section class="card">
+  <div class="period-title" id="p1title" style="display:none">1º período · <span id="p1days">12</span> dias</div>
   <div class="results">
     <div class="result start"><small>🌴 INÍCIO</small><strong id="rs">—</strong><span id="ws">—</span></div>
     <div class="result end"><small>☀️ ÚLTIMO DIA</small><strong id="re">—</strong><span id="we">—</span></div>
     <div class="result back" id="rbx"><small>✈️ RETORNO</small><strong id="rb">—</strong><span id="wb">—</span></div>
+  </div>
+  <div id="results2" style="display:none">
+    <div class="period-title second">2º período · <span id="p2days">18</span> dias</div>
+    <div class="results">
+      <div class="result start"><small>🌴 INÍCIO</small><strong id="rs2">—</strong><span id="ws2">—</span></div>
+      <div class="result end"><small>☀️ ÚLTIMO DIA</small><strong id="re2">—</strong><span id="we2">—</span></div>
+      <div class="result back" id="rbx2"><small>✈️ RETORNO</small><strong id="rb2">—</strong><span id="wb2">—</span></div>
+    </div>
   </div>
   <div class="notice" id="notice">Escolha uma data para calcular.</div>
   <div class="actions">
@@ -421,7 +466,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   <div class="quote">🌊 “Descanso hoje para voltar com mais energia amanhã!”<span>Férias fazem bem.</span></div>
 </section>
 
-<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 20</span></footer>
+<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 21</span></footer>
 </main>
 </div>
 
@@ -768,18 +813,30 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     }
   }
 
-  function vacationRange(r){
-    const start=date(r.start); const end=new Date(start);
-    end.setUTCDate(end.getUTCDate()+Number(r.days||1)-1); return {start,end};
+  // Cada registro pode ter 1 ou 2 períodos (ex.: 12 + 18 dias).
+  function vacationRanges(r){
+    const out=[];
+    if(r && r.start){
+      const s=date(r.start);
+      out.push({start:s,end:addDaysUTC(s,Number(r.days||1)-1)});
+    }
+    if(r && r.start2 && Number(r.days2)>0){
+      const s=date(r.start2);
+      out.push({start:s,end:addDaysUTC(s,Number(r.days2)-1)});
+    }
+    return out;
   }
   function conflictType(r){
-    const a=vacationRange(r); let near=false;
+    const mine=vacationRanges(r); let near=false;
     for(const o of agendaRecords){
       if(!o || String(o.id)===String(r.id) || o.status==='recusada') continue;
-      const b=vacationRange(o);
-      if(a.start<=b.end && a.end>=b.start) return 'r';
-      const gap=Math.min(Math.abs(a.start-b.end),Math.abs(b.start-a.end))/86400000;
-      if(gap<=3) near=true;
+      for(const a of mine){
+        for(const b of vacationRanges(o)){
+          if(a.start<=b.end && a.end>=b.start) return 'r';
+          const gap=Math.min(Math.abs(a.start-b.end),Math.abs(b.start-a.end))/86400000;
+          if(gap<=3) near=true;
+        }
+      }
     }
     return near?'o':'g';
   }
@@ -798,7 +855,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     const source = canManageRecords ? (records||[]) : (records||[]).filter(recordBelongsToCurrentUser);
     for(const r of source){
       if(!r || r.id==null || isDeleted(r.id)) continue;
-      const ag={start:r.start||'',days:Number(r.days||1),status:r.status||'pendente',updatedAt:r.updatedAt||Date.now(),deleted:false};
+      const ag={start:r.start||'',days:Number(r.days||1),start2:r.start2||'',days2:Number(r.days2||0),status:r.status||'pendente',updatedAt:r.updatedAt||Date.now(),deleted:false};
       const owner=r.ownerUid||(canManageRecords?'':firebaseUser.uid);
       if(owner) ag.ownerUid=owner;
       try{ await setDoc(doc(firebaseDb,'ferias_agenda',String(r.id)),ag,{merge:true}); }catch(err){ console.warn('Agenda não enviada',r.id,err); }
@@ -854,6 +911,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   let filter = 'todos';
   let calendarMonth = new Date();
   calendarMonth = new Date(Date.UTC(calendarMonth.getUTCFullYear(),calendarMonth.getUTCMonth(),1));
+  let calendarMonth2 = new Date(calendarMonth);
 
   const HOL = {
     '01-01':'Confraternização Universal','04-21':'Tiradentes','05-01':'Dia do Trabalho',
@@ -991,14 +1049,16 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
 
   function buildCalendarQuick(){
     const ms=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-    const qm=$('quickMonth'), qy=$('quickYear');
-    if(!qm||!qy)return;
-    qm.innerHTML=ms.map((n,i)=>`<option value="${i}">${n}</option>`).join('');
     const current=new Date().getUTCFullYear();
     let ys='';
     for(let y=current-5;y<=current+10;y++) ys+=`<option value="${y}">${y}</option>`;
-    qy.innerHTML=ys;
-    qm.value=calendarMonth.getUTCMonth(); qy.value=calendarMonth.getUTCFullYear();
+    [['quickMonth','quickYear'],['quickMonth2','quickYear2']].forEach(([mId,yId])=>{
+      const qm=$(mId), qy=$(yId);
+      if(!qm||!qy)return;
+      qm.innerHTML=ms.map((n,i)=>`<option value="${i}">${n}</option>`).join('');
+      qy.innerHTML=ys;
+    });
+    syncCalendarQuick(); syncCalendarQuick2();
   }
   function setRequestDateDisplay(ts){
     const d=ts?new Date(Number(ts)):new Date();
@@ -1009,20 +1069,23 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     if($('quickMonth'))$('quickMonth').value=calendarMonth.getUTCMonth();
     if($('quickYear'))$('quickYear').value=calendarMonth.getUTCFullYear();
   }
+  function syncCalendarQuick2(){
+    if($('quickMonth2'))$('quickMonth2').value=calendarMonth2.getUTCMonth();
+    if($('quickYear2'))$('quickYear2').value=calendarMonth2.getUTCFullYear();
+  }
+
+  function dateLabel(v){
+    const d=date(v);
+    const wd=new Intl.DateTimeFormat('pt-BR',{weekday:'short',timeZone:'UTC'}).format(d).replace('.','');
+    return wd.replace(/^./,c=>c.toUpperCase())+', '+fmt(d);
+  }
 
   // Campo que mostra a data escolhida e abre/fecha o calendário pequeno.
   function updateDatePick(){
     const v=$('start').value, t=$('datePickText');
     if(!t) return;
-    if(v){
-      const d=date(v);
-      const wd=new Intl.DateTimeFormat('pt-BR',{weekday:'short',timeZone:'UTC'}).format(d).replace('.','');
-      t.textContent=wd.replace(/^./,c=>c.toUpperCase())+', '+fmt(d);
-      t.className='';
-    }else{
-      t.textContent='Toque para escolher a data';
-      t.className='ph';
-    }
+    if(v){ t.textContent=dateLabel(v); t.className=''; }
+    else{ t.textContent='Toque para escolher a data'; t.className='ph'; }
   }
   function openCalendar(){
     const v=$('start').value;
@@ -1067,28 +1130,134 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
         $('calendarHint').textContent='✅ Data disponível. Início das férias selecionado.';
         $('calendarHint').className='calendar-hint ok';
         renderCalendar(); calc(); closeCalendar();
+        renderCalendar2();
       };
     });
   }
 
+  // ===== 2º PERÍODO =====
+  function secondDays(){ return 30-clamp($('days').value); }
+  function periodsOverlap(iso1,n1,iso2,n2){
+    const s1=date(iso1), e1=addDaysUTC(s1,n1-1), s2=date(iso2), e2=addDaysUTC(s2,n2-1);
+    return s1<=e2 && s2<=e1;
+  }
+  function inFirstPeriod(iso){
+    const v=$('start').value; if(!v) return false;
+    const s=date(v), e=addDaysUTC(s,clamp($('days').value)-1), x=date(iso);
+    return x>=s && x<=e;
+  }
+  function updateSecondPeriod(){
+    const n=clamp($('days').value), d2=30-n;
+    $('secondPeriod').classList.toggle('open',d2>0);
+    if(d2>0){
+      $('days1Echo').textContent=n;
+      $('days2Echo').textContent=d2;
+      $('days2Label').textContent=d2+(d2===1?' dia':' dias');
+    }else{
+      closeCalendar2();
+    }
+  }
+  function updateDatePick2(){
+    const v=$('start2').value, t=$('datePickText2');
+    if(!t) return;
+    if(v){ t.textContent=dateLabel(v); t.className=''; }
+    else{ t.textContent='Toque para escolher a data'; t.className='ph'; }
+  }
+  function openCalendar2(){
+    const v=$('start2').value, v1=$('start').value;
+    if(v){
+      const [y,m]=v.split('-').map(Number); calendarMonth2=new Date(Date.UTC(y,m-1,1));
+    }else if(v1){
+      // Sugere o mês logo depois do fim do 1º período.
+      const after=addDaysUTC(date(v1),clamp($('days').value));
+      calendarMonth2=new Date(Date.UTC(after.getUTCFullYear(),after.getUTCMonth(),1));
+    }
+    renderCalendar2();
+    $('calendarCard2').classList.add('open');
+    $('datePick2').classList.add('open');
+    $('datePick2').setAttribute('aria-expanded','true');
+  }
+  function closeCalendar2(){
+    $('calendarCard2').classList.remove('open');
+    $('datePick2').classList.remove('open');
+    $('datePick2').setAttribute('aria-expanded','false');
+  }
+  function renderCalendar2(){
+    syncCalendarQuick2();
+    updateDatePick2();
+    const y=calendarMonth2.getUTCFullYear(), m=calendarMonth2.getUTCMonth();
+    const first=new Date(Date.UTC(y,m,1)).getUTCDay();
+    const total=new Date(Date.UTC(y,m+1,0)).getUTCDate();
+    const now=new Date(), todayIso=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+    let html='';
+    for(let i=0;i<first;i++) html+='<div class="cal-day empty"></div>';
+    for(let day=1;day<=total;day++){
+      const iso=`${y}-${pad(m+1)}-${pad(day)}`;
+      const cls=($('start2').value===iso?' selected':(inFirstPeriod(iso)?' first-period':''))+(iso===todayIso?' today':'');
+      html+=`<button type="button" class="cal-day${cls}" data-date="${iso}">${day}</button>`;
+    }
+    $('calendarGrid2').innerHTML=html;
+    $('calendarGrid2').querySelectorAll('[data-date]').forEach(btn=>{
+      btn.onclick=()=>{
+        const v=btn.dataset.date, h2=holidays(Number(v.slice(0,4))), near=nearHoliday(v,h2);
+        if(near){
+          $('calendarHint2').textContent='⚠️ Data não disponível: até 2 dias do feriado '+h2[near]+'.';
+          $('calendarHint2').className='calendar-hint err';
+          return;
+        }
+        const v1=$('start').value;
+        if(v1 && periodsOverlap(v1,clamp($('days').value),v,secondDays())){
+          $('calendarHint2').textContent='⚠️ Essa data bate com o 1º período. Escolha outra.';
+          $('calendarHint2').className='calendar-hint err';
+          return;
+        }
+        $('start2').value=v;
+        $('calendarHint2').textContent='✅ Data disponível. Início do 2º período selecionado.';
+        $('calendarHint2').className='calendar-hint ok';
+        renderCalendar2(); calc(); closeCalendar2();
+      };
+    });
+  }
+
+  function clearPeriod(sfx){
+    ['rs','re','rb','ws','we','wb'].forEach(id=>$(id+sfx).textContent='—');
+    $('rbx'+sfx).className='result back';
+  }
+  function fillPeriod(iso,n,sfx){
+    const s=date(iso), e=addDaysUTC(s,n-1), b=addDaysUTC(e,1);
+    const cap=d=>week(d).replace(/^./,c=>c.toUpperCase());
+    $('rs'+sfx).textContent=fmt(s); $('ws'+sfx).textContent=cap(s);
+    $('re'+sfx).textContent=fmt(e); $('we'+sfx).textContent=cap(e);
+    $('rb'+sfx).textContent=fmt(b); $('wb'+sfx).textContent=cap(b);
+    const box=$('rbx'+sfx); box.className='result back';
+    let msg='🔵 Retorno em dia útil.';
+    if([0,6].includes(b.getUTCDay())){box.classList.add('red');msg='🔴 Retorno no fim de semana.'}
+    else if(b.getUTCDay()===5){box.classList.add('orange');msg='🟠 Retorno na sexta-feira.'}
+    return {s,e,b,msg};
+  }
+
   function calc(){
-    const start=$('start').value;
+    updateSecondPeriod();
+    const start=$('start').value, n=clamp($('days').value), d2=30-n, start2=$('start2').value;
+    $('p1title').style.display=d2>0?'':'none';
+    $('results2').style.display=d2>0?'':'none';
+    $('p1days').textContent=n; $('p2days').textContent=d2;
+    let p2=null;
+    if(d2>0){ if(start2) p2=fillPeriod(start2,d2,'2'); else clearPeriod('2'); }
     if(!start){
-      ['rs','re','rb','ws','we','wb'].forEach(id=>$(id).textContent='—');
+      clearPeriod('');
       $('notice').textContent='Escolha uma data para calcular.';
       return null;
     }
-    const n=clamp($('days').value), s=date(start), e=new Date(s), b=new Date(s);
-    e.setUTCDate(e.getUTCDate()+n-1); b.setTime(e); b.setUTCDate(b.getUTCDate()+1);
-    $('rs').textContent=fmt(s); $('ws').textContent=week(s).replace(/^./,c=>c.toUpperCase());
-    $('re').textContent=fmt(e); $('we').textContent=week(e).replace(/^./,c=>c.toUpperCase());
-    $('rb').textContent=fmt(b); $('wb').textContent=week(b).replace(/^./,c=>c.toUpperCase());
-    $('rbx').className='result back';
-    let msg='🔵 Retorno em dia útil.';
-    if([0,6].includes(b.getUTCDay())){$('rbx').classList.add('red');msg='🔴 Retorno no fim de semana.'}
-    else if(b.getUTCDay()===5){$('rbx').classList.add('orange');msg='🟠 Retorno na sexta-feira.'}
-    $('notice').textContent=msg+' Último dia: '+fmt(e)+' · Retorno: '+fmt(b)+'.';
-    return {s,e,b,n};
+    const p=fillPeriod(start,n,'');
+    let html=(d2>0?'<b>1º período:</b> ':'')+p.msg+' Último dia: '+fmt(p.e)+' · Retorno: '+fmt(p.b)+'.';
+    if(d2>0){
+      html+='<br>'+(p2
+        ? '<b>2º período:</b> '+p2.msg+' Último dia: '+fmt(p2.e)+' · Retorno: '+fmt(p2.b)+'.'
+        : '📅 Falta escolher a data do 2º período ('+d2+' dias).');
+    }
+    $('notice').innerHTML=html;
+    return {s:p.s,e:p.e,b:p.b,n,d2,start2};
   }
 
 
@@ -1345,6 +1514,17 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     $('records').innerHTML=filtered.map(x=>{
       const s=date(x.start),e=new Date(s);e.setUTCDate(e.getUTCDate()+Number(x.days||1)-1);
       const b=new Date(e);b.setUTCDate(b.getUTCDate()+1);
+      const has2=!!(x.start2 && Number(x.days2)>0);
+      let p2='';
+      if(has2){
+        const s2=date(x.start2), e2=addDaysUTC(s2,Number(x.days2)-1), b2=addDaysUTC(e2,1);
+        p2=`<div class="period-label">2º período · ${Number(x.days2)} dias</div>
+        <div class="info" style="margin-top:5px">
+          <div>🏖️ Início<b>${fmt(s2)}</b></div>
+          <div>☀️ Último dia<b>${fmt(e2)}</b></div>
+          <div>✈️ Retorno<b>${fmt(b2)}</b></div>
+        </div>`;
+      }
       const st=state(x);
       const actions = canManageRecords && st==='pendente'
         ? `<div class="approval"><button class="approve" data-approve="${x.id}">🟢 Aprovar férias</button><button class="reject" data-reject="${x.id}">🔴 Recusar férias</button></div>`
@@ -1358,11 +1538,13 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       const ct=conflictType(x);
       return `<div class="record">
         <div class="top"><div><div class="name">👤 ${escapeHtml(x.name)}</div><div class="request-date">📅 Data da solicitação: ${requestDate}</div></div><span class="badge ${ct==='r'?'err':ct==='o'?'warn':''}">${ct==='r'?'⚠️ Conflito de período':ct==='o'?'🟠 Período próximo':'Sem conflito'}</span></div>
-        <div class="info">
+        ${has2?`<div class="period-label">1º período · ${Number(x.days||1)} dias</div>`:''}
+        <div class="info"${has2?' style="margin-top:5px"':''}>
           <div>🏖️ Início<b>${fmt(s)}</b></div>
           <div>☀️ Último dia<b>${fmt(e)}</b></div>
           <div>✈️ Retorno<b>${fmt(b)}</b></div>
         </div>
+        ${p2}
         <div class="ra"><button data-edit="${x.id}">✏️ Editar</button>${canManageRecords?`<button data-delete="${x.id}">🗑️ Apagar</button>`:''}</div>
         <div class="status ${st==='aprovada'?'ok':st==='recusada'?'err':st==='encerrada'?'closed':''}">${label(st)}</div>
         ${st==='recusada' && x.reason ? `<div class="status err">📝 Motivo: ${escapeHtml(x.reason)}</div>` : ''}
@@ -1427,13 +1609,18 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   function editRecord(id){
     const x=local().find(r=>String(r.id)===String(id));if(!x)return;
     editId=x.id;$('name').value=x.name;$('start').value=x.start;setRequestDateDisplay(x.requestedAt);syncDays(x.days);
+    $('start2').value=(x.start2 && Number(x.days2)>0)?x.start2:'';
     const ctl=readControls().find(r=>String(r.name||'').trim().toLowerCase()===String(x.name||'').trim().toLowerCase());
     if(ctl){ $('admission').value=ctl.admission||''; loadHistory(ctl.history||[]); } else { $('admission').value=''; loadHistory([]); }
     renderHistoryList();renderHistorySummary();
     $('calendarHint').textContent='✏️ Registro carregado. Toque na data para alterar.';
     $('calendarHint').className='calendar-hint';
+    $('calendarHint2').textContent='Os dias em verde são do 1º período.';
+    $('calendarHint2').className='calendar-hint';
     const [y,m]=x.start.split('-').map(Number);calendarMonth=new Date(Date.UTC(y,m-1,1));
-    closeCalendar();renderCalendar();calc();
+    if($('start2').value){ const [y2,m2]=$('start2').value.split('-').map(Number); calendarMonth2=new Date(Date.UTC(y2,m2-1,1)); }
+    else calendarMonth2=new Date(calendarMonth);
+    closeCalendar();closeCalendar2();renderCalendar();renderCalendar2();calc();
     setTimeout(()=>$('datePick')?.scrollIntoView({behavior:'smooth',block:'center'}),80);
   }
 
@@ -1464,6 +1651,12 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     renderRecords();
   }
 
+  function showSecondError(msg){
+    $('calendarHint2').textContent=msg;
+    $('calendarHint2').className='calendar-hint err';
+    $('secondPeriod').scrollIntoView({behavior:'smooth',block:'center'});
+  }
+
   function saveRecord(){
     const c=calc(), name=($('name').value.trim() || String(firebaseUser?.displayName||'').trim());
     if(name && !$('name').value.trim()) $('name').value=name;
@@ -1475,6 +1668,28 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       alert('Data indisponível: '+h[near]+'. Escolha outra data.');
       return;
     }
+    // 2º período obrigatório quando o 1º tiver menos de 30 dias.
+    const d2=c.d2;
+    let start2='';
+    if(d2>0){
+      start2=$('start2').value;
+      if(!start2){
+        showSecondError('📅 Escolha a data do 2º período ('+d2+' dias).');
+        alert('Você lançou '+c.n+' dias. Escolha também a data do 2º período ('+d2+' dias).');
+        return;
+      }
+      const hh=holidays(Number(start2.slice(0,4))), near2=nearHoliday(start2,hh);
+      if(near2){
+        showSecondError('⚠️ Data não disponível: até 2 dias do feriado '+hh[near2]+'.');
+        alert('2º período indisponível: '+hh[near2]+'. Escolha outra data.');
+        return;
+      }
+      if(periodsOverlap($('start').value,c.n,start2,d2)){
+        showSecondError('⚠️ O 2º período bate com o 1º. Escolha outra data.');
+        alert('O 2º período está batendo com o 1º. Escolha outra data para o 2º período.');
+        return;
+      }
+    }
     const a=local(), id=editId||Date.now();
     const old=a.find(r=>String(r.id)===String(id));
     if(old && !canManageRecords && ['aprovada','encerrada'].includes(old.status)){
@@ -1484,7 +1699,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     let nextStatus='pendente';
     if(old) nextStatus = old.status==='recusada' ? 'pendente' : (old.status || 'pendente');
     const now=Date.now();
-    const record={id,name,start:$('start').value,days:c.n,status:nextStatus,reason:nextStatus==='recusada'?'':(old?.reason||''),requestedAt:old?.requestedAt||now,updatedAt:now,ownerUid:old?.ownerUid||firebaseUser?.uid||'',ownerEmail:old?.ownerEmail||firebaseUser?.email||''};
+    const record={id,name,start:$('start').value,days:c.n,start2,days2:d2>0?d2:0,status:nextStatus,reason:nextStatus==='recusada'?'':(old?.reason||''),requestedAt:old?.requestedAt||now,updatedAt:now,ownerUid:old?.ownerUid||firebaseUser?.uid||'',ownerEmail:old?.ownerEmail||firebaseUser?.email||''};
     const i=a.findIndex(r=>String(r.id)===String(id));
     if(i>=0)a[i]=record;else a.unshift(record);
     saveLocal(a); reset(); renderRecords();
@@ -1493,14 +1708,17 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   }
 
   function reset(){
-    editId=null;$('controlSaved').classList.remove('show');$('name').value='';$('start').value='';setRequestDateDisplay();$('admission').value='';loadHistory([]);syncDays(12);
+    editId=null;$('controlSaved').classList.remove('show');$('name').value='';$('start').value='';$('start2').value='';setRequestDateDisplay();$('admission').value='';loadHistory([]);syncDays(12);
     ['rs','re','rb','ws','we','wb'].forEach(id=>$(id).textContent='—');
     $('notice').textContent='Escolha uma data para calcular.';
     $('calendarHint').textContent='Toque no campo acima para escolher o início das férias.';
     $('calendarHint').className='calendar-hint';
+    $('calendarHint2').textContent='Os dias em verde são do 1º período.';
+    $('calendarHint2').className='calendar-hint';
     calendarMonth=new Date();calendarMonth=new Date(Date.UTC(calendarMonth.getUTCFullYear(),calendarMonth.getUTCMonth(),1));
-    closeCalendar();
-    renderCalendar();
+    calendarMonth2=new Date(calendarMonth);
+    closeCalendar();closeCalendar2();
+    renderCalendar();renderCalendar2();calc();
   }
 
   function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
@@ -1598,9 +1816,14 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     const rows=local().map(x=>{
       const s=date(x.start),e=new Date(s);e.setUTCDate(e.getUTCDate()+Number(x.days||1)-1);
       const b=new Date(e);b.setUTCDate(b.getUTCDate()+1);
-      return [x.name||'',fmt(new Date(Number(x.requestedAt||x.createdAt||x.updatedAt||Date.now()))),x.admission||'',x.start||'',fmt(e),fmt(b),Number(x.days||1),state(x),x.reason||''];
+      let p2=['','','',''];
+      if(x.start2 && Number(x.days2)>0){
+        const s2=date(x.start2), e2=addDaysUTC(s2,Number(x.days2)-1), b2=addDaysUTC(e2,1);
+        p2=[fmt(s2),fmt(e2),fmt(b2),Number(x.days2)];
+      }
+      return [x.name||'',fmt(new Date(Number(x.requestedAt||x.createdAt||x.updatedAt||Date.now()))),x.admission||'',x.start||'',fmt(e),fmt(b),Number(x.days||1),...p2,state(x),x.reason||''];
     });
-    const header=['Nome','Data da solicitação','Data de admissão','Início','Último dia','Retorno','Dias','Status','Motivo da recusa'];
+    const header=['Nome','Data da solicitação','Data de admissão','Início','Último dia','Retorno','Dias','2º período - Início','2º período - Último dia','2º período - Retorno','2º período - Dias','Status','Motivo da recusa'];
     const esc=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
     const csv='\ufeff'+[header,...rows].map(r=>r.map(esc).join(';')).join('\r\n');
     const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
@@ -1615,6 +1838,11 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   $('calNext').onclick=()=>{calendarMonth.setUTCMonth(calendarMonth.getUTCMonth()+1);renderCalendar()};
   $('quickMonth').onchange=()=>{calendarMonth.setUTCMonth(Number($('quickMonth').value));renderCalendar();};
   $('quickYear').onchange=()=>{calendarMonth.setUTCFullYear(Number($('quickYear').value));renderCalendar();};
+  $('datePick2').onclick=()=>{ $('calendarCard2').classList.contains('open') ? closeCalendar2() : openCalendar2(); };
+  $('calPrev2').onclick=()=>{calendarMonth2.setUTCMonth(calendarMonth2.getUTCMonth()-1);renderCalendar2()};
+  $('calNext2').onclick=()=>{calendarMonth2.setUTCMonth(calendarMonth2.getUTCMonth()+1);renderCalendar2()};
+  $('quickMonth2').onchange=()=>{calendarMonth2.setUTCMonth(Number($('quickMonth2').value));renderCalendar2();};
+  $('quickYear2').onchange=()=>{calendarMonth2.setUTCFullYear(Number($('quickYear2').value));renderCalendar2();};
   $('historyHelp').onclick=()=>{
     alert('❓ COMO USAR O HISTÓRICO\n\nEsta parte é OPCIONAL. Ela serve para informar a data de admissão e registrar férias que o funcionário já realizou.\n\n📚 Para que serve?\n• Ajuda o aplicativo a entender o histórico de férias do funcionário.\n• Com o histórico completo, será possível calcular os períodos de vencimento com mais segurança.\n\n💾 Salvar controle\nUse “Salvar controle” para guardar a admissão e o histórico sem lançar uma nova férias.\n\nSe você não precisar controlar o histórico, pode deixar esta parte vazia e usar normalmente o lançamento das próximas férias.\n\n⚠️ IMPORTANTE SOBRE A APROVAÇÃO\nA aprovação feita neste aplicativo NÃO lança as férias no sistema da empresa. Cada funcionário é responsável por lançar suas próprias férias no sistema/prontuário da empresa depois da aprovação.');
   };
@@ -1624,7 +1852,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   $('name').addEventListener('blur',()=>{ if(!historyDraft.length && !$('admission').value) loadSavedControl(); });
   $('admission').addEventListener('change',()=>{ loadSavedControl(); renderHistorySummary(); });
 
-  $('range').oninput=e=>{syncDays(e.target.value);calc()};
+  $('range').oninput=e=>{syncDays(e.target.value);calc();renderCalendar2()};
   // Deixa apagar e digitar o número à vontade; só corrige ao sair do campo.
   $('days').oninput=e=>{
     const v=e.target.value.replace(/\D/g,'');
@@ -1634,11 +1862,11 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     if(n>30){ syncDays(30); calc(); return; }
     if(n>=1){ $('range').value=n; calc(); }
   };
-  $('days').onblur=()=>{ syncDays($('days').value); calc(); };
+  $('days').onblur=()=>{ syncDays($('days').value); calc(); renderCalendar2(); };
   $('days').onfocus=e=>{ setTimeout(()=>e.target.select(),0); };
   $('days').onkeydown=e=>{ if(e.key==='Enter') e.target.blur(); };
-  $('minus').onclick=()=>{syncDays(Number($('days').value)-1);calc()};
-  $('plus').onclick=()=>{syncDays(Number($('days').value)+1);calc()};
+  $('minus').onclick=()=>{syncDays(Number($('days').value)-1);calc();renderCalendar2()};
+  $('plus').onclick=()=>{syncDays(Number($('days').value)+1);calc();renderCalendar2()};
   $('calc').onclick=calc;
   $('save').onclick=saveRecord;
   $('edit').onclick=()=>{const a=local();if(a.length)editRecord(a[0].id);else alert('Não há registros.')};
@@ -1826,6 +2054,8 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   setRequestDateDisplay();
   buildCalendarQuick();
   renderCalendar();
+  renderCalendar2();
+  calc();
   initFirebase();
   loadHistory([]);
   renderRecords();
