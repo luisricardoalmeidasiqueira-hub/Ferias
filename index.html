@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Férias">
 <title>Controle de Férias</title>
-<meta name="app-version" content="2026-09-24-v23.9-quadro-impressao">
+<meta name="app-version" content="2026-09-24-v24.0-botoes-menores">
 <style>
 :root{
   --blue:#0797e6;--blue2:#1976df;--ink:#12375d;--line:#d8e9f3;
@@ -182,9 +182,9 @@ button,input{font:inherit}button{cursor:pointer}
 .info div{font-size:10px;color:#70859a;background:#f2f7fa;border-radius:9px;padding:7px}
 .info b{display:block;color:var(--ink);font-size:11px;margin-top:2px}
 .ra{display:flex;gap:7px;margin-top:9px}
-.ra button{border:0;border-radius:9px;padding:8px 11px;font-weight:800}
+.ra button{border:0;border-radius:9px;padding:7px 11px;font-weight:800;font-size:13px;background:#e8f4fb;color:#075b8a}
 .approval{display:flex;gap:7px;margin-top:9px}
-.approval button{flex:1;border:0;border-radius:10px;padding:9px 8px;font-weight:900;color:#fff}
+.approval button{flex:1;border:0;border-radius:10px;padding:8px 6px;font-weight:900;font-size:13px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .approve{background:#16a765}.reject{background:#ef4444}
 .status{margin-top:9px;padding:9px 11px;border-radius:10px;background:#fff7df;color:#7a5700;font-size:11px;font-weight:800}
 .status.ok{background:#e7f8ee;color:#087446}
@@ -544,7 +544,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   <div class="quote">🌊 “Descanso hoje para voltar com mais energia amanhã!”<span>Férias fazem bem.</span></div>
 </section>
 
-<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 23.9</span></footer>
+<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 24.0</span></footer>
 </main>
 </div>
 
@@ -1683,10 +1683,10 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       const st=state(x);
       const actions = canManageRecords && st==='pendente'
         ? (miss>0
-          ? `<div class="approval"><button class="approve" disabled>🔒 Aprovar (falta 2º período)</button><button class="reject" data-reject="${x.id}">🔴 Recusar férias</button></div>`
-          : `<div class="approval"><button class="approve" data-approve="${x.id}">🟢 Aprovar férias</button><button class="reject" data-reject="${x.id}">🔴 Recusar férias</button></div>`)
+          ? `<div class="approval"><button class="approve" disabled>🔒 Falta 2º período</button><button class="reject" data-reject="${x.id}">✖️ Recusar</button></div>`
+          : `<div class="approval"><button class="approve" data-approve="${x.id}">✅ Aprovar</button><button class="reject" data-reject="${x.id}">✖️ Recusar</button></div>`)
         : canManageRecords && st==='aprovada'
-        ? `<div class="approval"><button class="approve" data-realizada="${x.id}">🏁 Marcar como realizada</button></div>`
+        ? `<div class="approval"><button class="approve" data-realizada="${x.id}">🏁 Realizada</button></div>`
         : st==='recusada'
         ? `<div class="approval"><button class="approve" data-edit="${x.id}">✏️ Alterar e reenviar</button></div>`
         : '';
