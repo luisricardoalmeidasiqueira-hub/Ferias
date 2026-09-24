@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Férias">
 <title>Controle de Férias</title>
-<meta name="app-version" content="2026-09-24-v22-vender-clt">
+<meta name="app-version" content="2026-09-24-v23.5-aviso-atualizacao">
 <style>
 :root{
   --blue:#0797e6;--blue2:#1976df;--ink:#12375d;--line:#d8e9f3;
@@ -96,6 +96,13 @@ button,input{font:inherit}button{cursor:pointer}
 .clt-btn{border:0;border-radius:10px;padding:8px 10px;background:#eaf5ff;color:#0d5f8f;font-weight:900;font-size:12px;white-space:nowrap}
 .sell-note{display:none;margin-top:7px;padding:8px 10px;border-radius:11px;background:#e7f8ee;color:#087446;font-size:11px;font-weight:800;line-height:1.35}
 .clt-warn{display:none;margin-top:8px;padding:8px 10px;border-radius:11px;background:#ffe8e8;color:#a52222;font-size:12px;font-weight:800;line-height:1.35}
+.update-banner{display:none;position:fixed;left:10px;right:10px;top:calc(env(safe-area-inset-top,0px) + 8px);z-index:10000;max-width:560px;margin:0 auto;padding:10px 10px 10px 14px;border-radius:16px;background:#075b8a;color:#fff;box-shadow:0 10px 28px #0005;align-items:center;gap:8px;font-weight:900;font-size:13px}
+.update-banner.show{display:flex}
+.update-banner span{flex:1;line-height:1.3}
+.update-banner .ub-go{border:0;border-radius:11px;padding:9px 11px;background:#ffd32f;color:#12375d;font-weight:900;font-size:13px;white-space:nowrap}
+.update-banner .ub-x{border:0;background:transparent;color:#cfe8f7;font-size:20px;font-weight:900;padding:0 4px;line-height:1}
+.update-toast{display:none;position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 10px);z-index:10000;padding:10px 16px;border-radius:999px;background:#13a56a;color:#fff;font-weight:900;font-size:13px;box-shadow:0 8px 22px #0004;white-space:nowrap}
+.update-toast.show{display:block}
 .sold-tag{margin-top:9px;padding:7px 10px;border-radius:10px;background:#e7f8ee;color:#087446;font-size:11px;font-weight:900}
 
 .days{display:flex;align-items:center;gap:6px;margin-top:12px}
@@ -239,6 +246,13 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
 
 </head>
 <body>
+
+<div class="update-banner" id="updateBanner" role="status">
+  <span>🆕 Nova versão disponível</span>
+  <button type="button" class="ub-go" id="updateBannerGo">Atualizar agora</button>
+  <button type="button" class="ub-x" id="updateBannerClose" aria-label="Fechar aviso">×</button>
+</div>
+<div class="update-toast" id="updateToast"></div>
 
 <header class="hero">
   <div class="palm">🌴</div><div class="sun"></div>
@@ -479,7 +493,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   <div class="quote">🌊 “Descanso hoje para voltar com mais energia amanhã!”<span>Férias fazem bem.</span></div>
 </section>
 
-<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 22</span></footer>
+<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 23.5</span></footer>
 </main>
 </div>
 
@@ -810,8 +824,13 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     }finally{ firebaseSyncing=false; }
   }
 
+  // Devolve a lista do que NÃO foi enviado (vazia = tudo certo).
   async function pushLocalToFirebase(records){
-    if(!firebaseReady || !firebaseUser || !firebaseDb) return;
+    const failed=[];
+    if(!firebaseReady || !firebaseUser || !firebaseDb){
+      (records||[]).forEach(r=>{ if(r && r.id!=null) failed.push({id:r.id,code:'sem-conexao'}); });
+      return failed;
+    }
     const {doc,setDoc}=firebaseFns;
     for(const r of records){
       if(!r || r.id==null || isDeleted(r.id)) continue;
@@ -822,8 +841,16 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
         else { payload.ownerUid=firebaseUser.uid; payload.ownerEmail=r.ownerEmail||firebaseUser.email||''; }
       }
       try{ await setDoc(doc(firebaseDb,'ferias',String(r.id)),payload,{merge:true}); }
-      catch(err){ console.warn('Registro não enviado ao Firebase',r.id,err); }
+      catch(err){ console.warn('Registro não enviado ao Firebase',r.id,err); failed.push({id:r.id,code:String(err?.code||'erro')}); }
     }
+    return failed;
+  }
+  function sendFailMessage(failed,what){
+    const code=failed[0]?.code||'erro';
+    const why=code.includes('permission')?'O Firebase recusou o envio (permissão negada).'
+      :code==='sem-conexao'?'O aplicativo está sem conexão com o Firebase.'
+      :'Não foi possível falar com o Firebase.';
+    return `⚠️ ${what} só neste aparelho.\n\n${why}\nOs outros ainda não estão vendo essa alteração.\n\nToque em 🔄 para tentar enviar de novo. Se continuar, avise o responsável pelo app.\n\nCódigo: ${code}`;
   }
 
   // Cada registro pode ter 1 ou 2 períodos (ex.: 12 + 18 dias).
@@ -1615,7 +1642,8 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     x.status='recusada'; x.reason=reason; x.updatedAt=Date.now();
     saveLocal(a); closeReject(); renderRecords();
     try{
-      await pushLocalToFirebase([x]);
+      const failed=await pushLocalToFirebase([x]);
+      if(failed.length){ setFirebaseStatus('Erro ao enviar'); alert(sendFailMessage(failed,'A recusa foi salva')); return; }
       await pushAgenda([x]);
       await pullAgenda();
       setFirebaseStatus('☁️ Firebase sincronizado');
@@ -1633,7 +1661,8 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     else return;
     x.updatedAt=Date.now(); saveLocal(a); renderRecords();
     try{
-      await pushLocalToFirebase([x]);
+      const failed=await pushLocalToFirebase([x]);
+      if(failed.length){ setFirebaseStatus('Erro ao enviar'); alert(sendFailMessage(failed,'O status foi alterado')); return; }
       await pushAgenda([x]);
       await pullAgenda();
       setFirebaseStatus('☁️ Firebase sincronizado');
@@ -1695,7 +1724,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     $('secondPeriod').scrollIntoView({behavior:'smooth',block:'center'});
   }
 
-  function saveRecord(){
+  async function saveRecord(){
     const c=calc(), name=($('name').value.trim() || String(firebaseUser?.displayName||'').trim());
     if(name && !$('name').value.trim()) $('name').value=name;
     if(!name||!c){alert('Preencha o nome e a data de início.');return;}
@@ -1747,8 +1776,20 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     const i=a.findIndex(r=>String(r.id)===String(id));
     if(i>=0)a[i]=record;else a.unshift(record);
     saveLocal(a); reset(); renderRecords();
-    pushLocalToFirebase([record]).then(()=>pushAgenda([record])).then(()=>pullAgenda()).catch(err=>console.warn('Envio falhou',err));
-    alert('Salvo.');
+    const btn=$('save'); btn.disabled=true; btn.textContent='⏳ Enviando...';
+    try{
+      const failed=await pushLocalToFirebase([record]);
+      if(failed.length){
+        setFirebaseStatus('Erro ao enviar');
+        alert(sendFailMessage(failed,'As férias foram salvas'));
+        return;
+      }
+      try{ await pushAgenda([record]); await pullAgenda(); }catch(err){ console.warn('Agenda não atualizada',err); }
+      setFirebaseStatus('☁️ Firebase sincronizado');
+      alert('✅ Salvo e enviado'+(record.status==='pendente'?' para aprovação.':'.'));
+    }finally{
+      btn.disabled=false; btn.textContent='💾 Salvar';
+    }
   }
 
   function reset(){
@@ -2060,23 +2101,66 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   };
   $('adminExportBtn').onclick=exportBackup;
 
-  // Atualização automática: busca a versão publicada no GitHub sem cache.
-  // Se for diferente desta, recarrega com a versão nova (serve também
-  // para o app instalado na tela de início do iPhone).
-  async function checkForUpdate(){
+  // ===== ATUALIZAÇÃO =====
+  // Ao abrir (ou voltar ao app) com o formulário vazio: atualiza sozinho.
+  // Se a pessoa estiver preenchendo algo: mostra a faixa "Nova versão disponível"
+  // e só atualiza quando ela tocar, para não perder nada.
+  const currentVersion=()=>document.querySelector('meta[name="app-version"]')?.content||'';
+  const versionLabel=v=>{ const m=String(v||'').match(/-v([\d.]+)/); return m?m[1]:''; };
+  async function fetchLatestVersion(){
+    const res=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});
+    if(!res.ok) return '';
+    const html=await res.text();
+    const m=html.match(/name="app-version"\s+content="([^"]+)"/);
+    return m?m[1]:'';
+  }
+  function formBusy(){
+    return !!($('start').value || $('start2').value || editId || $('admission').value || historyDraft.length
+      || $('rejectModal').classList.contains('open')
+      || $('calendarCard').classList.contains('open') || $('calendarCard2').classList.contains('open'));
+  }
+  let pendingVersion='';
+  function goToVersion(latest){
+    sessionStorage.setItem('ferias_updated_from',currentVersion());
+    location.replace(location.pathname+'?v='+encodeURIComponent(latest||Date.now()));
+  }
+  function showUpdateBanner(latest){
+    pendingVersion=latest;
+    const lbl=versionLabel(latest);
+    $('updateBanner').querySelector('span').textContent='🆕 Nova versão disponível'+(lbl?' ('+lbl+')':'');
+    $('updateBanner').classList.add('show');
+  }
+  async function checkForUpdate(mode){
     try{
-      const cur=document.querySelector('meta[name="app-version"]')?.content||'';
-      const res=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});
-      if(!res.ok) return;
-      const html=await res.text();
-      const m=html.match(/name="app-version"\s+content="([^"]+)"/);
-      const latest=m?m[1]:'';
-      if(!latest || latest===cur) return;
-      if(sessionStorage.getItem('ferias_update_tried')===latest) return;
-      sessionStorage.setItem('ferias_update_tried',latest);
-      location.replace(location.pathname+'?v='+encodeURIComponent(latest));
+      const cur=currentVersion(), latest=await fetchLatestVersion();
+      if(!latest || latest===cur){ $('updateBanner').classList.remove('show'); return; }
+      // Já tentou atualizar para esta versão e continuou na antiga: não fica em loop, só avisa.
+      const tried=sessionStorage.getItem('ferias_update_tried')===latest;
+      if(mode!=='interval' && !formBusy() && !tried){
+        sessionStorage.setItem('ferias_update_tried',latest);
+        goToVersion(latest);
+        return;
+      }
+      showUpdateBanner(latest);
     }catch(e){ console.warn('Verificação de atualização falhou',e); }
   }
+  function showUpdatedToast(){
+    const from=sessionStorage.getItem('ferias_updated_from');
+    if(from===null) return;
+    sessionStorage.removeItem('ferias_updated_from');
+    const cur=currentVersion();
+    if(from===cur) return;
+    const t=$('updateToast');
+    t.textContent='✅ Atualizado para a Versão '+(versionLabel(cur)||'nova');
+    t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'),3500);
+  }
+  $('updateBannerGo').onclick=()=>{
+    if(formBusy() && !confirm('Você está preenchendo algo. Se atualizar agora, o que não foi salvo será perdido. Atualizar mesmo assim?')) return;
+    sessionStorage.removeItem('ferias_update_tried');
+    goToVersion(pendingVersion);
+  };
+  $('updateBannerClose').onclick=()=>$('updateBanner').classList.remove('show');
   // Botão manual: busca a versão nova; se já estiver atualizado, sincroniza os dados.
   async function manualUpdate(){
     const btn=$('updateBtn'); if(btn){ btn.disabled=true; btn.textContent='⏳'; }
@@ -2088,13 +2172,13 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       const latest=m?m[1]:'';
       if(latest && latest!==cur){
         sessionStorage.removeItem('ferias_update_tried');
-        location.replace(location.pathname+'?v='+encodeURIComponent(latest));
+        goToVersion(latest);
         return;
       }
       if(firebaseUser){ await pullFirebase(); startLiveSync(); }
       alert('✅ O aplicativo já está na versão mais recente.'+(firebaseUser?' Os dados foram sincronizados.':''));
     }catch(e){
-      location.replace(location.pathname+'?v='+Date.now());
+      goToVersion('');
     }finally{
       if(btn){ btn.disabled=false; btn.textContent='🔄'; }
     }
@@ -2102,8 +2186,11 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   $('updateBtn').onclick=manualUpdate;
   $('updateLink').onclick=manualUpdate;
 
-  checkForUpdate();
-  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') checkForUpdate(); });
+  showUpdatedToast();
+  checkForUpdate('open');
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') checkForUpdate('return'); });
+  // Com o app aberto, confere a cada 5 minutos (só mostra a faixa, nunca recarrega sozinho).
+  setInterval(()=>{ if(document.visibilityState==='visible') checkForUpdate('interval'); },5*60*1000);
 
   // Inicialização
   setRequestDateDisplay();
