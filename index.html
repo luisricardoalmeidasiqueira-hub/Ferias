@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Férias">
 <title>Controle de Férias</title>
-<meta name="app-version" content="2026-09-23-v19-dias-compacto">
+<meta name="app-version" content="2026-09-23-v20-dias-digitar">
 <style>
 :root{
   --blue:#0797e6;--blue2:#1976df;--ink:#12375d;--line:#d8e9f3;
@@ -375,7 +375,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   <div class="days">
     <label>🏖️ Dias de férias</label>
     <button class="round" id="minus">−</button>
-    <input class="input num" id="days" type="number" min="1" max="30" value="12">
+    <input class="input num" id="days" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" value="12" aria-label="Quantidade de dias">
     <span style="font-weight:900">dias</span>
     <button class="round" id="plus">+</button>
   </div>
@@ -421,7 +421,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   <div class="quote">🌊 “Descanso hoje para voltar com mais energia amanhã!”<span>Férias fazem bem.</span></div>
 </section>
 
-<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 19</span></footer>
+<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 20</span></footer>
 </main>
 </div>
 
@@ -1625,7 +1625,18 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   $('admission').addEventListener('change',()=>{ loadSavedControl(); renderHistorySummary(); });
 
   $('range').oninput=e=>{syncDays(e.target.value);calc()};
-  $('days').oninput=e=>{syncDays(e.target.value);calc()};
+  // Deixa apagar e digitar o número à vontade; só corrige ao sair do campo.
+  $('days').oninput=e=>{
+    const v=e.target.value.replace(/\D/g,'');
+    if(v!==e.target.value) e.target.value=v;
+    if(v==='') return;
+    const n=Number(v);
+    if(n>30){ syncDays(30); calc(); return; }
+    if(n>=1){ $('range').value=n; calc(); }
+  };
+  $('days').onblur=()=>{ syncDays($('days').value); calc(); };
+  $('days').onfocus=e=>{ setTimeout(()=>e.target.select(),0); };
+  $('days').onkeydown=e=>{ if(e.key==='Enter') e.target.blur(); };
   $('minus').onclick=()=>{syncDays(Number($('days').value)-1);calc()};
   $('plus').onclick=()=>{syncDays(Number($('days').value)+1);calc()};
   $('calc').onclick=calc;
