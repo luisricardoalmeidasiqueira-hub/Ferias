@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Férias">
 <title>Controle de Férias</title>
-<meta name="app-version" content="2026-09-23-v18-botao-atualizar">
+<meta name="app-version" content="2026-09-23-v19-dias-compacto">
 <style>
 :root{
   --blue:#0797e6;--blue2:#1976df;--ink:#12375d;--line:#d8e9f3;
@@ -80,13 +80,14 @@ button,input{font:inherit}button{cursor:pointer}
 .calendar-hint.ok{background:#e7f8ee;color:#087446}
 .calendar-hint.err{background:#ffe8e8;color:#a52222}
 
-.days{display:flex;align-items:center;gap:8px;margin-top:14px}
-.days label{font-weight:900;margin-right:auto}
-.num{width:75px;text-align:center;font-weight:900;font-size:20px}
-.round{width:44px;height:44px;border:0;border-radius:50%;background:var(--blue);color:#fff;font-size:25px;font-weight:900}
-.range{width:100%;accent-color:var(--blue);margin-top:8px}
-.scale{display:flex;justify-content:space-between;font-size:11px;font-weight:800;color:#70879a}
-.calc{width:100%;border:0;border-radius:15px;margin-top:12px;padding:14px;background:linear-gradient(135deg,#0ca7f3,#1976df);color:#fff;font-weight:900;font-size:17px}
+.days{display:flex;align-items:center;gap:6px;margin-top:12px}
+.days label{font-weight:900;margin-right:auto;font-size:13px;white-space:nowrap}
+.days span{font-size:13px}
+.num{width:54px;height:36px;text-align:center;font-weight:900;font-size:16px;padding:0 4px;flex:0 0 54px}
+.round{width:34px;height:34px;flex:0 0 34px;border:0;border-radius:50%;background:var(--blue);color:#fff;font-size:20px;font-weight:900;line-height:1;padding:0}
+.range{width:100%;accent-color:var(--blue);margin-top:6px}
+.scale{display:flex;justify-content:space-between;font-size:10px;font-weight:800;color:#70879a}
+.calc{width:100%;border:0;border-radius:13px;margin-top:10px;padding:11px;background:linear-gradient(135deg,#0ca7f3,#1976df);color:#fff;font-weight:900;font-size:15px}
 
 .results{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .result{padding:14px;border-radius:17px}
@@ -372,7 +373,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   <div class="calendar-hint" id="calendarHint">Toque no campo acima para escolher o início das férias.</div>
 
   <div class="days">
-    <label>🏖️ Quantidade de dias</label>
+    <label>🏖️ Dias de férias</label>
     <button class="round" id="minus">−</button>
     <input class="input num" id="days" type="number" min="1" max="30" value="12">
     <span style="font-weight:900">dias</span>
@@ -420,7 +421,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   <div class="quote">🌊 “Descanso hoje para voltar com mais energia amanhã!”<span>Férias fazem bem.</span></div>
 </section>
 
-<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 18</span></footer>
+<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 19</span></footer>
 </main>
 </div>
 
