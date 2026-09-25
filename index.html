@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Férias">
 <title>Controle de Férias</title>
-<meta name="app-version" content="2026-09-24-v24.1-periodo-proximo">
+<meta name="app-version" content="2026-09-25-v24.3-feriado-compartilhar">
 <style>
 :root{
   --blue:#0797e6;--blue2:#1976df;--ink:#12375d;--line:#d8e9f3;
@@ -108,7 +108,11 @@ button,input{font:inherit}button{cursor:pointer}
 .alert-card.err{background:#ffe8e8;color:#a52222;border:1px solid #f5c2c2}
 .alert-card.info{background:#e7f5ff;color:#075b8a;border:1px solid #cfe4ef}
 .alert-card.warn{background:#fff6dc;color:#7a5700;border:1px solid #f1d58a}
-.alert-card button{margin-left:auto;border:0;background:transparent;color:inherit;font-size:20px;font-weight:900;line-height:1;padding:0 2px}
+.alert-card > button{margin-left:auto;border:0;background:transparent;color:inherit;font-size:20px;font-weight:900;line-height:1;padding:0 2px}
+.alert-go{display:inline-block;margin-top:8px;border:0;border-radius:9px;padding:7px 12px;background:#7a5700;color:#fff;font-weight:900;font-size:12px}
+.pend-box{margin-bottom:12px;padding:10px;border:1px solid #f1d58a;border-radius:12px;background:#fffaf0}
+.pend-box h3{margin:0 0 4px;font-size:14px;color:#7a5700}
+.pend-actions{display:flex;gap:6px;flex:0 0 auto}
 .dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#ef4444;margin-left:7px;vertical-align:middle;box-shadow:0 0 0 2px #fff}
 /* ===== QUADRO DE FÉRIAS PARA IMPRIMIR ===== */
 #printArea{display:none}
@@ -545,7 +549,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   <div class="quote">🌊 “Descanso hoje para voltar com mais energia amanhã!”<span>Férias fazem bem.</span></div>
 </section>
 
-<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 24.1</span></footer>
+<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 24.3</span></footer>
 </main>
 </div>
 
@@ -576,6 +580,12 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   // confirmar que a sessão é do Desenvolvedor ou de um administrador.
   let canManageRecords = false;
   let agendaRecords = [];
+  // ===== LIBERAÇÃO DE CADASTRO =====
+  // Conta nova fica aguardando até o Desenvolvedor liberar.
+  // Quem já usava o app antes desta versão continua entrando normalmente.
+  const RELEASE_TS=Date.UTC(2026,8,26,3,0,0); // 26/09/2026 00:00 (Brasília)
+  let registeringName='';
+  let pendingCount=0;
   const DELETED_KEY='ferias_deleted_ids';
   const SYNC_DELETE_VERSION=2;
   function deletedIds(){
@@ -646,6 +656,27 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
             }
           }catch(err){ console.warn('Não foi possível verificar bloqueio',err); }
         }
+        // Conta nova precisa ser liberada pelo Desenvolvedor.
+        if(user){
+          const lib=await checkLiberado(user);
+          if(!lib.ok){
+            const nm=registeringName||String(user.displayName||'').trim();
+            try{
+              await firebaseFns.setDoc(firebaseFns.doc(firebaseDb,'usuarios',user.uid),
+                {uid:user.uid,email:user.email||'',name:nm,pending:true,requestedAt:Date.now(),updatedAt:Date.now()},{merge:true});
+            }catch(err){ console.warn('Pedido de liberação não registrado',err); }
+            if(nm && firebaseFns.updateProfile && !user.displayName){ try{ await firebaseFns.updateProfile(user,{displayName:nm}); }catch(e){} }
+            registeringName='';
+            stopLiveSync();
+            sessionStorage.removeItem('ferias_session_ok');
+            try{ await authMod.signOut(firebaseAuth); }catch(e){}
+            setAuthStatus('⏳ Cadastro recebido! Aguarde a liberação do responsável pelo app. Depois é só entrar com seu e-mail e senha.','info');
+            return;
+          }
+          if(lib.veterano){
+            try{ await firebaseFns.setDoc(firebaseFns.doc(firebaseDb,'usuarios',user.uid),{veterano:true},{merge:true}); }catch(e){}
+          }
+        }
         firebaseUser=user||null;
         if(user){
           $('authStatus').className='auth-status';
@@ -661,6 +692,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
           await refreshRecordPermissions();
           await pullFirebase();
           startLiveSync();
+          refreshPending();
           if(document.getElementById('adminPanel')?.classList.contains('open')) refreshDeveloperPanel();
         }else{
           stopLiveSync();
@@ -678,6 +710,77 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       setFirebaseStatus('☁️ Firebase indisponível');
       setAuthStatus('Não foi possível iniciar o Firebase. Verifique a conexão e tente novamente.','error');
     }
+  }
+
+  async function checkLiberado(user){
+    const email=String(user.email||'').trim().toLowerCase();
+    if(email==='luissiqueir@hotmail.com') return {ok:true};
+    try{
+      const a=await firebaseFns.getDoc(firebaseFns.doc(firebaseDb,'admins',email));
+      if(a.exists() && a.data()?.role==='admin') return {ok:true};
+    }catch(e){}
+    // Quem já usava o app antes desta versão não fica travado.
+    try{
+      const u=await firebaseFns.getDoc(firebaseFns.doc(firebaseDb,'usuarios',user.uid));
+      if(u.exists()){
+        const d=u.data()||{}, seen=Number(d.lastLoginAt||d.updatedAt||0);
+        if(d.veterano===true || (!d.pending && seen && seen<RELEASE_TS)) return {ok:true,veterano:true};
+      }
+    }catch(e){}
+    try{
+      const l=await firebaseFns.getDoc(firebaseFns.doc(firebaseDb,'liberados',user.uid));
+      return {ok:l.exists()};
+    }catch(err){
+      // Regras novas ainda não publicadas: não trava ninguém.
+      console.warn('Liberação de cadastro indisponível (regras do Firebase?)',err);
+      return {ok:true};
+    }
+  }
+
+  // Lê usuários, bloqueados e liberados. Libera sozinho quem já usava o app.
+  async function loadUserState(){
+    const {collection,getDocs,doc,setDoc}=firebaseFns;
+    const [us,bl]=await Promise.all([
+      getDocs(collection(firebaseDb,'usuarios')),
+      getDocs(collection(firebaseDb,'bloqueados'))
+    ]);
+    const blocked=new Set(bl.docs.map(d=>d.id));
+    const users=us.docs.map(d=>({uid:d.id,...d.data()}));
+    let lib=null; const adm=new Set();
+    try{ const ls=await getDocs(collection(firebaseDb,'liberados')); lib=new Set(ls.docs.map(d=>d.id)); }
+    catch(err){ console.warn('Coleção liberados indisponível',err); }
+    try{ const as=await getDocs(collection(firebaseDb,'admins')); as.docs.forEach(d=>adm.add(String(d.id).toLowerCase())); }catch(e){}
+    const pending=[];
+    if(lib){
+      for(const u of users){
+        const em=String(u.email||'').trim().toLowerCase();
+        if(!em || blocked.has(u.uid) || lib.has(u.uid) || em==='luissiqueir@hotmail.com' || adm.has(em)) continue;
+        const seen=Number(u.lastLoginAt||u.updatedAt||0);
+        if(u.veterano===true || (!u.pending && seen && seen<RELEASE_TS)){
+          try{
+            await setDoc(doc(firebaseDb,'liberados',u.uid),{uid:u.uid,email:u.email||'',name:u.name||'',at:Date.now(),by:'automático (já usava o app)'});
+            lib.add(u.uid); continue;
+          }catch(e){}
+        }
+        pending.push(u);
+      }
+    }
+    return {users,blocked,lib,pending};
+  }
+
+  function updateDevDot(){
+    const b=$('developerBtn'); if(!b) return;
+    b.innerHTML='👨‍💻 Desenvolvedor'+(pendingCount?'<span class="dot" title="Cadastro aguardando liberação"></span>':'');
+  }
+
+  async function refreshPending(){
+    if(!isDeveloperLogged() || !firebaseDb || !firebaseFns){ pendingCount=0; updateDevDot(); return; }
+    try{
+      const st=await loadUserState();
+      pendingCount=st.pending.length;
+    }catch(err){ console.warn('Não foi possível ver cadastros pendentes',err); }
+    updateDevDot();
+    renderAlerts();
   }
 
   function setAuthStatus(message,type='info'){
@@ -770,6 +873,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       localStorage.setItem('ferias_remember_login', $('rememberLogin').checked ? '1' : '0');
       sessionStorage.setItem('ferias_session_ok','1');
       await applyLoginPersistence();
+      registeringName=loginName;
       const cred=await firebaseFns.createUserWithEmailAndPassword(firebaseAuth,email,password);
       await applyUserNameToAccount(cred.user,loginName);
       $('name').value=loginName;
@@ -997,6 +1101,12 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       applyCloudSnapshot(snap.docs.filter(d=>d.id!=='config').map(d=>({id:d.id,...d.data()})));
       setFirebaseStatus('☁️ Firebase sincronizado');
     },err=>console.warn('Tempo real indisponível',err)));
+    if(isDeveloperLogged()){
+      liveUnsubs.push(onSnapshot(collection(firebaseDb,'usuarios'),()=>{
+        refreshPending();
+        if($('adminPanel')?.classList.contains('open')) renderUserList();
+      },err=>console.warn('Cadastros em tempo real indisponível',err)));
+    }
     liveUnsubs.push(onSnapshot(collection(firebaseDb,'ferias_agenda'),snap=>{
       agendaRecords=filterDeleted(snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r.deleted!==true));
       renderRecords();
@@ -1063,9 +1173,11 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     const e=easter(y), add=(off,n)=>{const x=new Date(e);x.setUTCDate(x.getUTCDate()+off);m[x.toISOString().slice(0,10)]=n};
     add(-47,'Carnaval'); add(-2,'Sexta-feira Santa'); add(60,'Corpus Christi'); return m;
   }
+  // CLT art. 134 §3º: não pode começar nos 2 dias ANTES do feriado.
+  // Bloqueia o próprio feriado e os 2 dias antes. Depois do feriado pode.
   function nearHoliday(iso, h){
     const x=date(iso);
-    for(const k in h) if(Math.abs((x-date(k))/86400000)<=2) return k;
+    for(const k in h){ const diff=(date(k)-x)/86400000; if(diff>=0 && diff<=2) return k; }
     return null;
   }
   function readArray(key){
@@ -1255,7 +1367,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       btn.onclick=()=>{
         const v=btn.dataset.date, h2=holidays(Number(v.slice(0,4))), near=nearHoliday(v,h2);
         if(near){
-          $('calendarHint').textContent='⚠️ Data não disponível: até 2 dias do feriado '+h2[near]+'.';
+          $('calendarHint').textContent='⚠️ Data não disponível: nos 2 dias antes do feriado '+h2[near]+'.';
           $('calendarHint').className='calendar-hint err';
           return;
         }
@@ -1336,7 +1448,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       btn.onclick=()=>{
         const v=btn.dataset.date, h2=holidays(Number(v.slice(0,4))), near=nearHoliday(v,h2);
         if(near){
-          $('calendarHint2').textContent='⚠️ Data não disponível: até 2 dias do feriado '+h2[near]+'.';
+          $('calendarHint2').textContent='⚠️ Data não disponível: nos 2 dias antes do feriado '+h2[near]+'.';
           $('calendarHint2').className='calendar-hint err';
           return;
         }
@@ -1782,12 +1894,21 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       const key='adm:'+lines.join('|');
       if(lines.length && !dismissed.includes(key)) cards.push({cls:'warn',key,html:`👨‍💼 <b>Avisos da equipe</b><br>${lines.join('<br>')}`});
     }
+    if(isDeveloperLogged() && pendingCount>0){
+      const key='pend:'+pendingCount;
+      if(!dismissed.includes(key)) cards.unshift({cls:'warn',key,html:`👤 <b>${pendingCount} ${pendingCount===1?'cadastro aguardando':'cadastros aguardando'} sua liberação.</b><br><button type="button" class="alert-go" data-open-dev>Abrir e liberar</button>`});
+    }
     box.innerHTML=cards.map((c,i)=>`<div class="alert-card ${c.cls}"><div>${c.html}</div><button type="button" data-alert="${i}" aria-label="Fechar aviso">×</button></div>`).join('');
     box.querySelectorAll('[data-alert]').forEach(b=>b.onclick=()=>{
       const c=cards[Number(b.dataset.alert)]; if(!c) return;
       if(c.seen) markSeen(c.seen[0],c.seen[1]);
       else{ const d=dismissedList(); d.push(c.key); sessionStorage.setItem(DISMISS_KEY,JSON.stringify(d)); }
       renderAlerts();
+    });
+    box.querySelectorAll('[data-open-dev]').forEach(b=>b.onclick=()=>{
+      $('adminPanel').classList.add('open');
+      refreshDeveloperPanel();
+      setTimeout(()=>$('userList')?.scrollIntoView({behavior:'smooth',block:'start'}),120);
     });
     // Bolinha vermelha em "Férias cadastradas" enquanto houver resposta não vista.
     if(filter!=='controles') $('listTitle').innerHTML='📋 Férias cadastradas'+(unseen?'<span class="dot" title="Novidade"></span>':'');
@@ -1907,7 +2028,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     if(!name||!c){alert('Preencha o nome e a data de início.');return;}
     const h=holidays(c.s.getUTCFullYear()), near=nearHoliday($('start').value,h);
     if(near){
-      $('calendarHint').textContent='⚠️ Data não disponível: até 2 dias do feriado '+h[near]+'.';
+      $('calendarHint').textContent='⚠️ Data não disponível: nos 2 dias antes do feriado '+h[near]+'.';
       $('calendarHint').className='calendar-hint err';
       alert('Data indisponível: '+h[near]+'. Escolha outra data.');
       return;
@@ -1931,7 +2052,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       }
       const hh=holidays(Number(start2.slice(0,4))), near2=nearHoliday(start2,hh);
       if(near2){
-        showSecondError('⚠️ Data não disponível: até 2 dias do feriado '+hh[near2]+'.');
+        showSecondError('⚠️ Data não disponível: nos 2 dias antes do feriado '+hh[near2]+'.');
         alert('2º período indisponível: '+hh[near2]+'. Escolha outra data.');
         return;
       }
@@ -2009,17 +2130,15 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     const box=$('userList');
     if(!box || !isDeveloperLogged() || !firebaseDb || !firebaseFns) return;
     try{
-      const {collection,getDocs}=firebaseFns;
-      const [us,bl]=await Promise.all([
-        getDocs(collection(firebaseDb,'usuarios')),
-        getDocs(collection(firebaseDb,'bloqueados'))
-      ]);
-      const blocked=new Set(bl.docs.map(d=>d.id));
-      const users=us.docs.map(d=>({uid:d.id,...d.data()}))
+      const st=await loadUserState();
+      pendingCount=st.pending.length; updateDevDot();
+      const pendSet=new Set(st.pending.map(u=>u.uid));
+      const blocked=st.blocked;
+      const users=st.users.slice()
         .sort((a,b)=>String(a.name||a.email||'').localeCompare(String(b.name||b.email||''),'pt-BR'));
       // Pessoas com e-mail primeiro (ativas antes das excluídas).
       // Registros sem e-mail não são contas do app de Férias: ficam num grupo fechado.
-      const withEmail=users.filter(u=>String(u.email||'').trim())
+      const withEmail=users.filter(u=>String(u.email||'').trim() && !pendSet.has(u.uid))
         .sort((a,b)=>(blocked.has(a.uid)-blocked.has(b.uid)) || String(a.name||a.email).localeCompare(String(b.name||b.email),'pt-BR'));
       const noEmail=users.filter(u=>!String(u.email||'').trim());
       $('userCount').textContent=withEmail.length;
@@ -2033,7 +2152,10 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
           :`<button type="button" class="user-del" data-block="${escapeHtml(u.uid)}">🗑️ Excluir</button>`;
         return `<div class="user-row${isB?' blocked':''}"><div class="user-info"><b>👤 ${escapeHtml(u.name||'Sem nome')}</b><span>${escapeHtml(u.email||('Código: '+String(u.uid).slice(0,8)+'…'))}</span><small>${isB?'🚫 Acesso excluído':'Último acesso: '+when(u.lastLoginAt||u.updatedAt)}</small></div>${btn}</div>`;
       };
-      box.innerHTML=(withEmail.length?withEmail.map(row).join(''):'<div class="admin-note">Nenhuma pessoa com e-mail cadastrada ainda.</div>')
+      const pendHtml = st.lib===null
+        ? '<div class="admin-note" style="margin:0 0 10px">⚠️ Liberação de cadastro ainda desligada: publique as regras novas no Firebase.</div>'
+        : (st.pending.length ? `<div class="pend-box"><h3>⏳ Aguardando liberação (${st.pending.length})</h3>${st.pending.map(u=>`<div class="user-row"><div class="user-info"><b>👤 ${escapeHtml(u.name||'Sem nome')}</b><span>${escapeHtml(u.email||'')}</span><small>Pediu em: ${when(u.requestedAt||u.updatedAt)}</small></div><div class="pend-actions"><button type="button" class="user-back" data-liberar="${escapeHtml(u.uid)}">✅ Liberar</button><button type="button" class="user-del" data-recusar-user="${escapeHtml(u.uid)}">✖️</button></div></div>`).join('')}</div>` : '');
+      box.innerHTML=pendHtml+(withEmail.length?withEmail.map(row).join(''):'<div class="admin-note">Nenhuma pessoa com e-mail cadastrada ainda.</div>')
         + (noEmail.length?`<details class="user-others"><summary>📁 Outros registros sem e-mail (${noEmail.length})</summary>${noEmail.map(row).join('')}</details>`:'');
       box.querySelectorAll('[data-block]').forEach(b=>b.onclick=async()=>{
         const u=users.find(x=>x.uid===b.dataset.block); if(!u) return;
@@ -2044,6 +2166,23 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
           if(em){ try{ await firebaseFns.deleteDoc(firebaseFns.doc(firebaseDb,'admins',em)); }catch(e){} }
           await renderUserList(); renderAdminList();
         }catch(err){ console.error(err); alert('Não foi possível excluir o acesso. Confira se as regras novas foram publicadas.'); }
+      });
+      box.querySelectorAll('[data-liberar]').forEach(b=>b.onclick=async()=>{
+        const u=st.pending.find(x=>x.uid===b.dataset.liberar); if(!u) return;
+        try{
+          await firebaseFns.setDoc(firebaseFns.doc(firebaseDb,'liberados',u.uid),{uid:u.uid,email:u.email||'',name:u.name||'',at:Date.now(),by:OWNER_EMAIL});
+          try{ await firebaseFns.setDoc(firebaseFns.doc(firebaseDb,'usuarios',u.uid),{pending:false},{merge:true}); }catch(e){}
+          await renderUserList(); renderAlerts();
+          alert('✅ '+(u.name||u.email)+' liberado. Já pode entrar no app.');
+        }catch(err){ console.error(err); alert('Não foi possível liberar. Confira se as regras novas foram publicadas no Firebase.'); }
+      });
+      box.querySelectorAll('[data-recusar-user]').forEach(b=>b.onclick=async()=>{
+        const u=st.pending.find(x=>x.uid===b.dataset.recusarUser); if(!u) return;
+        if(!confirm(`Recusar o cadastro de ${u.name||u.email}?\n\nA pessoa não vai conseguir entrar no app.`)) return;
+        try{
+          await firebaseFns.setDoc(firebaseFns.doc(firebaseDb,'bloqueados',u.uid),{uid:u.uid,email:u.email||'',name:u.name||'',blockedAt:Date.now(),blockedBy:OWNER_EMAIL});
+          await renderUserList(); renderAlerts();
+        }catch(err){ console.error(err); alert('Não foi possível recusar o cadastro.'); }
       });
       box.querySelectorAll('[data-unblock]').forEach(b=>b.onclick=async()=>{
         const u=users.find(x=>x.uid===b.dataset.unblock); if(!u) return;
