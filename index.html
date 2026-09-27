@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Férias">
 <title>Controle de Férias</title>
-<meta name="app-version" content="2026-09-25-v24.3-feriado-compartilhar">
+<meta name="app-version" content="2026-09-27-v24.4-quadro-celular">
 <style>
 :root{
   --blue:#0797e6;--blue2:#1976df;--ink:#12375d;--line:#d8e9f3;
@@ -132,6 +132,32 @@ button,input{font:inherit}button{cursor:pointer}
   body.printing #printArea{display:block}
   .pa th,.pa tr.now td{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
+/* ===== QUADRO DE FÉRIAS NA TELA DO CELULAR ===== */
+.board-modal{display:none;position:fixed;inset:0;z-index:9000;background:#eef9ff;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:calc(env(safe-area-inset-top,0px) + 10px) 12px calc(env(safe-area-inset-bottom,0px) + 24px)}
+.board-modal.open{display:block}
+.bm-wrap{max-width:720px;margin:0 auto}
+.bm-head{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:8px;background:#eef9ff;padding:6px 0 8px}
+.bm-head h2{margin:0;font-size:18px;flex:1}
+.bm-print{border:0;border-radius:11px;padding:9px 12px;background:#0f766e;color:#fff;font-weight:900;font-size:13px;white-space:nowrap}
+.bm-close{border:0;border-radius:11px;padding:9px 12px;background:#dfe8ee;color:#234;font-weight:900;font-size:13px}
+.bm-sub{font-size:11px;color:#60788b;font-weight:800;margin:0 0 10px}
+.bm-sum{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px}
+.bm-sum div{background:#fff;border-radius:13px;padding:10px 12px;font-size:11px;font-weight:800;color:#60788b;box-shadow:0 4px 12px #07508012}
+.bm-sum b{display:block;font-size:22px;color:var(--ink);margin-top:2px}
+.bm-month{font-size:13px;font-weight:900;color:#0d6f9f;margin:14px 0 6px}
+.bm-item{background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:7px}
+.bm-item.now{border-color:#bfe6cf;background:#eefaf3}
+.bm-top{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.bm-name{font-weight:900;font-size:14px}
+.bm-tag{font-size:10px;font-weight:900;border-radius:999px;padding:4px 8px;background:#e7f5ff;color:#075b8a;white-space:nowrap}
+.bm-item.now .bm-tag{background:#13a56a;color:#fff}
+.bm-per{font-size:11px;color:#60788b;font-weight:800;margin-top:2px}
+.bm-dates{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:7px}
+.bm-dates div{font-size:10px;color:#70859a;background:#f2f7fa;border-radius:8px;padding:6px}
+.bm-item.now .bm-dates div{background:#fff}
+.bm-dates b{display:block;font-size:12px;color:var(--ink);margin-top:1px}
+.bm-empty{text-align:center;color:#71879a;font-weight:800;padding:26px 10px;line-height:1.5}
+.bm-pend{margin-top:14px;padding:10px 12px;border-radius:12px;background:#fff6dc;border:1px solid #f1d58a;color:#7a5700;font-size:12px;font-weight:800}
 /* ===== PARTE OPCIONAL (férias vencidas) ===== */
 .opt-box{grid-column:1/-1;border:1.5px dashed #c9dfec;border-radius:16px;background:#f9fcfe;padding:0 12px}
 .opt-box summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 0;font-weight:900;font-size:13px}
@@ -524,7 +550,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     <button class="act delete" id="del">🗑️ Apagar</button>
     <button class="act share" id="share">📤 Compartilhar</button>
     <button class="act" id="csvExportBtn" style="display:none;background:#0d78a8;color:#fff">📊 Exportar CSV</button>
-    <button class="act" id="printBtn" style="display:none;background:#0f766e;color:#fff">🖨️ Quadro de férias</button>
+    <button class="act" id="printBtn" style="display:none;background:#0f766e;color:#fff">📋 Quadro de férias</button>
   </div>
 </section>
 
@@ -549,8 +575,20 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   <div class="quote">🌊 “Descanso hoje para voltar com mais energia amanhã!”<span>Férias fazem bem.</span></div>
 </section>
 
-<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 24.3</span></footer>
+<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 24.4</span></footer>
 </main>
+</div>
+
+<div class="board-modal" id="boardModal" role="dialog" aria-modal="true" aria-label="Quadro de férias">
+  <div class="bm-wrap">
+    <div class="bm-head">
+      <h2>📋 Quadro de férias</h2>
+      <button type="button" class="bm-print" id="bmPrint">🖨️ Imprimir</button>
+      <button type="button" class="bm-close" id="bmClose" aria-label="Fechar">✕</button>
+    </div>
+    <div class="bm-sub" id="bmSub"></div>
+    <div id="bmBody"></div>
+  </div>
 </div>
 
 <div id="printArea"></div>
@@ -1088,6 +1126,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     const merged=filterDeleted(mergeRecordSets(local(),cloud));
     if(JSON.stringify(merged)!==JSON.stringify(protectedRecords)){
       saveLocal(merged); renderRecords();
+      if($('boardModal')?.classList.contains('open')) renderBoard();
       if(document.getElementById('adminPanel')?.classList.contains('open') && isDeveloperLogged()) adminRefresh();
     }
   }
@@ -2235,6 +2274,64 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     setTimeout(()=>URL.revokeObjectURL(url),1000);
   }
 
+  // Linhas do quadro: só férias aprovadas que ainda não terminaram.
+  function boardRows(){
+    const t=todayUTC(), rows=[];
+    local().filter(r=>state(r)==='aprovada').forEach(r=>{
+      const ranges=vacationRanges(r), two=ranges.length>1;
+      ranges.forEach((p,i)=>{
+        if(p.end<t) return;
+        const n=Math.round((p.end-p.start)/86400000)+1;
+        rows.push({name:r.name||'',label:two?(i+1)+'º período':'Período único',s:p.start,e:p.end,b:addDaysUTC(p.end,1),n,now:t>=p.start});
+      });
+    });
+    rows.sort((a,b)=>a.s-b.s || a.name.localeCompare(b.name,'pt-BR'));
+    return rows;
+  }
+
+  // Quadro na tela do celular (Desenvolvedor e administradores).
+  function openBoard(){
+    if(!canManageRecords){ alert('Somente o Desenvolvedor ou um administrador pode ver o quadro.'); return; }
+    renderBoard();
+    $('boardModal').classList.add('open');
+    $('boardModal').scrollTop=0;
+    document.body.style.overflow='hidden';
+  }
+  function closeBoard(){
+    $('boardModal').classList.remove('open');
+    document.body.style.overflow='';
+  }
+  function renderBoard(){
+    const t=todayUTC(), rows=boardRows();
+    const people=list=>new Set(list.map(x=>x.name.trim().toLowerCase())).size;
+    const nowRows=rows.filter(x=>x.now);
+    const soonRows=rows.filter(x=>!x.now && Math.round((x.s-t)/86400000)<=30);
+    const pend=visibleRecords().filter(r=>state(r)==='pendente').length;
+    $('bmSub').textContent='Férias aprovadas que ainda não terminaram · hoje, '+fmt(t);
+    let html=`<div class="bm-sum"><div>🌴 De férias agora<b>${people(nowRows)}</b></div><div>📅 Começam em até 30 dias<b>${people(soonRows)}</b></div></div>`;
+    if(!rows.length){
+      html+='<div class="bm-empty">Nenhuma férias aprovada pela frente.</div>';
+    }else{
+      let group='';
+      rows.forEach(x=>{
+        const key=x.now?'now':x.s.toISOString().slice(0,7);
+        if(key!==group){
+          group=key;
+          html+=`<div class="bm-month">${x.now?'🌴 De férias agora':'📅 '+fmtMonth(key)}</div>`;
+        }
+        const diff=Math.round((x.s-t)/86400000);
+        const tag=x.now?'Volta '+fmt(x.b):diff===1?'Começa amanhã':'Em '+diff+' dias';
+        html+=`<div class="bm-item${x.now?' now':''}">
+          <div class="bm-top"><div class="bm-name">👤 ${escapeHtml(x.name)}</div><span class="bm-tag">${tag}</span></div>
+          <div class="bm-per">${x.label} · ${x.n} dias</div>
+          <div class="bm-dates"><div>🏖️ Início<b>${fmt(x.s)}</b></div><div>☀️ Último dia<b>${fmt(x.e)}</b></div><div>✈️ Retorno<b>${fmt(x.b)}</b></div></div>
+        </div>`;
+      });
+    }
+    if(pend) html+=`<div class="bm-pend">🟡 ${pend} ${pend===1?'pedido aguardando':'pedidos aguardando'} aprovação. Eles só entram no quadro depois de aprovados.</div>`;
+    $('bmBody').innerHTML=html;
+  }
+
   // Quadro para imprimir e colocar no mural: só férias aprovadas que ainda não terminaram.
   function printBoard(){
     if(!canManageRecords){ alert('Somente o Desenvolvedor ou um administrador pode imprimir o quadro.'); return; }
@@ -2266,7 +2363,9 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   }
 
   // Eventos
-  $('printBtn').onclick=printBoard;
+  $('printBtn').onclick=openBoard;
+  $('bmPrint').onclick=printBoard;
+  $('bmClose').onclick=closeBoard;
   $('datePick').onclick=()=>{ $('calendarCard').classList.contains('open') ? closeCalendar() : openCalendar(); };
   $('calPrev').onclick=()=>{calendarMonth.setUTCMonth(calendarMonth.getUTCMonth()-1);renderCalendar()};
   $('calNext').onclick=()=>{calendarMonth.setUTCMonth(calendarMonth.getUTCMonth()+1);renderCalendar()};
@@ -2464,7 +2563,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   }
   function formBusy(){
     return !!($('start').value || $('start2').value || editId || $('admission').value || historyDraft.length
-      || $('rejectModal').classList.contains('open')
+      || $('rejectModal').classList.contains('open') || $('boardModal').classList.contains('open')
       || $('calendarCard').classList.contains('open') || $('calendarCard2').classList.contains('open'));
   }
   let pendingVersion='';
