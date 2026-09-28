@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Férias">
 <title>Controle de Férias</title>
-<meta name="app-version" content="2026-09-27-v24.4-quadro-celular">
+<meta name="app-version" content="2026-09-27-v24.5-aviso-novo-pedido">
 <style>
 :root{
   --blue:#0797e6;--blue2:#1976df;--ink:#12375d;--line:#d8e9f3;
@@ -174,6 +174,11 @@ button,input{font:inherit}button{cursor:pointer}
 .update-banner .ub-x{border:0;background:transparent;color:#cfe8f7;font-size:20px;font-weight:900;padding:0 4px;line-height:1}
 .update-toast{display:none;position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 10px);z-index:10000;padding:10px 16px;border-radius:999px;background:#13a56a;color:#fff;font-weight:900;font-size:13px;box-shadow:0 8px 22px #0004;white-space:nowrap}
 .update-toast.show{display:block}
+.req-toast{display:none;position:fixed;left:10px;right:10px;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);z-index:9500;max-width:560px;margin:0 auto;padding:12px 12px 12px 14px;border-radius:16px;background:#7a5700;color:#fff;box-shadow:0 10px 28px #0005;align-items:center;gap:10px;font-weight:900;font-size:13px;line-height:1.35}
+.req-toast.show{display:flex}
+.req-toast span{flex:1}
+.req-toast .rt-go{border:0;border-radius:11px;padding:8px 11px;background:#ffd32f;color:#12375d;font-weight:900;font-size:12px;white-space:nowrap}
+.req-toast .rt-x{border:0;background:transparent;color:#ffe7a6;font-size:20px;font-weight:900;padding:0 2px;line-height:1}
 .sold-tag{margin-top:9px;padding:7px 10px;border-radius:10px;background:#e7f8ee;color:#087446;font-size:11px;font-weight:900}
 
 .days{display:flex;align-items:center;gap:6px;margin-top:12px}
@@ -326,6 +331,11 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   <button type="button" class="ub-x" id="updateBannerClose" aria-label="Fechar aviso">×</button>
 </div>
 <div class="update-toast" id="updateToast"></div>
+<div class="req-toast" id="reqToast" role="status">
+  <span id="reqToastText">🆕 Novo pedido de férias</span>
+  <button type="button" class="rt-go" id="reqToastGo">Ver</button>
+  <button type="button" class="rt-x" id="reqToastClose" aria-label="Fechar aviso">×</button>
+</div>
 
 <header class="hero">
   <div class="palm">🌴</div><div class="sun"></div>
@@ -576,7 +586,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   <div class="quote">🌊 “Descanso hoje para voltar com mais energia amanhã!”<span>Férias fazem bem.</span></div>
 </section>
 
-<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 24.4</span></footer>
+<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 24.5</span></footer>
 </main>
 </div>
 
@@ -735,6 +745,8 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
           if(document.getElementById('adminPanel')?.classList.contains('open')) refreshDeveloperPanel();
         }else{
           stopLiveSync();
+          $('reqToast')?.classList.remove('show');
+          try{ navigator.clearAppBadge?.(); }catch(e){}
           canManageRecords=false;
           applyRecordPermissions();
           $('appContent').classList.add('auth-locked');
@@ -1950,8 +1962,42 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       refreshDeveloperPanel();
       setTimeout(()=>$('userList')?.scrollIntoView({behavior:'smooth',block:'start'}),120);
     });
+    notifyNewRequests();
     // Bolinha vermelha em "Férias cadastradas" enquanto houver resposta não vista.
     if(filter!=='controles') $('listTitle').innerHTML='📋 Férias cadastradas'+(unseen?'<span class="dot" title="Novidade"></span>':'');
+  }
+
+  // ===== AVISO DE PEDIDO NOVO (Desenvolvedor e administradores) =====
+  // Guarda neste aparelho quais pedidos "aguardando" já foram vistos.
+  // Quando aparece um que ainda não foi visto, mostra o aviso embaixo da tela,
+  // vibra (Android) e coloca o número de pendentes no ícone do app.
+  function knownPendKey(){ return 'ferias_known_pend_'+(firebaseUser?.uid||''); }
+  function notifyNewRequests(){
+    if(!firebaseUser || !canManageRecords) return;
+    const pend=visibleRecords().filter(r=>state(r)==='pendente');
+    try{
+      if(navigator.setAppBadge){ pend.length ? navigator.setAppBadge(pend.length) : navigator.clearAppBadge?.(); }
+    }catch(e){}
+    const key=knownPendKey(), raw=localStorage.getItem(key);
+    const ids=pend.map(r=>String(r.id));
+    if(raw===null){ localStorage.setItem(key,JSON.stringify(ids)); return; } // primeira vez: só registra
+    let known; try{ known=new Set(JSON.parse(raw)||[]); }catch{ known=new Set(); }
+    const fresh=pend.filter(r=>!known.has(String(r.id)) && !recordBelongsToCurrentUser(r));
+    localStorage.setItem(key,JSON.stringify(ids));
+    if(!fresh.length) return;
+    const r=fresh[0];
+    $('reqToastText').textContent = fresh.length===1
+      ? '🆕 Novo pedido de férias: '+(r.name||'funcionário')+' · início '+fmt(date(r.start))
+      : '🆕 '+fresh.length+' novos pedidos de férias aguardando aprovação';
+    $('reqToast').classList.add('show');
+    try{ navigator.vibrate?.([120,80,120]); }catch(e){}
+  }
+  function goToPending(){
+    $('reqToast').classList.remove('show');
+    closeBoard();
+    document.querySelectorAll('.filter').forEach(x=>x.classList.toggle('active',x.dataset.filter==='pendente'));
+    filter='pendente'; renderRecords();
+    setTimeout(()=>$('vacationsCard')?.scrollIntoView({behavior:'smooth',block:'start'}),60);
   }
 
   let rejectId = null;
@@ -2367,6 +2413,8 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   $('printBtn').onclick=openBoard;
   $('bmPrint').onclick=printBoard;
   $('bmClose').onclick=closeBoard;
+  $('reqToastGo').onclick=goToPending;
+  $('reqToastClose').onclick=()=>$('reqToast').classList.remove('show');
   $('datePick').onclick=()=>{ $('calendarCard').classList.contains('open') ? closeCalendar() : openCalendar(); };
   $('calPrev').onclick=()=>{calendarMonth.setUTCMonth(calendarMonth.getUTCMonth()-1);renderCalendar()};
   $('calNext').onclick=()=>{calendarMonth.setUTCMonth(calendarMonth.getUTCMonth()+1);renderCalendar()};
