@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Férias">
 <title>Controle de Férias</title>
-<meta name="app-version" content="2026-09-27-v24.6-lembrete-calendario">
+<meta name="app-version" content="2026-09-28-v24.7-instalar-app">
 <style>
 :root{
   --blue:#0797e6;--blue2:#1976df;--ink:#12375d;--line:#d8e9f3;
@@ -174,6 +174,10 @@ button,input{font:inherit}button{cursor:pointer}
 .update-banner .ub-x{border:0;background:transparent;color:#cfe8f7;font-size:20px;font-weight:900;padding:0 4px;line-height:1}
 .update-toast{display:none;position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 10px);z-index:10000;padding:10px 16px;border-radius:999px;background:#13a56a;color:#fff;font-weight:900;font-size:13px;box-shadow:0 8px 22px #0004;white-space:nowrap}
 .update-toast.show{display:block}
+.inst-steps{margin:0 0 12px;padding:0;list-style:none;display:grid;gap:8px}
+.inst-steps li{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:#f3f9fd;font-size:13px;font-weight:700;color:#35566b;line-height:1.4}
+.inst-steps b{color:var(--ink)}
+.inst-num{flex:0 0 24px;height:24px;border-radius:50%;background:var(--blue);color:#fff;font-weight:900;font-size:12px;display:flex;align-items:center;justify-content:center}
 .rem-opt{border:1.5px solid var(--line);border-radius:13px;padding:12px;background:#f7fcff;color:var(--ink);font-weight:900;font-size:14px;text-align:left}
 .rem-opt small{display:block;font-weight:700;color:#60788b;font-size:11px;margin-top:2px}
 .req-toast{display:none;position:fixed;left:10px;right:10px;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);z-index:9500;max-width:560px;margin:0 auto;padding:12px 12px 12px 14px;border-radius:16px;background:#7a5700;color:#fff;box-shadow:0 10px 28px #0005;align-items:center;gap:10px;font-weight:900;font-size:13px;line-height:1.35}
@@ -365,13 +369,15 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     <div class="auth-note" style="margin-top:6px">🔒 O aplicativo mantém a sessão do Firebase; sua senha não é gravada pelo aplicativo.</div>
     <div class="auth-status" id="authStatus"></div>
     <div class="auth-user" id="authUserInfo"></div>
-    <button type="button" class="update-link" id="updateLink">🔄 Atualizar aplicativo</button>
+    <button type="button" class="update-link" id="installLink">📲 Instalar o app no celular</button>
+    <button type="button" class="update-link" id="updateLink" style="margin-top:6px">🔄 Atualizar aplicativo</button>
   </div>
 </div>
 
 <div id="appContent" class="auth-locked">
 <div class="developer-area">
   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+    <button type="button" id="installBtn" class="update-btn" title="Instalar o app no celular" aria-label="Instalar o app no celular">📲</button>
     <button type="button" id="updateBtn" class="update-btn" title="Atualizar aplicativo" aria-label="Atualizar aplicativo">🔄</button>
     <span id="firebaseIndicator" class="firebase-indicator sync" title="Status da sincronização" aria-label="Status da sincronização">⏳</span>
     <button class="developer-btn" id="developerBtn">👨‍💻 Desenvolvedor</button>
@@ -449,6 +455,15 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       <button type="button" class="rem-opt" id="remGoogle">🟦 Google Agenda<small>Se você usa a agenda do Google</small></button>
       <button type="button" class="reject-cancel" id="remCancel">Cancelar</button>
     </div>
+  </div>
+</div>
+
+<div class="reject-modal" id="installModal" aria-hidden="true">
+  <div class="reject-box" role="dialog" aria-modal="true" aria-labelledby="installTitle">
+    <h3 id="installTitle" style="color:#075b8a">📲 Instalar o Controle de Férias</h3>
+    <p id="installIntro">Assim o app fica com ícone na tela do celular, igual aos outros aplicativos.</p>
+    <ol class="inst-steps" id="installSteps"></ol>
+    <button type="button" class="reject-cancel" id="installClose" style="width:100%">Entendi</button>
   </div>
 </div>
 
@@ -601,7 +616,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
 </section>
 
 <button type="button" class="update-link" id="remindLink" style="margin:4px auto 0">🔔 Lembrete no calendário</button>
-<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 24.6</span></footer>
+<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 24.7</span></footer>
 </main>
 </div>
 
@@ -2063,6 +2078,55 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     markReminderSet();
   }
 
+  // ===== INSTALAR O APP =====
+  // Android (Chrome): usa a janela de instalação do próprio celular.
+  // iPhone: o Safari não deixa instalar por botão, então mostra o passo a passo.
+  let deferredInstall=null;
+  const isStandalone=()=>window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone===true;
+  const isIOS=()=>/iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+  function refreshInstallUI(){
+    const show=!isStandalone();
+    ['installBtn','installLink'].forEach(id=>{ if($(id)) $(id).style.display=show?'':'none'; });
+  }
+  window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); deferredInstall=e; refreshInstallUI(); });
+  window.addEventListener('appinstalled',()=>{
+    deferredInstall=null; refreshInstallUI();
+    const t=$('updateToast'); t.textContent='✅ App instalado! Procure o ícone na tela do celular.';
+    t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),4000);
+  });
+  function step(n,html){ return `<li><span class="inst-num">${n}</span><span>${html}</span></li>`; }
+  function openInstallHelp(){
+    const ua=navigator.userAgent, otherIOSBrowser=/CriOS|FxiOS|EdgiOS/i.test(ua);
+    let html='';
+    if(isIOS()){
+      if(otherIOSBrowser) html+=step(1,'Abra este link no <b>Safari</b> (o navegador da bússola azul).');
+      const k=otherIOSBrowser?1:0;
+      html+=step(1+k,'Toque no botão <b>Compartilhar</b> (o quadrado com a setinha pra cima), na barra do Safari.');
+      html+=step(2+k,'Role a lista e toque em <b>“Adicionar à Tela de Início”</b>.');
+      html+=step(3+k,'Toque em <b>Adicionar</b>, no canto de cima. Pronto, o ícone aparece na tela do celular.');
+    }else{
+      html+=step(1,'Abra este link no <b>Chrome</b>.');
+      html+=step(2,'Toque nos <b>três pontinhos ⋮</b>, no canto de cima.');
+      html+=step(3,'Toque em <b>“Instalar app”</b> ou <b>“Adicionar à tela inicial”</b>.');
+      html+=step(4,'Confirme em <b>Instalar</b>. O ícone aparece na tela do celular.');
+    }
+    $('installSteps').innerHTML=html;
+    $('installModal').classList.add('open'); $('installModal').setAttribute('aria-hidden','false');
+  }
+  function closeInstallHelp(){ $('installModal').classList.remove('open'); $('installModal').setAttribute('aria-hidden','true'); }
+  async function doInstall(){
+    if(isStandalone()){ alert('✅ O app já está instalado e aberto pelo ícone.'); return; }
+    if(deferredInstall){
+      try{
+        deferredInstall.prompt();
+        await deferredInstall.userChoice;
+      }catch(e){ openInstallHelp(); }
+      deferredInstall=null;
+      return;
+    }
+    openInstallHelp();
+  }
+
   let rejectId = null;
   function openReject(id){
     rejectId=id; $('rejectReason').value=''; $('rejectError').classList.remove('show');
@@ -2477,6 +2541,11 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   $('bmPrint').onclick=printBoard;
   $('bmClose').onclick=closeBoard;
   $('reqToastGo').onclick=goToPending;
+  $('installBtn').onclick=doInstall;
+  $('installLink').onclick=doInstall;
+  $('installClose').onclick=closeInstallHelp;
+  $('installModal').onclick=e=>{if(e.target===$('installModal'))closeInstallHelp()};
+  refreshInstallUI();
   $('remindLink').onclick=openRemind;
   $('remIcs').onclick=createIcsReminder;
   $('remGoogle').onclick=openGoogleReminder;
