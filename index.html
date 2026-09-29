@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Férias">
 <title>Controle de Férias</title>
-<meta name="app-version" content="2026-09-28-v24.7-instalar-app">
+<meta name="app-version" content="2026-09-29-v24.8-cor-por-periodo">
 <style>
 :root{
   --blue:#0797e6;--blue2:#1976df;--ink:#12375d;--line:#d8e9f3;
@@ -174,6 +174,20 @@ button,input{font:inherit}button{cursor:pointer}
 .update-banner .ub-x{border:0;background:transparent;color:#cfe8f7;font-size:20px;font-weight:900;padding:0 4px;line-height:1}
 .update-toast{display:none;position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 10px);z-index:10000;padding:10px 16px;border-radius:999px;background:#13a56a;color:#fff;font-weight:900;font-size:13px;box-shadow:0 8px 22px #0004;white-space:nowrap}
 .update-toast.show{display:block}
+.pbox{margin-top:9px;padding:8px 9px 9px;border-radius:12px;border:1.5px solid #e1edf4;background:#fff}
+.pbox.g{border-color:#bfe6cf;background:#f3fbf6}
+.pbox.o{border-color:#f5c89a;background:#fff6ec}
+.pbox.r{border-color:#f5b5b5;background:#fff3f3}
+.pbox .info div{background:#ffffffd9}
+.pbox-head{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:11px;font-weight:900;color:#0d6f9f}
+.pchip{font-size:10px;font-weight:900;border-radius:999px;padding:3px 8px;white-space:nowrap}
+.pchip.g{background:#dff5e8;color:#087446}.pchip.o{background:#ffe3c7;color:#9a4a07}.pchip.r{background:#ffdcdc;color:#a52222}
+.pline{margin-top:6px;font-size:11px;font-weight:800;line-height:1.35}
+.pline.o{color:#9a4a07}.pline.r{color:#a52222}
+.pstat{display:none;margin-top:8px;padding:8px 10px;border-radius:10px;font-size:11px;font-weight:800;line-height:1.35}
+.pstat.g{display:block;background:#e7f8ee;color:#087446}
+.pstat.o{display:block;background:#ffe6cc;color:#9a4a07}
+.pstat.r{display:block;background:#ffe8e8;color:#a52222}
 .inst-steps{margin:0 0 12px;padding:0;list-style:none;display:grid;gap:8px}
 .inst-steps li{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:#f3f9fd;font-size:13px;font-weight:700;color:#35566b;line-height:1.4}
 .inst-steps b{color:var(--ink)}
@@ -575,6 +589,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     <div class="result end"><small>☀️ ÚLTIMO DIA</small><strong id="re">—</strong><span id="we">—</span></div>
     <div class="result back" id="rbx"><small>✈️ RETORNO</small><strong id="rb">—</strong><span id="wb">—</span></div>
   </div>
+  <div class="pstat" id="pstat1"></div>
   <div id="results2" style="display:none">
     <div class="period-title second">2º período · <span id="p2days">18</span> dias</div>
     <div class="results">
@@ -582,6 +597,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       <div class="result end"><small>☀️ ÚLTIMO DIA</small><strong id="re2">—</strong><span id="we2">—</span></div>
       <div class="result back" id="rbx2"><small>✈️ RETORNO</small><strong id="rb2">—</strong><span id="wb2">—</span></div>
     </div>
+    <div class="pstat" id="pstat2"></div>
   </div>
   <div class="notice" id="notice">Escolha uma data para calcular.</div>
   <div class="actions">
@@ -616,7 +632,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
 </section>
 
 <button type="button" class="update-link" id="remindLink" style="margin:4px auto 0">🔔 Lembrete no calendário</button>
-<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 24.7</span></footer>
+<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 24.8</span></footer>
 </main>
 </div>
 
@@ -1115,27 +1131,31 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   }
   // Quantos dias entre o fim de umas férias e o começo de outras contam como "perto".
   const NEAR_DAYS=7;
-  function conflictInfo(r){
-    const mine=vacationRanges(r), clash=[], near=[];
+  // Confere UM período contra as férias dos outros.
+  // Devolve só o período do colega que bate (não os dois).
+  function periodConflicts(a,selfId){
+    const clash=[], near=[];
     const byId=new Map(local().map(x=>[String(x.id),x]));
+    const txt=l=>l.map(p=>fmt(p.start)+' a '+fmt(p.end)).join(' e ');
     for(const o of agendaRecords){
-      if(!o || String(o.id)===String(r.id) || o.status==='recusada') continue;
-      let hit='';
-      for(const a of mine){
-        for(const b of vacationRanges(o)){
-          if(a.start<=b.end && a.end>=b.start){ hit='r'; break; }
-          const gap=Math.min(Math.abs(a.start-b.end),Math.abs(b.start-a.end))/86400000;
-          if(gap<=NEAR_DAYS && !hit) hit='o';
-        }
-        if(hit==='r') break;
+      if(!o || String(o.id)===String(selfId) || o.status==='recusada') continue;
+      const hitC=[], hitN=[];
+      for(const b of vacationRanges(o)){
+        if(a.start<=b.end && a.end>=b.start){ hitC.push(b); continue; }
+        const gap=Math.min(Math.abs(a.start-b.end),Math.abs(b.start-a.end))/86400000;
+        if(gap<=NEAR_DAYS) hitN.push(b);
       }
-      if(!hit) continue;
+      if(!hitC.length && !hitN.length) continue;
       const rec=byId.get(String(o.id));
       const who=canManageRecords && rec?.name ? rec.name : 'outro colega';
-      const ranges=vacationRanges(o).map(p=>fmt(p.start)+' a '+fmt(p.end)).join(' e ');
-      (hit==='r'?clash:near).push({who,ranges});
+      if(hitC.length) clash.push({who,ranges:txt(hitC)}); else near.push({who,ranges:txt(hitN)});
     }
     return {type:clash.length?'r':near.length?'o':'g',clash,near};
+  }
+  function conflictInfo(r){
+    const periods=vacationRanges(r).map(a=>periodConflicts(a,r.id));
+    const type=periods.some(p=>p.type==='r')?'r':periods.some(p=>p.type==='o')?'o':'g';
+    return {type,periods};
   }
   function conflictType(r){ return conflictInfo(r).type; }
   async function pullAgenda(){
@@ -1192,6 +1212,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     liveUnsubs.push(onSnapshot(collection(firebaseDb,'ferias_agenda'),snap=>{
       agendaRecords=filterDeleted(snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r.deleted!==true));
       renderRecords();
+      if($('start').value) calc();
     },err=>console.warn('Agenda em tempo real indisponível',err)));
   }
   document.addEventListener('visibilitychange',()=>{
@@ -1565,6 +1586,17 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     return {s,e,b,msg};
   }
 
+  function setPstat(id,iso,n,label){
+    const el=$(id); if(!el) return;
+    if(!iso){ el.className='pstat'; el.innerHTML=''; return; }
+    const s0=date(iso), pc=periodConflicts({start:s0,end:addDaysUTC(s0,n-1)},editId);
+    const list=l=>l.map(c=>`<b>${escapeHtml(c.who)}</b> (${c.ranges})`).join('; ');
+    el.className='pstat '+pc.type;
+    el.innerHTML = pc.type==='r' ? `🔴 ${label}: mesmos dias das férias de ${list(pc.clash)}. Escolha outra data.`
+      : pc.type==='o' ? `🟠 ${label}: perto das férias de ${list(pc.near)}. Se puder, escolha outra data.`
+      : `🟢 ${label}: sem conflito com outras férias.`;
+  }
+
   function calc(){
     updateSecondPeriod();
     const start=$('start').value, n=clamp($('days').value), d2=totalDays()-n, start2=$('start2').value;
@@ -1578,6 +1610,8 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     $('p1days').textContent=n; $('p2days').textContent=d2;
     let p2=null;
     if(d2>0){ if(start2) p2=fillPeriod(start2,d2,'2'); else clearPeriod('2'); }
+    setPstat('pstat1',start,n,d2>0?'1º período':'Suas férias');
+    setPstat('pstat2',d2>0?start2:'',d2,'2º período');
     if(!start){
       clearPeriod('');
       $('notice').textContent='Escolha uma data para calcular.';
@@ -1872,20 +1906,8 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       return;
     }
     $('records').innerHTML=filtered.map(x=>{
-      const s=date(x.start),e=new Date(s);e.setUTCDate(e.getUTCDate()+Number(x.days||1)-1);
-      const b=new Date(e);b.setUTCDate(b.getUTCDate()+1);
       const has2=!!(x.start2 && Number(x.days2)>0);
       const miss=missingDays(x);
-      let p2='';
-      if(has2){
-        const s2=date(x.start2), e2=addDaysUTC(s2,Number(x.days2)-1), b2=addDaysUTC(e2,1);
-        p2=`<div class="period-label">2º período · ${Number(x.days2)} dias</div>
-        <div class="info" style="margin-top:5px">
-          <div>🏖️ Início<b>${fmt(s2)}</b></div>
-          <div>☀️ Último dia<b>${fmt(e2)}</b></div>
-          <div>✈️ Retorno<b>${fmt(b2)}</b></div>
-        </div>`;
-      }
       const st=state(x);
       const actions = canManageRecords && st==='pendente'
         ? (miss>0
@@ -1898,19 +1920,25 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
         : '';
       const requestTs=Number(x.requestedAt||x.createdAt||x.updatedAt||Date.now());
       const requestDate=fmt(new Date(requestTs));
-      const ci=conflictInfo(x), ct=ci.type;
-      const ciLines=[...ci.clash.map(c=>`<div class="status clash">🔴 Mesmos dias das férias de <b>${escapeHtml(c.who)}</b> (${c.ranges}).</div>`),
-                     ...ci.near.map(c=>`<div class="status near">🟠 Perto das férias de <b>${escapeHtml(c.who)}</b> (${c.ranges}).</div>`)].join('');
+      // Cada período ganha a sua cor: 🟢 livre · 🟠 perto de outra férias · 🔴 mesmos dias.
+      const ci=conflictInfo(x), ct=ci.type, showC=st!=='encerrada';
+      const chip=t=>t==='r'?'🔴 Conflito':t==='o'?'🟠 Perto de outra férias':'🟢 Sem conflito';
+      const pLines=pc=>[...pc.clash.map(c=>`<div class="pline r">🔴 Mesmos dias das férias de <b>${escapeHtml(c.who)}</b> (${c.ranges}).</div>`),
+                        ...pc.near.map(c=>`<div class="pline o">🟠 Perto das férias de <b>${escapeHtml(c.who)}</b> (${c.ranges}).</div>`)].join('');
+      const pbox=(label,s0,n,pc)=>{
+        const e0=addDaysUTC(s0,n-1), b0=addDaysUTC(e0,1), t=(showC&&pc)?pc.type:'n';
+        const head=(label || (showC&&pc)) ? `<div class="pbox-head"><span>${label||''}</span>${(showC&&pc)?`<span class="pchip ${t}">${chip(t)}</span>`:''}</div>` : '';
+        return `<div class="pbox ${t}">${head}
+          <div class="info" style="margin-top:6px"><div>🏖️ Início<b>${fmt(s0)}</b></div><div>☀️ Último dia<b>${fmt(e0)}</b></div><div>✈️ Retorno<b>${fmt(b0)}</b></div></div>
+          ${(showC&&pc)?pLines(pc):''}
+        </div>`;
+      };
+      const two=has2||miss>0;
+      let periodsHtml=pbox(two?`1º período · ${Number(x.days||1)} dias`:'',date(x.start),Number(x.days||1),ci.periods[0]);
+      if(has2) periodsHtml+=pbox(`2º período · ${Number(x.days2)} dias`,date(x.start2),Number(x.days2),ci.periods[1]);
       return `<div class="record">
         <div class="top"><div><div class="name">👤 ${escapeHtml(x.name)}</div><div class="request-date">📅 Data da solicitação: ${requestDate}</div></div><span class="badge ${ct==='r'?'err':ct==='o'?'warn':''}">${ct==='r'?'🔴 Conflito':ct==='o'?'🟠 Período próximo':'🟢 Sem conflito'}</span></div>
-        ${(has2||miss>0)?`<div class="period-label">1º período · ${Number(x.days||1)} dias</div>`:''}
-        <div class="info"${(has2||miss>0)?' style="margin-top:5px"':''}>
-          <div>🏖️ Início<b>${fmt(s)}</b></div>
-          <div>☀️ Último dia<b>${fmt(e)}</b></div>
-          <div>✈️ Retorno<b>${fmt(b)}</b></div>
-        </div>
-        ${p2}
-        ${st!=='encerrada'?ciLines:''}
+        ${periodsHtml}
         ${miss>0 && st!=='encerrada'?`<div class="status warn">⚠️ Falta o 2º período (${miss} dias). Toque em ✏️ Editar e escolha a data.</div>`:''}
         ${Number(x.sold)>0?`<div class="sold-tag">🔒 ${Number(x.sold)} dias vendidos (abono)</div>`:''}
         <div class="ra"><button data-edit="${x.id}">✏️ Editar</button>${canManageRecords?`<button data-delete="${x.id}">🗑️ Apagar</button>`:''}</div>
