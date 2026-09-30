@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Férias">
 <title>Controle de Férias</title>
-<meta name="app-version" content="2026-09-29-v24.8-cor-por-periodo">
+<meta name="app-version" content="2026-09-30-v1.1-editar-por-periodo">
 <style>
 :root{
   --blue:#0797e6;--blue2:#1976df;--ink:#12375d;--line:#d8e9f3;
@@ -182,6 +182,7 @@ button,input{font:inherit}button{cursor:pointer}
 .pbox-head{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:11px;font-weight:900;color:#0d6f9f}
 .pchip{font-size:10px;font-weight:900;border-radius:999px;padding:3px 8px;white-space:nowrap}
 .pchip.g{background:#dff5e8;color:#087446}.pchip.o{background:#ffe3c7;color:#9a4a07}.pchip.r{background:#ffdcdc;color:#a52222}
+.pedit{display:block;width:100%;margin-top:7px;border:0;border-radius:9px;padding:7px 10px;background:#e8f4fb;color:#075b8a;font-weight:800;font-size:12px}
 .pline{margin-top:6px;font-size:11px;font-weight:800;line-height:1.35}
 .pline.o{color:#9a4a07}.pline.r{color:#a52222}
 .pstat{display:none;margin-top:8px;padding:8px 10px;border-radius:10px;font-size:11px;font-weight:800;line-height:1.35}
@@ -632,7 +633,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
 </section>
 
 <button type="button" class="update-link" id="remindLink" style="margin:4px auto 0">🔔 Lembrete no calendário</button>
-<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 24.8</span></footer>
+<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 1.1</span></footer>
 </main>
 </div>
 
@@ -1925,23 +1926,25 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       const chip=t=>t==='r'?'🔴 Conflito':t==='o'?'🟠 Perto de outra férias':'🟢 Sem conflito';
       const pLines=pc=>[...pc.clash.map(c=>`<div class="pline r">🔴 Mesmos dias das férias de <b>${escapeHtml(c.who)}</b> (${c.ranges}).</div>`),
                         ...pc.near.map(c=>`<div class="pline o">🟠 Perto das férias de <b>${escapeHtml(c.who)}</b> (${c.ranges}).</div>`)].join('');
-      const pbox=(label,s0,n,pc)=>{
+      const canEdit=canManageRecords || ['pendente','recusada'].includes(st);
+      const pbox=(label,s0,n,pc,idx)=>{
         const e0=addDaysUTC(s0,n-1), b0=addDaysUTC(e0,1), t=(showC&&pc)?pc.type:'n';
         const head=(label || (showC&&pc)) ? `<div class="pbox-head"><span>${label||''}</span>${(showC&&pc)?`<span class="pchip ${t}">${chip(t)}</span>`:''}</div>` : '';
         return `<div class="pbox ${t}">${head}
           <div class="info" style="margin-top:6px"><div>🏖️ Início<b>${fmt(s0)}</b></div><div>☀️ Último dia<b>${fmt(e0)}</b></div><div>✈️ Retorno<b>${fmt(b0)}</b></div></div>
           ${(showC&&pc)?pLines(pc):''}
+          ${canEdit?`<button type="button" class="pedit" data-edit-p="${x.id}" data-p="${idx}">✏️ ${two?'Editar '+idx+'º período':'Editar data'}</button>`:''}
         </div>`;
       };
       const two=has2||miss>0;
-      let periodsHtml=pbox(two?`1º período · ${Number(x.days||1)} dias`:'',date(x.start),Number(x.days||1),ci.periods[0]);
-      if(has2) periodsHtml+=pbox(`2º período · ${Number(x.days2)} dias`,date(x.start2),Number(x.days2),ci.periods[1]);
+      let periodsHtml=pbox(two?`1º período · ${Number(x.days||1)} dias`:'',date(x.start),Number(x.days||1),ci.periods[0],1);
+      if(has2) periodsHtml+=pbox(`2º período · ${Number(x.days2)} dias`,date(x.start2),Number(x.days2),ci.periods[1],2);
       return `<div class="record">
         <div class="top"><div><div class="name">👤 ${escapeHtml(x.name)}</div><div class="request-date">📅 Data da solicitação: ${requestDate}</div></div><span class="badge ${ct==='r'?'err':ct==='o'?'warn':''}">${ct==='r'?'🔴 Conflito':ct==='o'?'🟠 Período próximo':'🟢 Sem conflito'}</span></div>
         ${periodsHtml}
-        ${miss>0 && st!=='encerrada'?`<div class="status warn">⚠️ Falta o 2º período (${miss} dias). Toque em ✏️ Editar e escolha a data.</div>`:''}
+        ${miss>0 && st!=='encerrada'?`<div class="status warn">⚠️ Falta o 2º período (${miss} dias).${canEdit?`<button type="button" class="pedit" data-edit-p="${x.id}" data-p="2">➕ Escolher data do 2º período</button>`:''}</div>`:''}
         ${Number(x.sold)>0?`<div class="sold-tag">🔒 ${Number(x.sold)} dias vendidos (abono)</div>`:''}
-        <div class="ra"><button data-edit="${x.id}">✏️ Editar</button>${canManageRecords?`<button data-delete="${x.id}">🗑️ Apagar</button>`:''}</div>
+        ${canManageRecords?`<div class="ra"><button data-delete="${x.id}">🗑️ Apagar</button></div>`:''}
         <div class="status ${st==='aprovada'?'ok':st==='recusada'?'err':st==='encerrada'?'closed':''}">${label(st)}</div>
         ${st==='aprovada' && recordBelongsToCurrentUser(x) ? `<div class="status warn">📌 <b>Não esqueça:</b> lance estas férias no sistema da empresa. A aprovação aqui não lança sozinha.</div>` : ''}
         ${st==='recusada' && x.reason ? `<div class="status err">📝 Motivo: ${escapeHtml(x.reason)}</div>` : ''}
@@ -1954,6 +1957,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     $('records').querySelectorAll('[data-realizada]').forEach(b=>b.onclick=()=>setStatus(b.dataset.realizada,'encerrada'));
     $('records').querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>removeRecord(b.dataset.delete));
     $('records').querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editRecord(b.dataset.edit));
+    $('records').querySelectorAll('[data-edit-p]').forEach(b=>b.onclick=()=>editRecord(b.dataset.editP,Number(b.dataset.p)));
   }
 
   // ===== AVISOS =====
@@ -2208,7 +2212,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     }
   }
 
-  function editRecord(id){
+  function editRecord(id,which){
     const x=local().find(r=>String(r.id)===String(id));if(!x)return;
     editId=x.id;$('name').value=x.name;$('start').value=x.start;setRequestDateDisplay(x.requestedAt);
     $('sellDays').checked=Number(x.sold)>0; setSellUI(); syncDays(x.days);
@@ -2225,8 +2229,12 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     if($('start2').value){ const [y2,m2]=$('start2').value.split('-').map(Number); calendarMonth2=new Date(Date.UTC(y2,m2-1,1)); }
     else calendarMonth2=new Date(calendarMonth);
     closeCalendar();closeCalendar2();renderCalendar();renderCalendar2();calc();
-    // Se falta o 2º período, já leva direto para ele.
-    const target=(totalDays()-clamp($('days').value)>0 && !$('start2').value)?'datePick2':'datePick';
+    // which=1: vai direto no 1º período · which=2: vai direto no 2º.
+    // Sem escolher: se falta o 2º período, leva para ele.
+    const need2=totalDays()-clamp($('days').value)>0;
+    const go2= which===2 ? need2 : which===1 ? false : (need2 && !$('start2').value);
+    if(which===1) openCalendar(); else if(which===2 && need2) openCalendar2();
+    const target=go2?'datePick2':'datePick';
     setTimeout(()=>$(target)?.scrollIntoView({behavior:'smooth',block:'center'}),80);
   }
 
