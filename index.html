@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Férias">
 <title>Controle de Férias</title>
-<meta name="app-version" content="2026-09-30-v1.10-resultado-so-com-data">
+<meta name="app-version" content="2026-09-30-v1.11-ferias-de-quem">
 <style>
 :root{
   --blue:#0797e6;--blue2:#1976df;--ink:#12375d;--line:#d8e9f3;
@@ -215,6 +215,12 @@ button,input{font:inherit}button{cursor:pointer}
 .pchip.g{background:#dff5e8;color:#087446}.pchip.o{background:#ffe3c7;color:#9a4a07}.pchip.r{background:#ffdcdc;color:#a52222}
 .pedit{display:block;width:100%;margin-top:7px;border:0;border-radius:9px;padding:7px 10px;background:#e8f4fb;color:#075b8a;font-weight:800;font-size:12px}
 .pedit.prej{background:#ffe8e8;color:#a52222}
+.edit-banner{display:none;align-items:center;gap:8px;margin:0 0 12px;padding:10px 12px;border-radius:13px;background:#fff4d8;border:1px solid #f1d58a;color:#7a5700;font-weight:900;font-size:13px}
+.edit-banner.show{display:flex}
+.edit-banner span{flex:1;line-height:1.35}
+.edit-banner button{border:0;border-radius:10px;padding:8px 11px;background:#7a5700;color:#fff;font-weight:900;font-size:12px;white-space:nowrap}
+select.input{-webkit-appearance:none;appearance:none;font-weight:800;background-image:linear-gradient(45deg,transparent 50%,#60788b 50%),linear-gradient(135deg,#60788b 50%,transparent 50%);background-position:calc(100% - 18px) 50%,calc(100% - 13px) 50%;background-size:5px 5px;background-repeat:no-repeat;padding-right:32px}
+select.input:disabled{opacity:.7}
 .rej-note{display:block;width:100%;margin-top:9px;border:1px dashed #f5b5b5;border-radius:12px;padding:9px 11px;background:#fff6f6;color:#a52222;font-weight:800;font-size:12px;text-align:left;line-height:1.35}
 .pbtns{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:7px}
 .pbtns button{border:0;border-radius:9px;padding:9px 6px;font-weight:900;font-size:12px;color:#fff;white-space:nowrap}
@@ -529,6 +535,11 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
 <div id="alerts"></div>
 
 <section class="card" id="formCard">
+  <div class="edit-banner" id="editBanner"><span id="editBannerText">✏️ Editando</span><button type="button" id="cancelEdit">✖️ Cancelar</button></div>
+  <div class="field" id="forWhoWrap" style="display:none;margin-bottom:12px">
+    <label>👥 Férias de quem?</label>
+    <select class="input" id="forWho" aria-label="Férias de quem"></select>
+  </div>
   <div class="grid">
     <div class="field"><label>👤 Nome</label><input class="input" id="name" placeholder="Digite o nome"></div>
     <div class="field"><label>📋 Data da solicitação</label><input class="input" id="requestDateDisplay" readonly></div>
@@ -648,7 +659,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   </div>
   <div class="actions">
     <button class="act save" id="save">💾 Salvar</button>
-    <button class="act edit" id="edit">✏️ Editar</button>
+    <button class="act edit" id="edit" style="display:none">✖️ Cancelar edição</button>
     <button class="act delete" id="del">🗑️ Apagar</button>
     <button class="act share" id="share">📤 Compartilhar</button>
     <button class="act" id="csvExportBtn" style="display:none;background:#0d78a8;color:#fff">📊 Exportar CSV</button>
@@ -678,7 +689,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
 </section>
 
 <button type="button" class="update-link" id="remindLink" style="margin:4px auto 0">🔔 Lembrete no calendário</button>
-<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 1.10</span></footer>
+<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 1.11</span></footer>
 </main>
 </div>
 
@@ -737,6 +748,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   const RELEASE_TS=Date.UTC(2026,8,26,3,0,0); // 26/09/2026 00:00 (Brasília)
   let registeringName='';
   let pendingCount=0;
+  let usersCache=[];
   const DELETED_KEY='ferias_deleted_ids';
   const SYNC_DELETE_VERSION=2;
   function deletedIds(){
@@ -899,6 +911,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     ]);
     const blocked=new Set(bl.docs.map(d=>d.id));
     const users=us.docs.map(d=>({uid:d.id,...d.data()}));
+    usersCache=users.filter(u=>String(u.email||'').trim() && !blocked.has(u.uid));
     let lib=null; const adm=new Set();
     try{ const ls=await getDocs(collection(firebaseDb,'liberados')); lib=new Set(ls.docs.map(d=>d.id)); }
     catch(err){ console.warn('Coleção liberados indisponível',err); }
@@ -1083,13 +1096,14 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     const del=$('del');
     const csv=$('adminCsvBtn');
     const csvApp=$('csvExportBtn');
-    if(del) del.style.display=canManageRecords?'':'none';
+    if(del) del.style.display=(canManageRecords && editId)?'':'none';
     if(csv) csv.style.display=canManageRecords?'':'none';
     if(csvApp) csvApp.style.display=canManageRecords?'':'none';
     if($('printBtn')) $('printBtn').style.display=canManageRecords?'':'none';
     updateDevDot();
     if(typeof arrangeFilters==='function') arrangeFilters();
     if(!canManageRecords && !isDevAccount()) $('adminPanel')?.classList.remove('open');
+    populateForWho();
     if(typeof renderRecords==='function' && document.getElementById('records')) renderRecords();
   }
 
@@ -1920,6 +1934,43 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   function state(x){
     return x.status || 'pendente';
   }
+  // ===== FÉRIAS DE QUEM? (Desenvolvedor e administradores) =====
+  function myName(){ return String(firebaseUser?.displayName||'').trim() || String(firebaseUser?.email||'').split('@')[0]; }
+  function forWhoPeople(){
+    const map=new Map(), me=firebaseUser?.uid||'';
+    usersCache.forEach(u=>{ if(u.uid!==me) map.set(u.uid,{uid:u.uid,name:String(u.name||u.email||'').trim(),email:u.email||''}); });
+    local().forEach(r=>{ if(r.ownerUid && r.ownerUid!==me && !map.has(r.ownerUid)) map.set(r.ownerUid,{uid:r.ownerUid,name:String(r.name||r.ownerEmail||'').trim(),email:r.ownerEmail||''}); });
+    return [...map.values()].filter(p=>p.name).sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));
+  }
+  function populateForWho(){
+    const wrap=$('forWhoWrap'), sel=$('forWho'); if(!wrap||!sel) return;
+    if(!canManageRecords || !firebaseUser){ wrap.style.display='none'; return; }
+    wrap.style.display='';
+    if(editId) return; // durante a edição a lista fica travada no dono do pedido
+    const cur=sel.value||'me';
+    const people=forWhoPeople();
+    sel.innerHTML=`<option value="me">🙋 Eu (${escapeHtml(myName())})</option>`+
+      (people.length?'<optgroup label="Funcionários">'+people.map(p=>`<option value="${escapeHtml(p.uid)}">${escapeHtml(p.name)}</option>`).join('')+'</optgroup>':'');
+    sel.value=[...sel.options].some(o=>o.value===cur)?cur:'me';
+  }
+  function forWhoOwner(){
+    const v=$('forWho')?.value||'me';
+    if(!canManageRecords || v==='me') return null;
+    return forWhoPeople().find(p=>p.uid===v)||null;
+  }
+  function applyForWho(){
+    const o=forWhoOwner();
+    $('name').value=o?o.name:myName();
+    $('name').readOnly=!!o;
+  }
+  function updateEditUI(){
+    const editing=!!editId;
+    $('editBanner').classList.toggle('show',editing);
+    $('edit').style.display=editing?'':'none';
+    if($('del')) $('del').style.display=(canManageRecords && editing)?'':'none';
+    $('save').textContent=editing?'💾 Salvar alteração':'💾 Salvar';
+    const sel=$('forWho'); if(sel) sel.disabled=editing;
+  }
   // Situação de cada período (1 ou 2): 'aprovada' | 'recusada' | 'pendente'.
   // Pedidos antigos (sem essa informação) seguem o status geral.
   function hasP2(x){ return !!(x && x.start2 && Number(x.days2)>0); }
@@ -1987,6 +2038,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   }
 
   function renderRecords(){
+    populateForWho();
     if(filter==='controles'){
       $('records').style.display='none';
       $('controlsView').style.display='block';
@@ -2403,6 +2455,16 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   function editRecord(id,which){
     const x=local().find(r=>String(r.id)===String(id));if(!x)return;
     editId=x.id;$('name').value=x.name;$('start').value=x.start;setRequestDateDisplay(x.requestedAt);
+    $('editBannerText').textContent='✏️ Editando as férias de '+(x.name||'—');
+    const sel=$('forWho');
+    if(sel && canManageRecords){
+      const mine=!x.ownerUid || x.ownerUid===firebaseUser?.uid;
+      const val=mine?'me':x.ownerUid;
+      if(![...sel.options].some(o=>o.value===val)) sel.insertAdjacentHTML('beforeend',`<option value="${escapeHtml(val)}">${escapeHtml(x.name||'')}</option>`);
+      sel.value=val;
+    }
+    $('name').readOnly=false;
+    updateEditUI();
     $('sellDays').checked=Number(x.sold)>0; setSellUI(); syncDays(x.days);
     $('start2').value=(x.start2 && Number(x.days2)>0)?x.start2:'';
     const ctl=readControls().find(r=>String(r.name||'').trim().toLowerCase()===String(x.name||'').trim().toLowerCase());
@@ -2508,7 +2570,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     let nextStatus='pendente';
     if(old) nextStatus = old.status==='recusada' ? 'pendente' : (old.status || 'pendente');
     const now=Date.now();
-    const record={id,name,start:$('start').value,days:c.n,start2,days2:d2>0?d2:0,sold:$('sellDays').checked?10:0,status:nextStatus,reason:nextStatus==='recusada'?'':(old?.reason||''),rejectedPeriod:0,requestedAt:old?.requestedAt||now,updatedAt:now,ownerUid:old?.ownerUid||firebaseUser?.uid||'',ownerEmail:old?.ownerEmail||firebaseUser?.email||''};
+    const record={id,name,start:$('start').value,days:c.n,start2,days2:d2>0?d2:0,sold:$('sellDays').checked?10:0,status:nextStatus,reason:nextStatus==='recusada'?'':(old?.reason||''),rejectedPeriod:0,requestedAt:old?.requestedAt||now,updatedAt:now,ownerUid:old?.ownerUid||forWhoOwner()?.uid||firebaseUser?.uid||'',ownerEmail:old?.ownerEmail||(forWhoOwner()?forWhoOwner().email:(firebaseUser?.email||''))};
     // Período já aprovado e sem mudança de data continua aprovado; o resto volta para aguardando.
     const has2n=hasP2(record);
     if(record.status==='aprovada'){ record.ps1='aprovada'; record.ps2=has2n?'aprovada':''; }
@@ -2539,7 +2601,8 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   }
 
   function reset(){
-    editId=null;$('controlSaved').classList.remove('show');$('name').value='';$('start').value='';$('start2').value='';setRequestDateDisplay();$('admission').value='';loadHistory([]);$('sellDays').checked=false;setSellUI();syncDays(12);
+    editId=null;
+    $('name').readOnly=false;$('controlSaved').classList.remove('show');$('name').value='';$('start').value='';$('start2').value='';setRequestDateDisplay();$('admission').value='';loadHistory([]);$('sellDays').checked=false;setSellUI();syncDays(12);
     ['rs','re','rb','ws','we','wb'].forEach(id=>$(id).textContent='—');
     $('notice').textContent='Escolha uma data para calcular.';
     $('calendarHint').textContent='Toque no campo acima para escolher o início das férias.';
@@ -2550,6 +2613,10 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     calendarMonth2=new Date(calendarMonth);
     closeCalendar();closeCalendar2();
     renderCalendar();renderCalendar2();calc();
+    updateEditUI();
+    if($('forWho')) $('forWho').value='me';
+    populateForWho();
+    if(canManageRecords && firebaseUser) applyForWho();
   }
 
   function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
@@ -2935,7 +3002,9 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   $('plus').onclick=()=>{syncDays(Number($('days').value)+1);calc();renderCalendar2()};
   $('calc').onclick=calc;
   $('save').onclick=saveRecord;
-  $('edit').onclick=()=>{const a=local();if(a.length)editRecord(a[0].id);else alert('Não há registros.')};
+  $('edit').onclick=()=>reset();
+  $('cancelEdit').onclick=()=>{ reset(); setTimeout(()=>$('formCard')?.scrollIntoView({behavior:'smooth',block:'start'}),60); };
+  $('forWho').onchange=applyForWho;
   $('del').onclick=()=>{if(!canManageRecords){alert('Somente o Desenvolvedor ou um administrador pode apagar registros.');return;} if(editId)removeRecord(editId);else alert('Selecione um registro para apagar.')};
   $('share').onclick=async()=>{
     const url=location.href;
