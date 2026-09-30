@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Férias">
 <title>Controle de Férias</title>
-<meta name="app-version" content="2026-09-30-v1.9-abre-em-aguardando">
+<meta name="app-version" content="2026-09-30-v1.10-resultado-so-com-data">
 <style>
 :root{
   --blue:#0797e6;--blue2:#1976df;--ink:#12375d;--line:#d8e9f3;
@@ -256,7 +256,9 @@ button,input{font:inherit}button{cursor:pointer}
 .back.red{outline:3px solid var(--red)}.back.orange{outline:3px solid var(--orange)}
 .mini-warn{margin:10px 0 12px;padding:8px 10px;border-radius:11px;background:#fff6dc;border:1px solid #f1d58a;color:#7a5700;font-size:11px;font-weight:700;line-height:1.35}
 .notice{text-align:center;background:#eef8ff;border-radius:13px;padding:11px;margin-top:10px;font-weight:800}
-.actions{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:11px}
+.actions{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:0}
+#resultsWrap + .actions{margin-top:0}
+#resultsWrap:not([style*="none"]) + .actions{margin-top:11px}
 .act{border:0;border-radius:13px;color:#fff;padding:11px 6px;font-weight:900;font-size:14px}
 .save{background:var(--green)}.edit{background:#f2a20b}.delete{background:var(--red)}.share{background:var(--purple)}
 
@@ -363,8 +365,13 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
 .control-actions{display:flex;gap:8px;margin-top:10px}
 .control-actions button{border:0;border-radius:10px;padding:9px 11px;font-weight:900;background:#e8f4fb;color:#075b8a}
 @media(max-width:650px){
-  .grid,.results{grid-template-columns:1fr}
-  .result{display:flex;align-items:center;justify-content:space-between}
+  .grid{grid-template-columns:1fr}
+  .results{gap:6px}
+  .result{padding:9px 8px;border-radius:12px}
+  .result small{font-size:9px}
+  .result strong{font-size:13px;margin-top:4px}
+  .result span{font-size:10px}
+  #resultsWrap .notice{font-size:13px;line-height:1.4}
   .actions{grid-template-columns:1fr 1fr}.info{grid-template-columns:1fr}
   .board h1{font-size:25px}.chair{font-size:60px;right:12px}
   .admin-grid{grid-template-columns:1fr}
@@ -620,6 +627,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
 </section>
 
 <section class="card">
+  <div id="resultsWrap" style="display:none;margin-bottom:4px">
   <div class="period-title" id="p1title" style="display:none">1º período · <span id="p1days">12</span> dias</div>
   <div class="results">
     <div class="result start"><small>🌴 INÍCIO</small><strong id="rs">—</strong><span id="ws">—</span></div>
@@ -637,6 +645,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     <div class="pstat" id="pstat2"></div>
   </div>
   <div class="notice" id="notice">Escolha uma data para calcular.</div>
+  </div>
   <div class="actions">
     <button class="act save" id="save">💾 Salvar</button>
     <button class="act edit" id="edit">✏️ Editar</button>
@@ -669,7 +678,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
 </section>
 
 <button type="button" class="update-link" id="remindLink" style="margin:4px auto 0">🔔 Lembrete no calendário</button>
-<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 1.9</span></footer>
+<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 1.10</span></footer>
 </main>
 </div>
 
@@ -1671,6 +1680,8 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   function calc(){
     updateSecondPeriod();
     const start=$('start').value, n=clamp($('days').value), d2=totalDays()-n, start2=$('start2').value;
+    // Resultado só aparece depois de escolher a data de início.
+    $('resultsWrap').style.display=start?'':'none';
     // Botão Salvar aparece travado enquanto faltar alguma data.
     $('save').classList.toggle('locked', !start || (d2>0 && !start2));
     const ruleErr=splitRuleError(n,d2);
