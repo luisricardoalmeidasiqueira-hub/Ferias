@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Férias">
 <title>Controle de Férias</title>
-<meta name="app-version" content="2026-09-30-v1.1-editar-por-periodo">
+<meta name="app-version" content="2026-09-30-v1.4-quadro-60-90">
 <style>
 :root{
   --blue:#0797e6;--blue2:#1976df;--ink:#12375d;--line:#d8e9f3;
@@ -141,6 +141,10 @@ button,input{font:inherit}button{cursor:pointer}
 .bm-print{border:0;border-radius:11px;padding:9px 12px;background:#0f766e;color:#fff;font-weight:900;font-size:13px;white-space:nowrap}
 .bm-close{border:0;border-radius:11px;padding:9px 12px;background:#dfe8ee;color:#234;font-weight:900;font-size:13px}
 .bm-sub{font-size:11px;color:#60788b;font-weight:800;margin:0 0 10px}
+.bm-chips{display:flex;gap:6px;margin:0 0 10px;overflow-x:auto;scrollbar-width:none}
+.bm-chips::-webkit-scrollbar{display:none}
+.bm-chips button{border:0;border-radius:999px;padding:7px 12px;background:#dfeef6;color:#31536d;font-size:12px;font-weight:900;white-space:nowrap}
+.bm-chips button.active{background:#0f766e;color:#fff}
 .bm-sum{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px}
 .bm-sum div{background:#fff;border-radius:13px;padding:10px 12px;font-size:11px;font-weight:800;color:#60788b;box-shadow:0 4px 12px #07508012}
 .bm-sum b{display:block;font-size:22px;color:var(--ink);margin-top:2px}
@@ -183,6 +187,7 @@ button,input{font:inherit}button{cursor:pointer}
 .pchip{font-size:10px;font-weight:900;border-radius:999px;padding:3px 8px;white-space:nowrap}
 .pchip.g{background:#dff5e8;color:#087446}.pchip.o{background:#ffe3c7;color:#9a4a07}.pchip.r{background:#ffdcdc;color:#a52222}
 .pedit{display:block;width:100%;margin-top:7px;border:0;border-radius:9px;padding:7px 10px;background:#e8f4fb;color:#075b8a;font-weight:800;font-size:12px}
+.pedit.prej{background:#ffe8e8;color:#a52222}
 .pline{margin-top:6px;font-size:11px;font-weight:800;line-height:1.35}
 .pline.o{color:#9a4a07}.pline.r{color:#a52222}
 .pstat{display:none;margin-top:8px;padding:8px 10px;border-radius:10px;font-size:11px;font-weight:800;line-height:1.35}
@@ -633,7 +638,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
 </section>
 
 <button type="button" class="update-link" id="remindLink" style="margin:4px auto 0">🔔 Lembrete no calendário</button>
-<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 1.1</span></footer>
+<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 1.4</span></footer>
 </main>
 </div>
 
@@ -645,6 +650,12 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       <button type="button" class="bm-close" id="bmClose" aria-label="Fechar">✕</button>
     </div>
     <div class="bm-sub" id="bmSub"></div>
+    <div class="bm-chips" id="bmChips">
+      <button type="button" data-w="30">30 dias</button>
+      <button type="button" data-w="60">60 dias</button>
+      <button type="button" data-w="90">90 dias</button>
+      <button type="button" data-w="all">Todas</button>
+    </div>
     <div id="bmBody"></div>
   </div>
 </div>
@@ -1917,7 +1928,9 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
         : canManageRecords && st==='aprovada'
         ? `<div class="approval"><button class="approve" data-realizada="${x.id}">🏁 Realizada</button></div>`
         : st==='recusada'
-        ? `<div class="approval"><button class="approve" data-edit="${x.id}">✏️ Alterar e reenviar</button></div>`
+        ? (Number(x.rejectedPeriod||0)>0
+          ? `<div class="approval"><button class="approve" data-edit-p="${x.id}" data-p="${Number(x.rejectedPeriod)}">✏️ Alterar o ${Number(x.rejectedPeriod)}º período e reenviar</button></div>`
+          : `<div class="approval"><button class="approve" data-edit="${x.id}">✏️ Alterar e reenviar</button></div>`)
         : '';
       const requestTs=Number(x.requestedAt||x.createdAt||x.updatedAt||Date.now());
       const requestDate=fmt(new Date(requestTs));
@@ -1927,16 +1940,26 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       const pLines=pc=>[...pc.clash.map(c=>`<div class="pline r">🔴 Mesmos dias das férias de <b>${escapeHtml(c.who)}</b> (${c.ranges}).</div>`),
                         ...pc.near.map(c=>`<div class="pline o">🟠 Perto das férias de <b>${escapeHtml(c.who)}</b> (${c.ranges}).</div>`)].join('');
       const canEdit=canManageRecords || ['pendente','recusada'].includes(st);
+      const two=has2||miss>0;
+      // Período recusado (0 = férias inteiras). Só vale enquanto o pedido está recusado.
+      const rp=st==='recusada'?Number(x.rejectedPeriod||0):0;
       const pbox=(label,s0,n,pc,idx)=>{
-        const e0=addDaysUTC(s0,n-1), b0=addDaysUTC(e0,1), t=(showC&&pc)?pc.type:'n';
-        const head=(label || (showC&&pc)) ? `<div class="pbox-head"><span>${label||''}</span>${(showC&&pc)?`<span class="pchip ${t}">${chip(t)}</span>`:''}</div>` : '';
+        const e0=addDaysUTC(s0,n-1), b0=addDaysUTC(e0,1);
+        const refused=rp===idx, kept=rp>0 && rp!==idx;
+        const t=refused?'r':kept?'g':(showC&&pc)?pc.type:'n';
+        const chipHtml=refused?'<span class="pchip r">❌ Recusado</span>':kept?'<span class="pchip g">✅ Mantido</span>':(showC&&pc)?`<span class="pchip ${t}">${chip(t)}</span>`:'';
+        const head=(label || chipHtml) ? `<div class="pbox-head"><span>${label||''}</span>${chipHtml}</div>` : '';
+        const why=refused && x.reason ? `<div class="pline r">📝 Motivo: ${escapeHtml(x.reason)}</div>` : '';
+        const rejBtn=canManageRecords && st==='pendente' && has2 ? `<button type="button" class="pedit prej" data-reject-p="${x.id}" data-p="${idx}">✖️ Recusar só o ${idx}º período</button>` : '';
+        const editLabel=refused?`✏️ Alterar o ${idx}º período e reenviar`:`✏️ ${two?'Editar '+idx+'º período':'Editar data'}`;
         return `<div class="pbox ${t}">${head}
           <div class="info" style="margin-top:6px"><div>🏖️ Início<b>${fmt(s0)}</b></div><div>☀️ Último dia<b>${fmt(e0)}</b></div><div>✈️ Retorno<b>${fmt(b0)}</b></div></div>
           ${(showC&&pc)?pLines(pc):''}
-          ${canEdit?`<button type="button" class="pedit" data-edit-p="${x.id}" data-p="${idx}">✏️ ${two?'Editar '+idx+'º período':'Editar data'}</button>`:''}
+          ${why}
+          ${canEdit?`<button type="button" class="pedit" data-edit-p="${x.id}" data-p="${idx}">${editLabel}</button>`:''}
+          ${rejBtn}
         </div>`;
       };
-      const two=has2||miss>0;
       let periodsHtml=pbox(two?`1º período · ${Number(x.days||1)} dias`:'',date(x.start),Number(x.days||1),ci.periods[0],1);
       if(has2) periodsHtml+=pbox(`2º período · ${Number(x.days2)} dias`,date(x.start2),Number(x.days2),ci.periods[1],2);
       return `<div class="record">
@@ -1945,15 +1968,19 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
         ${miss>0 && st!=='encerrada'?`<div class="status warn">⚠️ Falta o 2º período (${miss} dias).${canEdit?`<button type="button" class="pedit" data-edit-p="${x.id}" data-p="2">➕ Escolher data do 2º período</button>`:''}</div>`:''}
         ${Number(x.sold)>0?`<div class="sold-tag">🔒 ${Number(x.sold)} dias vendidos (abono)</div>`:''}
         ${canManageRecords?`<div class="ra"><button data-delete="${x.id}">🗑️ Apagar</button></div>`:''}
-        <div class="status ${st==='aprovada'?'ok':st==='recusada'?'err':st==='encerrada'?'closed':''}">${label(st)}</div>
+        <div class="status ${st==='aprovada'?'ok':st==='recusada'?'err':st==='encerrada'?'closed':''}">${rp?`❌ ${rp}º período recusado · o outro fica mantido`:label(st)}</div>
         ${st==='aprovada' && recordBelongsToCurrentUser(x) ? `<div class="status warn">📌 <b>Não esqueça:</b> lance estas férias no sistema da empresa. A aprovação aqui não lança sozinha.</div>` : ''}
-        ${st==='recusada' && x.reason ? `<div class="status err">📝 Motivo: ${escapeHtml(x.reason)}</div>` : ''}
+        ${st==='recusada' && x.reason && !rp ? `<div class="status err">📝 Motivo: ${escapeHtml(x.reason)}</div>` : ''}
         ${actions}
       </div>`;
     }).join('');
 
     $('records').querySelectorAll('[data-approve]').forEach(b=>b.onclick=()=>setStatus(b.dataset.approve,'aprovada'));
     $('records').querySelectorAll('[data-reject]').forEach(b=>b.onclick=()=>setStatus(b.dataset.reject,'recusada'));
+    $('records').querySelectorAll('[data-reject-p]').forEach(b=>b.onclick=()=>{
+      if(!canManageRecords){ alert('Somente o administrador pode recusar férias.'); return; }
+      openReject(b.dataset.rejectP,Number(b.dataset.p));
+    });
     $('records').querySelectorAll('[data-realizada]').forEach(b=>b.onclick=()=>setStatus(b.dataset.realizada,'encerrada'));
     $('records').querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>removeRecord(b.dataset.delete));
     $('records').querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editRecord(b.dataset.edit));
@@ -1997,6 +2024,10 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       unseen++;
       const p2=(r.start2 && Number(r.days2)>0)?' · 2º período: '+fmt(date(r.start2)):'';
       if(st==='aprovada') cards.push({cls:'ok',seen:[r.id,st],html:`🟢 <b>Suas férias foram aprovadas!</b><br>Início: ${fmt(date(r.start))}${p2}.<br>📌 <b>Agora lance no sistema da empresa.</b> A aprovação aqui não lança sozinha.`});
+      else if(Number(r.rejectedPeriod||0)>0){
+        const rp=Number(r.rejectedPeriod);
+        cards.push({cls:'err',seen:[r.id,st],html:`🔴 <b>O ${rp}º período das suas férias foi recusado.</b>${r.reason?'<br>Motivo: '+escapeHtml(r.reason):''}<br><small>O outro período fica mantido. Toque em ✏️ Alterar o ${rp}º período e reenviar.</small>`});
+      }
       else cards.push({cls:'err',seen:[r.id,st],html:`🔴 <b>Suas férias foram recusadas.</b>${r.reason?'<br>Motivo: '+escapeHtml(r.reason):''}<br><small>Toque em ✏️ Alterar e reenviar no seu pedido.</small>`});
     });
     mine.filter(r=>state(r)==='aprovada').forEach(r=>vacationRanges(r).forEach((p,i)=>{
@@ -2159,9 +2190,13 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     openInstallHelp();
   }
 
-  let rejectId = null;
-  function openReject(id){
-    rejectId=id; $('rejectReason').value=''; $('rejectError').classList.remove('show');
+  let rejectId = null, rejectPeriod = 0;
+  function openReject(id,period){
+    rejectId=id; rejectPeriod=Number(period||0);
+    $('rejectTitle').textContent=rejectPeriod?`🔴 Recusar o ${rejectPeriod}º período`:'🔴 Recusar férias';
+    $('rejectConfirm').textContent=rejectPeriod?`🔴 Recusar o ${rejectPeriod}º período`:'🔴 Confirmar recusa';
+    $('rejectReason').placeholder=rejectPeriod?'Ex.: bate com as férias de outro colega. Escolha outra data para este período.':'Digite o motivo da recusa...';
+    $('rejectReason').value=''; $('rejectError').classList.remove('show');
     $('rejectModal').classList.add('open'); $('rejectModal').setAttribute('aria-hidden','false');
     setTimeout(()=>$('rejectReason').focus(),50);
   }
@@ -2175,7 +2210,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     if(!canManageRecords){ closeReject(); alert('Somente o administrador pode recusar férias.'); return; }
     const a=local(), x=a.find(r=>String(r.id)===String(rejectId));
     if(!x){closeReject();return;}
-    x.status='recusada'; x.reason=reason; x.updatedAt=Date.now();
+    x.status='recusada'; x.reason=reason; x.rejectedPeriod=rejectPeriod||0; x.updatedAt=Date.now();
     saveLocal(a); closeReject(); renderRecords();
     try{
       const failed=await pushLocalToFirebase([x]);
@@ -2196,7 +2231,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       alert('Não dá para aprovar: falta o 2º período ('+missingDays(x)+' dias).\n\nToque em ✏️ Editar, escolha a data do 2º período e salve. Depois aprove.');
       return;
     }
-    if(status==='aprovada'){x.status='aprovada';x.reason='';}
+    if(status==='aprovada'){x.status='aprovada';x.reason='';x.rejectedPeriod=0;}
     else if(status==='encerrada'){x.status='encerrada';}
     else return;
     x.updatedAt=Date.now(); saveLocal(a); renderRecords();
@@ -2320,7 +2355,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     let nextStatus='pendente';
     if(old) nextStatus = old.status==='recusada' ? 'pendente' : (old.status || 'pendente');
     const now=Date.now();
-    const record={id,name,start:$('start').value,days:c.n,start2,days2:d2>0?d2:0,sold:$('sellDays').checked?10:0,status:nextStatus,reason:nextStatus==='recusada'?'':(old?.reason||''),requestedAt:old?.requestedAt||now,updatedAt:now,ownerUid:old?.ownerUid||firebaseUser?.uid||'',ownerEmail:old?.ownerEmail||firebaseUser?.email||''};
+    const record={id,name,start:$('start').value,days:c.n,start2,days2:d2>0?d2:0,sold:$('sellDays').checked?10:0,status:nextStatus,reason:nextStatus==='recusada'?'':(old?.reason||''),rejectedPeriod:0,requestedAt:old?.requestedAt||now,updatedAt:now,ownerUid:old?.ownerUid||firebaseUser?.uid||'',ownerEmail:old?.ownerEmail||firebaseUser?.email||''};
     const i=a.findIndex(r=>String(r.id)===String(id));
     if(i>=0)a[i]=record;else a.unshift(record);
     saveLocal(a); reset(); renderRecords();
@@ -2364,7 +2399,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       const snap=await getDocs(collection(firebaseDb,'admins'));
       const admins=snap.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.email);
       if(!admins.length){ box.innerHTML='<div class="admin-note">Nenhum administrador cadastrado.</div>'; return; }
-      box.innerHTML=admins.map(x=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 10px;background:#fff;border:1px solid #dcecf5;border-radius:10px;margin-top:7px"><span style="font-weight:800;color:#234">${escapeHtml(x.email)}</span><button type="button" class="admin-close" data-remove-admin="${escapeHtml(x.email)}">🗑️ Remover</button></div>`).join('');
+      box.innerHTML=admins.map(x=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 10px;background:#fff;border:1px solid #dcecf5;border-radius:10px;margin-top:7px"><span style="font-weight:800;color:#234;font-size:13px;min-width:0;word-break:break-all">${escapeHtml(x.email)}</span><button type="button" class="admin-close" style="flex:0 0 auto;white-space:nowrap;padding:8px 10px;font-size:12px" data-remove-admin="${escapeHtml(x.email)}">🗑️ Remover</button></div>`).join('');
       box.querySelectorAll('[data-remove-admin]').forEach(btn=>btn.onclick=async()=>{
         const email=btn.dataset.removeAdmin;
         if(!email || email===OWNER_EMAIL) return;
@@ -2484,8 +2519,11 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     setTimeout(()=>URL.revokeObjectURL(url),1000);
   }
 
+  // Janela do quadro: 30, 60, 90 dias ou todas (fica lembrada neste aparelho).
+  let boardWindow=localStorage.getItem('ferias_board_window')||'all';
   // Linhas do quadro: só férias aprovadas que ainda não terminaram.
-  function boardRows(){
+  // Com janela: quem está de férias agora + quem começa dentro da janela.
+  function boardRows(win='all'){
     const t=todayUTC(), rows=[];
     local().filter(r=>state(r)==='aprovada').forEach(r=>{
       const ranges=vacationRanges(r), two=ranges.length>1;
@@ -2496,7 +2534,9 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       });
     });
     rows.sort((a,b)=>a.s-b.s || a.name.localeCompare(b.name,'pt-BR'));
-    return rows;
+    if(win==='all') return rows;
+    const lim=Number(win);
+    return rows.filter(x=>x.now || Math.round((x.s-t)/86400000)<=lim);
   }
 
   // Quadro na tela do celular (Desenvolvedor e administradores).
@@ -2512,15 +2552,17 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     document.body.style.overflow='';
   }
   function renderBoard(){
-    const t=todayUTC(), rows=boardRows();
+    const t=todayUTC(), win=boardWindow, rows=boardRows(win);
+    document.querySelectorAll('#bmChips [data-w]').forEach(b=>b.classList.toggle('active',b.dataset.w===win));
     const people=list=>new Set(list.map(x=>x.name.trim().toLowerCase())).size;
     const nowRows=rows.filter(x=>x.now);
-    const soonRows=rows.filter(x=>!x.now && Math.round((x.s-t)/86400000)<=30);
+    const soonRows=rows.filter(x=>!x.now);
     const pend=visibleRecords().filter(r=>state(r)==='pendente').length;
-    $('bmSub').textContent='Férias aprovadas que ainda não terminaram · hoje, '+fmt(t);
-    let html=`<div class="bm-sum"><div>🌴 De férias agora<b>${people(nowRows)}</b></div><div>📅 Começam em até 30 dias<b>${people(soonRows)}</b></div></div>`;
+    $('bmSub').textContent='Férias aprovadas que ainda não terminaram'+(win==='all'?'':' · próximos '+win+' dias')+' · hoje, '+fmt(t);
+    const soonLabel=win==='all'?'📅 Próximas férias':'📅 Começam em até '+win+' dias';
+    let html=`<div class="bm-sum"><div>🌴 De férias agora<b>${people(nowRows)}</b></div><div>${soonLabel}<b>${people(soonRows)}</b></div></div>`;
     if(!rows.length){
-      html+='<div class="bm-empty">Nenhuma férias aprovada pela frente.</div>';
+      html+=`<div class="bm-empty">${win==='all'?'Nenhuma férias aprovada pela frente.':'Nenhuma férias aprovada nos próximos '+win+' dias.'}</div>`;
     }else{
       let group='';
       rows.forEach(x=>{
@@ -2545,22 +2587,12 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   // Quadro para imprimir e colocar no mural: só férias aprovadas que ainda não terminaram.
   function printBoard(){
     if(!canManageRecords){ alert('Somente o Desenvolvedor ou um administrador pode imprimir o quadro.'); return; }
-    const t=todayUTC(), rows=[];
-    local().filter(r=>state(r)==='aprovada').forEach(r=>{
-      const ranges=vacationRanges(r), two=ranges.length>1;
-      ranges.forEach((p,i)=>{
-        const back=addDaysUTC(p.end,1);
-        if(p.end<t) return;
-        const n=Math.round((p.end-p.start)/86400000)+1;
-        rows.push({name:r.name||'',label:two?(i+1)+'º período':'Período único',s:p.start,e:p.end,b:back,n,now:t>=p.start});
-      });
-    });
-    if(!rows.length){ alert('Nenhuma férias aprovada para imprimir (só entram as que ainda não terminaram).'); return; }
-    rows.sort((a,b)=>a.s-b.s || a.name.localeCompare(b.name,'pt-BR'));
+    const t=todayUTC(), rows=boardRows(boardWindow);
+    if(!rows.length){ alert(boardWindow==='all'?'Nenhuma férias aprovada para imprimir (só entram as que ainda não terminaram).':'Nenhuma férias aprovada nos próximos '+boardWindow+' dias para imprimir.'); return; }
     const cap=d=>week(d).replace(/^./,c=>c.toUpperCase());
     $('printArea').innerHTML=`<div class="pa">
       <h1>🏖️ Quadro de Férias</h1>
-      <p class="sub">Férias aprovadas · atualizado em ${fmt(t)}</p>
+      <p class="sub">Férias aprovadas${boardWindow==='all'?'':' · próximos '+boardWindow+' dias'} · atualizado em ${fmt(t)}</p>
       <table><thead><tr><th>Nome</th><th>Período</th><th>Início</th><th>Último dia</th><th>Retorno</th><th>Dias</th></tr></thead><tbody>
       ${rows.map(x=>`<tr class="${x.now?'now':''}"><td><b>${escapeHtml(x.name)}</b>${x.now?'<br>🌴 de férias agora':''}</td><td>${x.label}</td><td>${fmt(x.s)}<br><small>${cap(x.s)}</small></td><td>${fmt(x.e)}<br><small>${cap(x.e)}</small></td><td><b>${fmt(x.b)}</b><br><small>${cap(x.b)}</small></td><td>${x.n}</td></tr>`).join('')}
       </tbody></table>
@@ -2576,6 +2608,10 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   $('printBtn').onclick=openBoard;
   $('bmPrint').onclick=printBoard;
   $('bmClose').onclick=closeBoard;
+  document.querySelectorAll('#bmChips [data-w]').forEach(b=>b.onclick=()=>{
+    boardWindow=b.dataset.w; localStorage.setItem('ferias_board_window',boardWindow);
+    renderBoard(); $('boardModal').scrollTop=0;
+  });
   $('reqToastGo').onclick=goToPending;
   $('installBtn').onclick=doInstall;
   $('installLink').onclick=doInstall;
