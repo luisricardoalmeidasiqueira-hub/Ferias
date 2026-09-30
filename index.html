@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Férias">
 <title>Controle de Férias</title>
-<meta name="app-version" content="2026-09-30-v1.11-ferias-de-quem">
+<meta name="app-version" content="2026-09-30-v1.12-lista-sem-gestor">
 <style>
 :root{
   --blue:#0797e6;--blue2:#1976df;--ink:#12375d;--line:#d8e9f3;
@@ -689,7 +689,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
 </section>
 
 <button type="button" class="update-link" id="remindLink" style="margin:4px auto 0">🔔 Lembrete no calendário</button>
-<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 1.11</span></footer>
+<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 1.12</span></footer>
 </main>
 </div>
 
@@ -749,6 +749,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   let registeringName='';
   let pendingCount=0;
   let usersCache=[];
+  let adminEmails=new Set();
   const DELETED_KEY='ferias_deleted_ids';
   const SYNC_DELETE_VERSION=2;
   function deletedIds(){
@@ -911,7 +912,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     ]);
     const blocked=new Set(bl.docs.map(d=>d.id));
     const users=us.docs.map(d=>({uid:d.id,...d.data()}));
-    usersCache=users.filter(u=>String(u.email||'').trim() && !blocked.has(u.uid));
+
     let lib=null; const adm=new Set();
     try{ const ls=await getDocs(collection(firebaseDb,'liberados')); lib=new Set(ls.docs.map(d=>d.id)); }
     catch(err){ console.warn('Coleção liberados indisponível',err); }
@@ -931,6 +932,14 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
         pending.push(u);
       }
     }
+    // Lista "Férias de quem?": só funcionários liberados.
+    // Fica de fora: você, administradores (gestores), bloqueados e quem ainda aguarda liberação.
+    adminEmails=adm;
+    const pendIds=new Set(pending.map(u=>u.uid));
+    usersCache=users.filter(u=>{
+      const em=String(u.email||'').trim().toLowerCase();
+      return em && em!=='luissiqueir@hotmail.com' && !adm.has(em) && !blocked.has(u.uid) && !pendIds.has(u.uid);
+    });
     return {users,blocked,lib,pending};
   }
 
@@ -1939,7 +1948,10 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   function forWhoPeople(){
     const map=new Map(), me=firebaseUser?.uid||'';
     usersCache.forEach(u=>{ if(u.uid!==me) map.set(u.uid,{uid:u.uid,name:String(u.name||u.email||'').trim(),email:u.email||''}); });
-    local().forEach(r=>{ if(r.ownerUid && r.ownerUid!==me && !map.has(r.ownerUid)) map.set(r.ownerUid,{uid:r.ownerUid,name:String(r.name||r.ownerEmail||'').trim(),email:r.ownerEmail||''}); });
+    local().forEach(r=>{
+      const em=String(r.ownerEmail||'').trim().toLowerCase();
+      if(r.ownerUid && r.ownerUid!==me && !map.has(r.ownerUid) && !adminEmails.has(em)) map.set(r.ownerUid,{uid:r.ownerUid,name:String(r.name||r.ownerEmail||'').trim(),email:r.ownerEmail||''});
+    });
     return [...map.values()].filter(p=>p.name).sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));
   }
   function populateForWho(){
