@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Férias">
 <title>Controle de Férias</title>
-<meta name="app-version" content="2026-09-30-v1.7-aprovar-por-periodo">
+<meta name="app-version" content="2026-09-30-v1.8-recusadas-separadas">
 <style>
 :root{
   --blue:#0797e6;--blue2:#1976df;--ink:#12375d;--line:#d8e9f3;
@@ -215,6 +215,7 @@ button,input{font:inherit}button{cursor:pointer}
 .pchip.g{background:#dff5e8;color:#087446}.pchip.o{background:#ffe3c7;color:#9a4a07}.pchip.r{background:#ffdcdc;color:#a52222}
 .pedit{display:block;width:100%;margin-top:7px;border:0;border-radius:9px;padding:7px 10px;background:#e8f4fb;color:#075b8a;font-weight:800;font-size:12px}
 .pedit.prej{background:#ffe8e8;color:#a52222}
+.rej-note{display:block;width:100%;margin-top:9px;border:1px dashed #f5b5b5;border-radius:12px;padding:9px 11px;background:#fff6f6;color:#a52222;font-weight:800;font-size:12px;text-align:left;line-height:1.35}
 .pbtns{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:7px}
 .pbtns button{border:0;border-radius:9px;padding:9px 6px;font-weight:900;font-size:12px;color:#fff;white-space:nowrap}
 .pbtns .pok{background:#16a765}.pbtns .pno{background:#ef4444}
@@ -668,7 +669,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
 </section>
 
 <button type="button" class="update-link" id="remindLink" style="margin:4px auto 0">🔔 Lembrete no calendário</button>
-<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 1.7</span></footer>
+<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 1.8</span></footer>
 </main>
 </div>
 
@@ -1972,13 +1973,25 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     $('listTitle').textContent='📋 Férias cadastradas';
     renderAlerts();
     const all=visibleRecords();
-    const filtered=filter==='todos'?all:all.filter(x=>state(x)===filter);
+    // Administrador: recusadas saem de "Todas" e ficam só na aba "Recusadas".
+    // Voltam para "Todas" quando o funcionário reenviar. O funcionário continua vendo as dele.
+    const nRej=all.filter(x=>state(x)==='recusada').length;
+    const rejBtn=document.querySelector('.filter[data-filter="recusada"]');
+    if(rejBtn) rejBtn.textContent='🔴 Recusadas'+(nRej?' ('+nRej+')':'');
+    const hideRej=canManageRecords && filter==='todos';
+    const filtered=filter==='todos'?all.filter(x=>!(hideRej && state(x)==='recusada')):all.filter(x=>state(x)===filter);
+    const note=hideRej && nRej ? `<button type="button" class="rej-note" data-goto-rej>🔴 ${nRej} ${nRej===1?'pedido recusado está':'pedidos recusados estão'} na aba <b>Recusadas</b>, esperando o funcionário alterar e reenviar. Toque para ver.</button>` : '';
     $('count').textContent=filtered.length+' '+(filtered.length===1?'registro':'registros');
+    const bindNote=()=>$('records').querySelectorAll('[data-goto-rej]').forEach(b=>b.onclick=()=>{
+      document.querySelectorAll('.filter').forEach(f=>f.classList.toggle('active',f.dataset.filter==='recusada'));
+      filter='recusada'; renderRecords();
+    });
     if(!filtered.length){
-      $('records').innerHTML='<div style="text-align:center;color:#71879a;padding:14px">Nenhum registro nesta categoria.</div>';
+      $('records').innerHTML=note+'<div style="text-align:center;color:#71879a;padding:14px">Nenhum registro nesta categoria.</div>';
+      bindNote();
       return;
     }
-    $('records').innerHTML=filtered.map(x=>{
+    $('records').innerHTML=note+filtered.map(x=>{
       const has2=!!(x.start2 && Number(x.days2)>0);
       const miss=missingDays(x);
       const st=state(x);
@@ -2041,11 +2054,12 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
           : st==='pendente' && has2 && okIds.length ? `🟡 ${okIds[0]}º período aprovado · falta aprovar o ${okIds[0]===1?2:1}º`
           : label(st)}</div>
         ${st==='aprovada' && recordBelongsToCurrentUser(x) ? `<div class="status warn">📌 <b>Não esqueça:</b> lance estas férias no sistema da empresa. A aprovação aqui não lança sozinha.</div>` : ''}
-        ${st==='recusada' && x.reason && !rp ? `<div class="status err">📝 Motivo: ${escapeHtml(x.reason)}</div>` : ''}
+        ${st==='recusada' && x.reason && !has2 ? `<div class="status err">📝 Motivo: ${escapeHtml(x.reason)}</div>` : ''}
         ${actions}
       </div>`;
     }).join('');
 
+    bindNote();
     $('records').querySelectorAll('[data-approve]').forEach(b=>b.onclick=()=>setStatus(b.dataset.approve,'aprovada'));
     $('records').querySelectorAll('[data-reject]').forEach(b=>b.onclick=()=>setStatus(b.dataset.reject,'recusada'));
     $('records').querySelectorAll('[data-approve-p]').forEach(b=>b.onclick=()=>approvePeriod(b.dataset.approveP,Number(b.dataset.p)));
