@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Férias">
 <title>Controle de Férias</title>
-<meta name="app-version" content="2026-09-30-v1.8-recusadas-separadas">
+<meta name="app-version" content="2026-09-30-v1.9-abre-em-aguardando">
 <style>
 :root{
   --blue:#0797e6;--blue2:#1976df;--ink:#12375d;--line:#d8e9f3;
@@ -669,7 +669,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
 </section>
 
 <button type="button" class="update-link" id="remindLink" style="margin:4px auto 0">🔔 Lembrete no calendário</button>
-<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 1.8</span></footer>
+<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 1.9</span></footer>
 </main>
 </div>
 
@@ -1079,6 +1079,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     if(csvApp) csvApp.style.display=canManageRecords?'':'none';
     if($('printBtn')) $('printBtn').style.display=canManageRecords?'':'none';
     updateDevDot();
+    if(typeof arrangeFilters==='function') arrangeFilters();
     if(!canManageRecords && !isDevAccount()) $('adminPanel')?.classList.remove('open');
     if(typeof renderRecords==='function' && document.getElementById('records')) renderRecords();
   }
@@ -1309,6 +1310,22 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
 
   let editId = null;
   let filter = 'todos';
+  let adminFilterSet = false;
+  // Administrador: lista abre em "Aguardando" e "Todas" vai para o fim.
+  // Funcionário: continua abrindo em "Todas".
+  function arrangeFilters(){
+    const box=$('statusFilters'); if(!box) return;
+    const todos=box.querySelector('[data-filter="todos"]'), ctl=box.querySelector('[data-filter="controles"]');
+    if(canManageRecords){
+      box.insertBefore(todos,ctl); todos.textContent='📋 Todas';
+      if(!adminFilterSet){ adminFilterSet=true; if(filter==='todos') filter='pendente'; }
+    }else{
+      box.insertBefore(todos,box.firstChild); todos.textContent='Todas';
+      if(adminFilterSet){ adminFilterSet=false; filter='todos'; }
+    }
+    box.querySelectorAll('.filter').forEach(b=>b.classList.toggle('active',b.dataset.filter===filter));
+    box.scrollLeft=0;
+  }
   let calendarMonth = new Date();
   calendarMonth = new Date(Date.UTC(calendarMonth.getUTCFullYear(),calendarMonth.getUTCMonth(),1));
   let calendarMonth2 = new Date(calendarMonth);
@@ -1976,10 +1993,13 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     // Administrador: recusadas saem de "Todas" e ficam só na aba "Recusadas".
     // Voltam para "Todas" quando o funcionário reenviar. O funcionário continua vendo as dele.
     const nRej=all.filter(x=>state(x)==='recusada').length;
+    const nPend=all.filter(x=>state(x)==='pendente').length;
     const rejBtn=document.querySelector('.filter[data-filter="recusada"]');
     if(rejBtn) rejBtn.textContent='🔴 Recusadas'+(nRej?' ('+nRej+')':'');
-    const hideRej=canManageRecords && filter==='todos';
-    const filtered=filter==='todos'?all.filter(x=>!(hideRej && state(x)==='recusada')):all.filter(x=>state(x)===filter);
+    const pendBtn=document.querySelector('.filter[data-filter="pendente"]');
+    if(pendBtn) pendBtn.textContent='🟡 Aguardando'+(canManageRecords&&nPend?' ('+nPend+')':'');
+    const hideRej=canManageRecords && filter==='pendente';
+    const filtered=filter==='todos'?all:all.filter(x=>state(x)===filter);
     const note=hideRej && nRej ? `<button type="button" class="rej-note" data-goto-rej>🔴 ${nRej} ${nRej===1?'pedido recusado está':'pedidos recusados estão'} na aba <b>Recusadas</b>, esperando o funcionário alterar e reenviar. Toque para ver.</button>` : '';
     $('count').textContent=filtered.length+' '+(filtered.length===1?'registro':'registros');
     const bindNote=()=>$('records').querySelectorAll('[data-goto-rej]').forEach(b=>b.onclick=()=>{
@@ -1987,7 +2007,8 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       filter='recusada'; renderRecords();
     });
     if(!filtered.length){
-      $('records').innerHTML=note+'<div style="text-align:center;color:#71879a;padding:14px">Nenhum registro nesta categoria.</div>';
+      const emptyMsg=canManageRecords&&filter==='pendente'?'✅ Nenhum pedido aguardando aprovação.':'Nenhum registro nesta categoria.';
+      $('records').innerHTML=note+`<div style="text-align:center;color:#71879a;padding:14px">${emptyMsg}</div>`;
       bindNote();
       return;
     }
