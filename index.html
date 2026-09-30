@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Férias">
 <title>Controle de Férias</title>
-<meta name="app-version" content="2026-09-30-v1.4-quadro-60-90">
+<meta name="app-version" content="2026-09-30-v1.7-aprovar-por-periodo">
 <style>
 :root{
   --blue:#0797e6;--blue2:#1976df;--ink:#12375d;--line:#d8e9f3;
@@ -145,6 +145,33 @@ button,input{font:inherit}button{cursor:pointer}
 .bm-chips::-webkit-scrollbar{display:none}
 .bm-chips button{border:0;border-radius:999px;padding:7px 12px;background:#dfeef6;color:#31536d;font-size:12px;font-weight:900;white-space:nowrap}
 .bm-chips button.active{background:#0f766e;color:#fff}
+.bm-tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:0 0 10px;background:#dfeef6;padding:4px;border-radius:12px}
+.bm-tabs button{border:0;border-radius:9px;padding:8px;background:transparent;color:#31536d;font-weight:900;font-size:13px}
+.bm-tabs button.active{background:#fff;color:#0f766e;box-shadow:0 2px 6px #0001}
+.tl-hint{font-size:11px;color:#60788b;font-weight:700;margin:10px 2px 8px;line-height:1.35}
+.tl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;background:#fff;border-radius:14px;border:1px solid var(--line);padding:6px 0}
+.tl{position:relative}
+.tl-head,.tl-row{display:flex;align-items:center}
+.tl-name{position:sticky;left:0;z-index:3;flex:0 0 100px;width:100px;padding:0 8px;background:#fff;font-size:11px;font-weight:900;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tl-head{height:24px;border-bottom:1px solid #e3eef5}
+.tl-track{position:relative;height:32px;flex:0 0 auto}
+.tl-head .tl-track{height:24px}
+.tl-mlabel{position:absolute;top:5px;font-size:10px;font-weight:900;color:#60788b;white-space:nowrap;padding-left:4px}
+.tl-body{position:relative}
+.tl-row{height:32px;border-bottom:1px dashed #eef4f8}
+.tl-lines{position:absolute;top:0;bottom:0;pointer-events:none;z-index:1}
+.tl-mline{position:absolute;top:0;bottom:0;border-left:1px solid #e3eef5}
+.tl-today{position:absolute;top:0;bottom:0;border-left:2px solid #ef4444}
+.tl-bar{position:absolute;top:7px;height:18px;border:0;border-radius:6px;padding:0 4px;font-size:10px;font-weight:900;color:#fff;overflow:hidden;white-space:nowrap;z-index:2;text-align:left;line-height:18px}
+.tl-bar.ok{background:#16a765}
+.tl-bar.pend{background:repeating-linear-gradient(45deg,#f2b300 0 6px,#f8cd45 6px 12px);color:#4d3900}
+.tl-bar.over{background:#ef4444}
+.tl-row.over-row{background:#fff6f6}
+.tl-row.over-row .tl-name{color:#a52222;background:#fff6f6}
+.tl-legend{display:flex;flex-wrap:wrap;gap:6px 12px;margin:10px 2px 0;font-size:11px;font-weight:800;color:#60788b}
+.tl-legend i{display:inline-block;width:14px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+.tl-opt{display:flex;align-items:center;gap:8px;margin:10px 2px 0;font-size:12px;font-weight:800;color:#35566b}
+.tl-opt input{width:18px;height:18px;accent-color:#0f766e}
 .bm-sum{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px}
 .bm-sum div{background:#fff;border-radius:13px;padding:10px 12px;font-size:11px;font-weight:800;color:#60788b;box-shadow:0 4px 12px #07508012}
 .bm-sum b{display:block;font-size:22px;color:var(--ink);margin-top:2px}
@@ -188,6 +215,9 @@ button,input{font:inherit}button{cursor:pointer}
 .pchip.g{background:#dff5e8;color:#087446}.pchip.o{background:#ffe3c7;color:#9a4a07}.pchip.r{background:#ffdcdc;color:#a52222}
 .pedit{display:block;width:100%;margin-top:7px;border:0;border-radius:9px;padding:7px 10px;background:#e8f4fb;color:#075b8a;font-weight:800;font-size:12px}
 .pedit.prej{background:#ffe8e8;color:#a52222}
+.pbtns{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:7px}
+.pbtns button{border:0;border-radius:9px;padding:9px 6px;font-weight:900;font-size:12px;color:#fff;white-space:nowrap}
+.pbtns .pok{background:#16a765}.pbtns .pno{background:#ef4444}
 .pline{margin-top:6px;font-size:11px;font-weight:800;line-height:1.35}
 .pline.o{color:#9a4a07}.pline.r{color:#a52222}
 .pstat{display:none;margin-top:8px;padding:8px 10px;border-radius:10px;font-size:11px;font-weight:800;line-height:1.35}
@@ -400,13 +430,13 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     <button type="button" id="installBtn" class="update-btn" title="Instalar o app no celular" aria-label="Instalar o app no celular">📲</button>
     <button type="button" id="updateBtn" class="update-btn" title="Atualizar aplicativo" aria-label="Atualizar aplicativo">🔄</button>
     <span id="firebaseIndicator" class="firebase-indicator sync" title="Status da sincronização" aria-label="Status da sincronização">⏳</span>
-    <button class="developer-btn" id="developerBtn">👨‍💻 Desenvolvedor</button>
+    <button class="developer-btn" id="developerBtn" style="display:none">👨‍💻 Desenvolvedor</button>
     <button type="button" class="auth-logout" id="appLogoutBtn" style="display:none">🚪 Sair</button>
   </div>
 </div>
 
 <div class="admin-panel" id="adminPanel">
-  <h2>👨‍💻 Área do Desenvolvedor</h2>
+  <h2 id="adminPanelTitle">👨‍💻 Área do Desenvolvedor</h2>
   <div id="adminLogin">
     <div class="admin-login" style="flex-wrap:wrap">
       <input id="adminEmail" type="email" autocomplete="username" placeholder="E-mail do desenvolvedor">
@@ -426,7 +456,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       <div class="admin-card">⏳ Pendentes<strong id="adminPending">0</strong></div>
       <div class="admin-card">🏁 Realizadas<strong id="adminClosed">0</strong></div>
     </div>
-    <div class="admin-manager">
+    <div class="admin-manager dev-only">
       <h3>👤 Adicionar administrador</h3>
       <div class="admin-manager-row">
         <input id="newAdminEmail" type="email" placeholder="E-mail do administrador">
@@ -438,7 +468,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
         <div id="adminList"><div class="admin-note">Nenhum administrador cadastrado.</div></div>
       </div>
     </div>
-    <div class="admin-manager">
+    <div class="admin-manager dev-only">
       <h3>👥 Usuários cadastrados (<span id="userCount">0</span>)</h3>
       <div id="userList"><div class="admin-note">Carregando...</div></div>
       <div class="admin-note">🗑️ Excluir bloqueia o acesso ao app na hora. Para apagar o e-mail de vez, use Authentication no console do Firebase.</div>
@@ -638,7 +668,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
 </section>
 
 <button type="button" class="update-link" id="remindLink" style="margin:4px auto 0">🔔 Lembrete no calendário</button>
-<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 1.4</span></footer>
+<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 1.7</span></footer>
 </main>
 </div>
 
@@ -650,6 +680,10 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       <button type="button" class="bm-close" id="bmClose" aria-label="Fechar">✕</button>
     </div>
     <div class="bm-sub" id="bmSub"></div>
+    <div class="bm-tabs" id="bmTabs">
+      <button type="button" data-view="list">📋 Lista</button>
+      <button type="button" data-view="tl">📊 Comparar</button>
+    </div>
     <div class="bm-chips" id="bmChips">
       <button type="button" data-w="30">30 dias</button>
       <button type="button" data-w="60">60 dias</button>
@@ -877,9 +911,14 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     return {users,blocked,lib,pending};
   }
 
+  const isDevAccount=()=>String(firebaseUser?.email||'').trim().toLowerCase()==='luissiqueir@hotmail.com';
   function updateDevDot(){
     const b=$('developerBtn'); if(!b) return;
-    b.innerHTML='👨‍💻 Desenvolvedor'+(pendingCount?'<span class="dot" title="Cadastro aguardando liberação"></span>':'');
+    const dev=isDevAccount();
+    b.style.display=(dev||canManageRecords)?'':'none';
+    b.innerHTML=dev
+      ? '👨‍💻 Desenvolvedor'+(pendingCount?'<span class="dot" title="Cadastro aguardando liberação"></span>':'')
+      : '🛡️ Administrador';
   }
 
   async function refreshPending(){
@@ -1038,6 +1077,8 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     if(csv) csv.style.display=canManageRecords?'':'none';
     if(csvApp) csvApp.style.display=canManageRecords?'':'none';
     if($('printBtn')) $('printBtn').style.display=canManageRecords?'':'none';
+    updateDevDot();
+    if(!canManageRecords && !isDevAccount()) $('adminPanel')?.classList.remove('open');
     if(typeof renderRecords==='function' && document.getElementById('records')) renderRecords();
   }
 
@@ -1202,7 +1243,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     if(JSON.stringify(merged)!==JSON.stringify(protectedRecords)){
       saveLocal(merged); renderRecords();
       if($('boardModal')?.classList.contains('open')) renderBoard();
-      if(document.getElementById('adminPanel')?.classList.contains('open') && isDeveloperLogged()) adminRefresh();
+      if(document.getElementById('adminPanel')?.classList.contains('open') && (isDeveloperLogged()||canManageRecords)) adminRefresh();
     }
   }
   function startLiveSync(){
@@ -1850,6 +1891,26 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   function state(x){
     return x.status || 'pendente';
   }
+  // Situação de cada período (1 ou 2): 'aprovada' | 'recusada' | 'pendente'.
+  // Pedidos antigos (sem essa informação) seguem o status geral.
+  function hasP2(x){ return !!(x && x.start2 && Number(x.days2)>0); }
+  function getPS(x,i){
+    const st=state(x);
+    if(st==='encerrada' || st==='aprovada') return 'aprovada';
+    const v=x['ps'+i];
+    if(v==='aprovada'||v==='recusada'||v==='pendente') return v;
+    if(st==='recusada'){ const rp=Number(x.rejectedPeriod||0); return (!rp||rp===i)?'recusada':'pendente'; }
+    return 'pendente';
+  }
+  function materializePS(x){ (hasP2(x)?[1,2]:[1]).forEach(i=>x['ps'+i]=getPS(x,i)); }
+  // Atualiza o status geral a partir dos períodos.
+  function applyPeriodStatus(x){
+    const ids=hasP2(x)?[1,2]:[1], v=ids.map(i=>x['ps'+i]||'pendente');
+    const rej=ids.filter(i=>(x['ps'+i]||'pendente')==='recusada');
+    if(v.every(k=>k==='aprovada')){ x.status='aprovada'; x.reason=''; x.rejectedPeriod=0; }
+    else if(rej.length){ x.status='recusada'; x.rejectedPeriod=rej.length===1?rej[0]:0; }
+    else { x.status='pendente'; x.rejectedPeriod=0; }
+  }
   function label(st){
     return st==='aprovada'?'✅ Férias aprovadas':
            st==='recusada'?'❌ Férias recusadas':
@@ -1924,9 +1985,11 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       const actions = canManageRecords && st==='pendente'
         ? (miss>0
           ? `<div class="approval"><button class="approve" disabled>🔒 Falta 2º período</button><button class="reject" data-reject="${x.id}">✖️ Recusar</button></div>`
-          : `<div class="approval"><button class="approve" data-approve="${x.id}">✅ Aprovar</button><button class="reject" data-reject="${x.id}">✖️ Recusar</button></div>`)
+          : `<div class="approval"><button class="approve" data-approve="${x.id}">✅ Aprovar ${has2?'os dois':''}</button><button class="reject" data-reject="${x.id}">✖️ Recusar ${has2?'os dois':''}</button></div>`)
         : canManageRecords && st==='aprovada'
         ? `<div class="approval"><button class="approve" data-realizada="${x.id}">🏁 Realizada</button></div>`
+        : canManageRecords && st==='encerrada'
+        ? `<div class="approval"><button class="approve" style="background:#64748b" data-back-approved="${x.id}">↩️ Voltar para aprovada</button></div>`
         : st==='recusada'
         ? (Number(x.rejectedPeriod||0)>0
           ? `<div class="approval"><button class="approve" data-edit-p="${x.id}" data-p="${Number(x.rejectedPeriod)}">✏️ Alterar o ${Number(x.rejectedPeriod)}º período e reenviar</button></div>`
@@ -1941,16 +2004,21 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
                         ...pc.near.map(c=>`<div class="pline o">🟠 Perto das férias de <b>${escapeHtml(c.who)}</b> (${c.ranges}).</div>`)].join('');
       const canEdit=canManageRecords || ['pendente','recusada'].includes(st);
       const two=has2||miss>0;
-      // Período recusado (0 = férias inteiras). Só vale enquanto o pedido está recusado.
-      const rp=st==='recusada'?Number(x.rejectedPeriod||0):0;
+      // Situação de cada período (aprovado / recusado / aguardando).
+      const ids=has2?[1,2]:[1];
+      const rejIds=ids.filter(i=>getPS(x,i)==='recusada'), okIds=ids.filter(i=>getPS(x,i)==='aprovada');
+      const rp=st==='recusada' && rejIds.length===1 && has2 ? rejIds[0] : 0;
+      const perActive=canManageRecords && has2 && miss===0 && ['pendente','recusada'].includes(st);
       const pbox=(label,s0,n,pc,idx)=>{
         const e0=addDaysUTC(s0,n-1), b0=addDaysUTC(e0,1);
-        const refused=rp===idx, kept=rp>0 && rp!==idx;
-        const t=refused?'r':kept?'g':(showC&&pc)?pc.type:'n';
-        const chipHtml=refused?'<span class="pchip r">❌ Recusado</span>':kept?'<span class="pchip g">✅ Mantido</span>':(showC&&pc)?`<span class="pchip ${t}">${chip(t)}</span>`:'';
+        const pst=st==='encerrada'?'n':getPS(x,idx);
+        const refused=pst==='recusada', appr=pst==='aprovada' && st!=='aprovada';
+        const t=refused?'r':appr?'g':(showC&&pc)?pc.type:'n';
+        const chipHtml=refused?'<span class="pchip r">❌ Recusado</span>':appr?'<span class="pchip g">✅ Aprovado</span>':(showC&&pc)?`<span class="pchip ${t}">${chip(t)}</span>`:'';
         const head=(label || chipHtml) ? `<div class="pbox-head"><span>${label||''}</span>${chipHtml}</div>` : '';
-        const why=refused && x.reason ? `<div class="pline r">📝 Motivo: ${escapeHtml(x.reason)}</div>` : '';
-        const rejBtn=canManageRecords && st==='pendente' && has2 ? `<button type="button" class="pedit prej" data-reject-p="${x.id}" data-p="${idx}">✖️ Recusar só o ${idx}º período</button>` : '';
+        const motivo=x['reason'+idx]||x.reason;
+        const why=refused && has2 && motivo ? `<div class="pline r">📝 Motivo: ${escapeHtml(motivo)}</div>` : '';
+        const rejBtn=perActive && pst==='pendente' ? `<div class="pbtns"><button type="button" class="pok" data-approve-p="${x.id}" data-p="${idx}">✅ Aprovar ${idx}º</button><button type="button" class="pno" data-reject-p="${x.id}" data-p="${idx}">✖️ Recusar ${idx}º</button></div>` : '';
         const editLabel=refused?`✏️ Alterar o ${idx}º período e reenviar`:`✏️ ${two?'Editar '+idx+'º período':'Editar data'}`;
         return `<div class="pbox ${t}">${head}
           <div class="info" style="margin-top:6px"><div>🏖️ Início<b>${fmt(s0)}</b></div><div>☀️ Último dia<b>${fmt(e0)}</b></div><div>✈️ Retorno<b>${fmt(b0)}</b></div></div>
@@ -1968,7 +2036,10 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
         ${miss>0 && st!=='encerrada'?`<div class="status warn">⚠️ Falta o 2º período (${miss} dias).${canEdit?`<button type="button" class="pedit" data-edit-p="${x.id}" data-p="2">➕ Escolher data do 2º período</button>`:''}</div>`:''}
         ${Number(x.sold)>0?`<div class="sold-tag">🔒 ${Number(x.sold)} dias vendidos (abono)</div>`:''}
         ${canManageRecords?`<div class="ra"><button data-delete="${x.id}">🗑️ Apagar</button></div>`:''}
-        <div class="status ${st==='aprovada'?'ok':st==='recusada'?'err':st==='encerrada'?'closed':''}">${rp?`❌ ${rp}º período recusado · o outro fica mantido`:label(st)}</div>
+        <div class="status ${st==='aprovada'?'ok':st==='recusada'?'err':st==='encerrada'?'closed':''}">${
+          rp?`❌ ${rp}º período recusado`+(okIds.length?` · ${okIds[0]}º já aprovado`:' · o outro aguarda')
+          : st==='pendente' && has2 && okIds.length ? `🟡 ${okIds[0]}º período aprovado · falta aprovar o ${okIds[0]===1?2:1}º`
+          : label(st)}</div>
         ${st==='aprovada' && recordBelongsToCurrentUser(x) ? `<div class="status warn">📌 <b>Não esqueça:</b> lance estas férias no sistema da empresa. A aprovação aqui não lança sozinha.</div>` : ''}
         ${st==='recusada' && x.reason && !rp ? `<div class="status err">📝 Motivo: ${escapeHtml(x.reason)}</div>` : ''}
         ${actions}
@@ -1977,11 +2048,16 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
 
     $('records').querySelectorAll('[data-approve]').forEach(b=>b.onclick=()=>setStatus(b.dataset.approve,'aprovada'));
     $('records').querySelectorAll('[data-reject]').forEach(b=>b.onclick=()=>setStatus(b.dataset.reject,'recusada'));
+    $('records').querySelectorAll('[data-approve-p]').forEach(b=>b.onclick=()=>approvePeriod(b.dataset.approveP,Number(b.dataset.p)));
     $('records').querySelectorAll('[data-reject-p]').forEach(b=>b.onclick=()=>{
       if(!canManageRecords){ alert('Somente o administrador pode recusar férias.'); return; }
       openReject(b.dataset.rejectP,Number(b.dataset.p));
     });
     $('records').querySelectorAll('[data-realizada]').forEach(b=>b.onclick=()=>setStatus(b.dataset.realizada,'encerrada'));
+    $('records').querySelectorAll('[data-back-approved]').forEach(b=>b.onclick=()=>{
+      if(!confirm('Voltar estas férias para "Aprovada"?\n\nUse quando alguém marcou "Realizada" por engano.')) return;
+      setStatus(b.dataset.backApproved,'aprovada');
+    });
     $('records').querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>removeRecord(b.dataset.delete));
     $('records').querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editRecord(b.dataset.edit));
     $('records').querySelectorAll('[data-edit-p]').forEach(b=>b.onclick=()=>editRecord(b.dataset.editP,Number(b.dataset.p)));
@@ -2190,6 +2266,28 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     openInstallHelp();
   }
 
+  // Envia um registro alterado pelo administrador e avisa se falhar.
+  async function syncOne(x,what){
+    try{
+      const failed=await pushLocalToFirebase([x]);
+      if(failed.length){ setFirebaseStatus('Erro ao enviar'); alert(sendFailMessage(failed,what)); return; }
+      await pushAgenda([x]); await pullAgenda();
+      setFirebaseStatus('☁️ Firebase sincronizado');
+    }catch(err){
+      console.error('Erro ao sincronizar',err);
+      alert(what+' neste aparelho, mas não foi possível sincronizar com o Firebase. Toque em 🔄 para tentar de novo.');
+    }
+  }
+  async function approvePeriod(id,idx){
+    if(!canManageRecords){ alert('Somente o administrador pode aprovar férias.'); return; }
+    const a=local(), x=a.find(r=>String(r.id)===String(id)); if(!x) return;
+    materializePS(x);
+    x['ps'+idx]='aprovada'; x['reason'+idx]='';
+    applyPeriodStatus(x); x.updatedAt=Date.now();
+    saveLocal(a); renderRecords();
+    await syncOne(x,'A aprovação foi salva');
+  }
+
   let rejectId = null, rejectPeriod = 0;
   function openReject(id,period){
     rejectId=id; rejectPeriod=Number(period||0);
@@ -2210,7 +2308,12 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     if(!canManageRecords){ closeReject(); alert('Somente o administrador pode recusar férias.'); return; }
     const a=local(), x=a.find(r=>String(r.id)===String(rejectId));
     if(!x){closeReject();return;}
-    x.status='recusada'; x.reason=reason; x.rejectedPeriod=rejectPeriod||0; x.updatedAt=Date.now();
+    materializePS(x);
+    if(rejectPeriod){ x['ps'+rejectPeriod]='recusada'; x['reason'+rejectPeriod]=reason; }
+    else{ (hasP2(x)?[1,2]:[1]).forEach(i=>{ x['ps'+i]='recusada'; x['reason'+i]=reason; }); }
+    x.reason=reason; applyPeriodStatus(x);
+    if(!rejectPeriod){ x.status='recusada'; x.rejectedPeriod=0; }
+    x.updatedAt=Date.now();
     saveLocal(a); closeReject(); renderRecords();
     try{
       const failed=await pushLocalToFirebase([x]);
@@ -2231,7 +2334,11 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       alert('Não dá para aprovar: falta o 2º período ('+missingDays(x)+' dias).\n\nToque em ✏️ Editar, escolha a data do 2º período e salve. Depois aprove.');
       return;
     }
-    if(status==='aprovada'){x.status='aprovada';x.reason='';x.rejectedPeriod=0;}
+    if(status==='encerrada'){
+      const last=vacationRanges(x).reduce((m,p)=>p.end>m?p.end:m,new Date(0));
+      if(last>=todayUTC() && !confirm(`⚠️ Estas férias ainda não terminaram.\nÚltimo dia: ${fmt(last)}.\n\nMarcar como realizada mesmo assim?`)) return;
+    }
+    if(status==='aprovada'){x.status='aprovada';x.reason='';x.rejectedPeriod=0;(hasP2(x)?[1,2]:[1]).forEach(i=>{x['ps'+i]='aprovada';x['reason'+i]='';});}
     else if(status==='encerrada'){x.status='encerrada';}
     else return;
     x.updatedAt=Date.now(); saveLocal(a); renderRecords();
@@ -2356,6 +2463,16 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     if(old) nextStatus = old.status==='recusada' ? 'pendente' : (old.status || 'pendente');
     const now=Date.now();
     const record={id,name,start:$('start').value,days:c.n,start2,days2:d2>0?d2:0,sold:$('sellDays').checked?10:0,status:nextStatus,reason:nextStatus==='recusada'?'':(old?.reason||''),rejectedPeriod:0,requestedAt:old?.requestedAt||now,updatedAt:now,ownerUid:old?.ownerUid||firebaseUser?.uid||'',ownerEmail:old?.ownerEmail||firebaseUser?.email||''};
+    // Período já aprovado e sem mudança de data continua aprovado; o resto volta para aguardando.
+    const has2n=hasP2(record);
+    if(record.status==='aprovada'){ record.ps1='aprovada'; record.ps2=has2n?'aprovada':''; }
+    else{
+      const same1=!!old && old.start===record.start && Number(old.days)===record.days;
+      const same2=!!old && (old.start2||'')===(record.start2||'') && Number(old.days2||0)===record.days2;
+      record.ps1=(old && getPS(old,1)==='aprovada' && same1)?'aprovada':'pendente';
+      record.ps2=has2n?((old && hasP2(old) && getPS(old,2)==='aprovada' && same2)?'aprovada':'pendente'):'';
+    }
+    record.reason1=''; record.reason2='';
     const i=a.findIndex(r=>String(r.id)===String(id));
     if(i>=0)a[i]=record;else a.unshift(record);
     saveLocal(a); reset(); renderRecords();
@@ -2486,8 +2603,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     $('adminApproved').textContent=a.filter(x=>state(x)==='aprovada').length;
     $('adminPending').textContent=a.filter(x=>state(x)==='pendente').length;
     $('adminClosed').textContent=a.filter(x=>state(x)==='encerrada').length;
-    renderAdminList();
-    renderUserList();
+    if(isDeveloperLogged()){ renderAdminList(); renderUserList(); }
   }
 
   function exportBackup(){
@@ -2521,14 +2637,107 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
 
   // Janela do quadro: 30, 60, 90 dias ou todas (fica lembrada neste aparelho).
   let boardWindow=localStorage.getItem('ferias_board_window')||'all';
+  let boardView=localStorage.getItem('ferias_board_view')||'list';
+  let tlShowPend=localStorage.getItem('ferias_tl_pend')!=='0';
+  let tlItems=[];
+
+  // ===== LINHA DO TEMPO (comparar férias de todo mundo) =====
+  function timelineHtml(){
+    const t=todayUTC(), win=boardWindow, DAY=86400000;
+    const recs=visibleRecords();
+    let items=[];
+    recs.forEach(r=>{
+      const all=vacationRanges(r), two=all.length>1;
+      const periods=all.map((p,i)=>({s:p.start,e:p.end,idx:i+1,two,st:getPS(r,i+1)}))
+        .filter(p=>p.e>=t && (p.st==='aprovada' || (tlShowPend && p.st==='pendente')));
+      if(periods.length) items.push({id:String(r.id),name:r.name||'',periods});
+    });
+    let start=t;
+    items.forEach(it=>it.periods.forEach(p=>{ if(p.s<start) start=p.s; }));
+    let end=win==='all' ? addDaysUTC(t,30) : addDaysUTC(t,Number(win));
+    if(win==='all') items.forEach(it=>it.periods.forEach(p=>{ if(p.e>end) end=p.e; }));
+    const maxEnd=addDaysUTC(start,400); if(end>maxEnd) end=maxEnd;
+    items=items.map(it=>({...it,periods:it.periods.filter(p=>p.s<=end && p.e>=start)})).filter(it=>it.periods.length);
+    items.sort((a,b)=>a.periods[0].s-b.periods[0].s || a.name.localeCompare(b.name,'pt-BR'));
+    tlItems=items;
+    if(!items.length) return `<div class="bm-empty">Nenhuma férias ${tlShowPend?'aprovada ou aguardando':'aprovada'} ${win==='all'?'pela frente':'nos próximos '+win+' dias'}.</div>`+tlOptions();
+    const days=Math.round((end-start)/DAY)+1;
+    const avail=Math.min(window.innerWidth||390,720)-24-100-4;
+    const px=Math.max(3,Math.min(12,Math.floor(avail/days)));
+    const W=days*px;
+    const X=d=>Math.round((d-start)/DAY)*px;
+    const clip=p=>{ const s0=p.s<start?start:p.s, e0=p.e>end?end:p.e; return {s0,e0,n:Math.round((e0-s0)/DAY)+1}; };
+    const mNames=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    let labels='', lines='';
+    let cur=new Date(Date.UTC(start.getUTCFullYear(),start.getUTCMonth(),1));
+    while(cur<=end){
+      const left=Math.max(0,X(cur));
+      const next=new Date(Date.UTC(cur.getUTCFullYear(),cur.getUTCMonth()+1,1));
+      const room=(next<=end?X(next):W)-left;
+      if(room>=34) labels+=`<span class="tl-mlabel" style="left:${left}px">${mNames[cur.getUTCMonth()]}/${String(cur.getUTCFullYear()).slice(2)}</span>`;
+      if(cur>start) lines+=`<div class="tl-mline" style="left:${left}px"></div>`;
+      cur=new Date(Date.UTC(cur.getUTCFullYear(),cur.getUTCMonth()+1,1));
+    }
+    lines+=`<div class="tl-today" style="left:${X(t)}px" title="Hoje"></div>`;
+    // Quantas pessoas fora em cada dia
+    const cnt=new Array(days).fill(0);
+    items.forEach(it=>it.periods.forEach(p=>{ const c=clip(p), o=Math.round((c.s0-start)/DAY); for(let i=0;i<c.n;i++) cnt[o+i]++; }));
+    let rows=items.map(it=>{
+      const bars=it.periods.map(p=>{
+        const c=clip(p), w=c.n*px;
+        const nFull=Math.round((p.e-p.s)/DAY)+1;
+        const txt=w>=58?(p.two?p.idx+'º · ':'')+nFull+'d':w>=26?nFull+'d':'';
+        return `<button type="button" class="tl-bar ${p.st==='pendente'?'pend':'ok'}" style="left:${X(c.s0)}px;width:${Math.max(w,4)}px" data-tl="${escapeHtml(it.id)}|${p.idx}">${txt}</button>`;
+      }).join('');
+      return `<div class="tl-row"><div class="tl-name" title="${escapeHtml(it.name)}">${escapeHtml(it.name)}</div><div class="tl-track" style="width:${W}px">${bars}</div></div>`;
+    }).join('');
+    // Linha vermelha: dias com 2 ou mais pessoas fora ao mesmo tempo
+    let over='', i=0, anyOver=false;
+    while(i<days){
+      if(cnt[i]>=2){
+        let j=i, mx=cnt[i]; while(j+1<days && cnt[j+1]>=2){ j++; mx=Math.max(mx,cnt[j]); }
+        const s0=addDaysUTC(start,i), e0=addDaysUTC(start,j), w=(j-i+1)*px;
+        over+=`<button type="button" class="tl-bar over" style="left:${i*px}px;width:${Math.max(w,4)}px" data-over="${fmt(s0)}|${fmt(e0)}|${mx}">${w>=32?mx+'👥':w>=12?mx:''}</button>`;
+        anyOver=true; i=j+1;
+      }else i++;
+    }
+    rows+=`<div class="tl-row over-row"><div class="tl-name">⚠️ Juntos</div><div class="tl-track" style="width:${W}px">${over}</div></div>`;
+    return `<div class="tl-hint">Cada linha é uma pessoa. Barras uma embaixo da outra = férias no mesmo período. Arraste para o lado para ver mais meses. Toque numa barra para ver as datas.</div>
+      <div class="tl-scroll"><div class="tl" style="width:${100+W}px">
+        <div class="tl-head"><div class="tl-name"></div><div class="tl-track" style="width:${W}px">${labels}</div></div>
+        <div class="tl-body"><div class="tl-lines" style="left:100px;width:${W}px">${lines}</div>${rows}</div>
+      </div></div>
+      <div class="tl-legend"><span><i style="background:#16a765"></i>Aprovada</span>${tlShowPend?'<span><i style="background:repeating-linear-gradient(45deg,#f2b300 0 4px,#f8cd45 4px 8px)"></i>Aguardando</span>':''}<span><i style="background:#ef4444"></i>2 ou mais fora juntos</span><span><i style="background:#ef4444;width:2px"></i>Hoje</span></div>
+      ${anyOver?'':'<div class="tl-hint" style="color:#087446">🟢 Ninguém fica fora ao mesmo tempo neste período.</div>'}
+      ${tlOptions()}`;
+  }
+  function tlOptions(){
+    return `<label class="tl-opt"><input type="checkbox" id="tlPend" ${tlShowPend?'checked':''}> Mostrar também os pedidos aguardando aprovação</label>`;
+  }
+  function bindTimeline(){
+    $('bmBody').querySelectorAll('[data-tl]').forEach(b=>b.onclick=()=>{
+      const [id,idx]=b.dataset.tl.split('|');
+      const it=tlItems.find(x=>x.id===id); if(!it) return;
+      const p=it.periods.find(x=>String(x.idx)===idx); if(!p) return;
+      const n=Math.round((p.e-p.s)/86400000)+1;
+      alert(`👤 ${it.name}\n${p.two?p.idx+'º período · ':''}${n} dias\n\n🏖️ Início: ${fmt(p.s)}\n☀️ Último dia: ${fmt(p.e)}\n✈️ Retorno: ${fmt(addDaysUTC(p.e,1))}\n\n${p.st==='pendente'?'🟡 Aguardando aprovação':'✅ Aprovada'}`);
+    });
+    $('bmBody').querySelectorAll('[data-over]').forEach(b=>b.onclick=()=>{
+      const [a,z,m]=b.dataset.over.split('|');
+      const s0=date(a.split('/').reverse().join('-')), e0=date(z.split('/').reverse().join('-'));
+      const who=tlItems.map(it=>({it,mp:it.periods.find(p=>p.s<=e0 && p.e>=s0)})).filter(o=>o.mp).map(o=>'• '+o.it.name+(o.mp.st==='pendente'?' (aguardando)':''));
+      alert(`⚠️ De ${a} a ${z}\nAté ${m} pessoas fora ao mesmo tempo:\n\n${who.join('\n')}`);
+    });
+    const cb=$('tlPend'); if(cb) cb.onchange=()=>{ tlShowPend=cb.checked; localStorage.setItem('ferias_tl_pend',tlShowPend?'1':'0'); renderBoard(); };
+  }
   // Linhas do quadro: só férias aprovadas que ainda não terminaram.
   // Com janela: quem está de férias agora + quem começa dentro da janela.
   function boardRows(win='all'){
     const t=todayUTC(), rows=[];
-    local().filter(r=>state(r)==='aprovada').forEach(r=>{
+    local().forEach(r=>{
       const ranges=vacationRanges(r), two=ranges.length>1;
       ranges.forEach((p,i)=>{
-        if(p.end<t) return;
+        if(p.end<t || getPS(r,i+1)!=='aprovada') return;
         const n=Math.round((p.end-p.start)/86400000)+1;
         rows.push({name:r.name||'',label:two?(i+1)+'º período':'Período único',s:p.start,e:p.end,b:addDaysUTC(p.end,1),n,now:t>=p.start});
       });
@@ -2554,6 +2763,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   function renderBoard(){
     const t=todayUTC(), win=boardWindow, rows=boardRows(win);
     document.querySelectorAll('#bmChips [data-w]').forEach(b=>b.classList.toggle('active',b.dataset.w===win));
+    document.querySelectorAll('#bmTabs [data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===boardView));
     const people=list=>new Set(list.map(x=>x.name.trim().toLowerCase())).size;
     const nowRows=rows.filter(x=>x.now);
     const soonRows=rows.filter(x=>!x.now);
@@ -2561,6 +2771,11 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     $('bmSub').textContent='Férias aprovadas que ainda não terminaram'+(win==='all'?'':' · próximos '+win+' dias')+' · hoje, '+fmt(t);
     const soonLabel=win==='all'?'📅 Próximas férias':'📅 Começam em até '+win+' dias';
     let html=`<div class="bm-sum"><div>🌴 De férias agora<b>${people(nowRows)}</b></div><div>${soonLabel}<b>${people(soonRows)}</b></div></div>`;
+    if(boardView==='tl'){
+      $('bmBody').innerHTML=html+timelineHtml();
+      bindTimeline();
+      return;
+    }
     if(!rows.length){
       html+=`<div class="bm-empty">${win==='all'?'Nenhuma férias aprovada pela frente.':'Nenhuma férias aprovada nos próximos '+win+' dias.'}</div>`;
     }else{
@@ -2608,6 +2823,10 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   $('printBtn').onclick=openBoard;
   $('bmPrint').onclick=printBoard;
   $('bmClose').onclick=closeBoard;
+  document.querySelectorAll('#bmTabs [data-view]').forEach(b=>b.onclick=()=>{
+    boardView=b.dataset.view; localStorage.setItem('ferias_board_view',boardView);
+    renderBoard(); $('boardModal').scrollTop=0;
+  });
   document.querySelectorAll('#bmChips [data-w]').forEach(b=>b.onclick=()=>{
     boardWindow=b.dataset.w; localStorage.setItem('ferias_board_window',boardWindow);
     renderBoard(); $('boardModal').scrollTop=0;
@@ -2712,10 +2931,12 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     return !!(firebaseUser && firebaseUser.email && firebaseUser.email.toLowerCase()===OWNER_EMAIL);
   }
   function refreshDeveloperPanel(){
-    const logged=isDeveloperLogged();
-    $('adminLogin').style.display=logged?'none':'block';
-    $('adminArea').style.display=logged?'block':'none';
-    if(logged) adminRefresh();
+    const dev=isDeveloperLogged(), adm=dev||canManageRecords;
+    $('adminPanelTitle').textContent=dev?'👨‍💻 Área do Desenvolvedor':'🛡️ Área do Administrador';
+    document.querySelectorAll('#adminPanel .dev-only').forEach(el=>el.style.display=dev?'':'none');
+    $('adminLogin').style.display=adm?'none':'block';
+    $('adminArea').style.display=adm?'block':'none';
+    if(adm) adminRefresh();
   }
   $('developerBtn').onclick=()=>{
     $('adminPanel').classList.toggle('open');
