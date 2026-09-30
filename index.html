@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Férias">
 <title>Controle de Férias</title>
-<meta name="app-version" content="2026-09-27-v24.4-quadro-celular">
+<meta name="app-version" content="2026-09-29-v24.8-cor-por-periodo">
 <style>
 :root{
   --blue:#0797e6;--blue2:#1976df;--ink:#12375d;--line:#d8e9f3;
@@ -110,10 +110,6 @@ button,input{font:inherit}button{cursor:pointer}
 .alert-card.warn{background:#fff6dc;color:#7a5700;border:1px solid #f1d58a}
 .alert-card > button{margin-left:auto;border:0;background:transparent;color:inherit;font-size:20px;font-weight:900;line-height:1;padding:0 2px}
 .alert-go{display:inline-block;margin-top:8px;border:0;border-radius:9px;padding:7px 12px;background:#7a5700;color:#fff;font-weight:900;font-size:12px}
-.reminder-config{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:12px;font-weight:800;color:#45677f;background:#f3fbff;border:1px solid #cfe4ef;border-radius:13px;padding:9px 12px;margin-bottom:10px}
-.reminder-days-input{width:56px;height:32px;border:1.5px solid var(--line);border-radius:9px;padding:0 8px;text-align:center;font-weight:900;color:var(--ink)}
-.reminder-days-save{border:0;border-radius:9px;padding:7px 11px;background:#0d6f9f;color:#fff;font-weight:900;font-size:12px}
-.reminder-days-note{font-size:11px;font-weight:700;color:#087446}
 .pend-box{margin-bottom:12px;padding:10px;border:1px solid #f1d58a;border-radius:12px;background:#fffaf0}
 .pend-box h3{margin:0 0 4px;font-size:14px;color:#7a5700}
 .pend-actions{display:flex;gap:6px;flex:0 0 auto}
@@ -178,6 +174,31 @@ button,input{font:inherit}button{cursor:pointer}
 .update-banner .ub-x{border:0;background:transparent;color:#cfe8f7;font-size:20px;font-weight:900;padding:0 4px;line-height:1}
 .update-toast{display:none;position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 10px);z-index:10000;padding:10px 16px;border-radius:999px;background:#13a56a;color:#fff;font-weight:900;font-size:13px;box-shadow:0 8px 22px #0004;white-space:nowrap}
 .update-toast.show{display:block}
+.pbox{margin-top:9px;padding:8px 9px 9px;border-radius:12px;border:1.5px solid #e1edf4;background:#fff}
+.pbox.g{border-color:#bfe6cf;background:#f3fbf6}
+.pbox.o{border-color:#f5c89a;background:#fff6ec}
+.pbox.r{border-color:#f5b5b5;background:#fff3f3}
+.pbox .info div{background:#ffffffd9}
+.pbox-head{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:11px;font-weight:900;color:#0d6f9f}
+.pchip{font-size:10px;font-weight:900;border-radius:999px;padding:3px 8px;white-space:nowrap}
+.pchip.g{background:#dff5e8;color:#087446}.pchip.o{background:#ffe3c7;color:#9a4a07}.pchip.r{background:#ffdcdc;color:#a52222}
+.pline{margin-top:6px;font-size:11px;font-weight:800;line-height:1.35}
+.pline.o{color:#9a4a07}.pline.r{color:#a52222}
+.pstat{display:none;margin-top:8px;padding:8px 10px;border-radius:10px;font-size:11px;font-weight:800;line-height:1.35}
+.pstat.g{display:block;background:#e7f8ee;color:#087446}
+.pstat.o{display:block;background:#ffe6cc;color:#9a4a07}
+.pstat.r{display:block;background:#ffe8e8;color:#a52222}
+.inst-steps{margin:0 0 12px;padding:0;list-style:none;display:grid;gap:8px}
+.inst-steps li{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:#f3f9fd;font-size:13px;font-weight:700;color:#35566b;line-height:1.4}
+.inst-steps b{color:var(--ink)}
+.inst-num{flex:0 0 24px;height:24px;border-radius:50%;background:var(--blue);color:#fff;font-weight:900;font-size:12px;display:flex;align-items:center;justify-content:center}
+.rem-opt{border:1.5px solid var(--line);border-radius:13px;padding:12px;background:#f7fcff;color:var(--ink);font-weight:900;font-size:14px;text-align:left}
+.rem-opt small{display:block;font-weight:700;color:#60788b;font-size:11px;margin-top:2px}
+.req-toast{display:none;position:fixed;left:10px;right:10px;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);z-index:9500;max-width:560px;margin:0 auto;padding:12px 12px 12px 14px;border-radius:16px;background:#7a5700;color:#fff;box-shadow:0 10px 28px #0005;align-items:center;gap:10px;font-weight:900;font-size:13px;line-height:1.35}
+.req-toast.show{display:flex}
+.req-toast span{flex:1}
+.req-toast .rt-go{border:0;border-radius:11px;padding:8px 11px;background:#ffd32f;color:#12375d;font-weight:900;font-size:12px;white-space:nowrap}
+.req-toast .rt-x{border:0;background:transparent;color:#ffe7a6;font-size:20px;font-weight:900;padding:0 2px;line-height:1}
 .sold-tag{margin-top:9px;padding:7px 10px;border-radius:10px;background:#e7f8ee;color:#087446;font-size:11px;font-weight:900}
 
 .days{display:flex;align-items:center;gap:6px;margin-top:12px}
@@ -330,6 +351,11 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   <button type="button" class="ub-x" id="updateBannerClose" aria-label="Fechar aviso">×</button>
 </div>
 <div class="update-toast" id="updateToast"></div>
+<div class="req-toast" id="reqToast" role="status">
+  <span id="reqToastText">🆕 Novo pedido de férias</span>
+  <button type="button" class="rt-go" id="reqToastGo">Ver</button>
+  <button type="button" class="rt-x" id="reqToastClose" aria-label="Fechar aviso">×</button>
+</div>
 
 <header class="hero">
   <div class="palm">🌴</div><div class="sun"></div>
@@ -357,13 +383,15 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     <div class="auth-note" style="margin-top:6px">🔒 O aplicativo mantém a sessão do Firebase; sua senha não é gravada pelo aplicativo.</div>
     <div class="auth-status" id="authStatus"></div>
     <div class="auth-user" id="authUserInfo"></div>
-    <button type="button" class="update-link" id="updateLink">🔄 Atualizar aplicativo</button>
+    <button type="button" class="update-link" id="installLink">📲 Instalar o app no celular</button>
+    <button type="button" class="update-link" id="updateLink" style="margin-top:6px">🔄 Atualizar aplicativo</button>
   </div>
 </div>
 
 <div id="appContent" class="auth-locked">
 <div class="developer-area">
   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+    <button type="button" id="installBtn" class="update-btn" title="Instalar o app no celular" aria-label="Instalar o app no celular">📲</button>
     <button type="button" id="updateBtn" class="update-btn" title="Atualizar aplicativo" aria-label="Atualizar aplicativo">🔄</button>
     <span id="firebaseIndicator" class="firebase-indicator sync" title="Status da sincronização" aria-label="Status da sincronização">⏳</span>
     <button class="developer-btn" id="developerBtn">👨‍💻 Desenvolvedor</button>
@@ -432,15 +460,29 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   </div>
 </div>
 
+<div class="reject-modal" id="remModal" aria-hidden="true">
+  <div class="reject-box" role="dialog" aria-modal="true" aria-labelledby="remTitle">
+    <h3 id="remTitle" style="color:#075b8a">🔔 Lembrete a cada 2 semanas</h3>
+    <p>O lembrete fica no calendário do seu celular e toca mesmo com o app fechado. Ele começa daqui a 2 semanas, às 9h.</p>
+    <div style="display:grid;gap:9px">
+      <button type="button" class="rem-opt" id="remIcs">📅 Calendário do celular<small>iPhone e a maioria dos Android</small></button>
+      <button type="button" class="rem-opt" id="remGoogle">🟦 Google Agenda<small>Se você usa a agenda do Google</small></button>
+      <button type="button" class="reject-cancel" id="remCancel">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div class="reject-modal" id="installModal" aria-hidden="true">
+  <div class="reject-box" role="dialog" aria-modal="true" aria-labelledby="installTitle">
+    <h3 id="installTitle" style="color:#075b8a">📲 Instalar o Controle de Férias</h3>
+    <p id="installIntro">Assim o app fica com ícone na tela do celular, igual aos outros aplicativos.</p>
+    <ol class="inst-steps" id="installSteps"></ol>
+    <button type="button" class="reject-cancel" id="installClose" style="width:100%">Entendi</button>
+  </div>
+</div>
+
 <main class="wrap">
 <div id="alerts"></div>
-<div class="reminder-config" id="reminderConfig" style="display:none">
-  <span>🔔 Lembrar a equipe de olhar o app a cada</span>
-  <input type="number" id="reminderDaysInput" class="reminder-days-input" min="1" max="90" value="14">
-  <span>dias</span>
-  <button type="button" id="reminderDaysSave" class="reminder-days-save">Salvar</button>
-  <span class="reminder-days-note" id="reminderDaysNote"></span>
-</div>
 
 <section class="card" id="formCard">
   <div class="grid">
@@ -547,6 +589,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     <div class="result end"><small>☀️ ÚLTIMO DIA</small><strong id="re">—</strong><span id="we">—</span></div>
     <div class="result back" id="rbx"><small>✈️ RETORNO</small><strong id="rb">—</strong><span id="wb">—</span></div>
   </div>
+  <div class="pstat" id="pstat1"></div>
   <div id="results2" style="display:none">
     <div class="period-title second">2º período · <span id="p2days">18</span> dias</div>
     <div class="results">
@@ -554,6 +597,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       <div class="result end"><small>☀️ ÚLTIMO DIA</small><strong id="re2">—</strong><span id="we2">—</span></div>
       <div class="result back" id="rbx2"><small>✈️ RETORNO</small><strong id="rb2">—</strong><span id="wb2">—</span></div>
     </div>
+    <div class="pstat" id="pstat2"></div>
   </div>
   <div class="notice" id="notice">Escolha uma data para calcular.</div>
   <div class="actions">
@@ -587,7 +631,8 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   <div class="quote">🌊 “Descanso hoje para voltar com mais energia amanhã!”<span>Férias fazem bem.</span></div>
 </section>
 
-<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 24.4</span></footer>
+<button type="button" class="update-link" id="remindLink" style="margin:4px auto 0">🔔 Lembrete no calendário</button>
+<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 24.8</span></footer>
 </main>
 </div>
 
@@ -740,14 +785,14 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
           await ensureUserProfile(user,savedName);
           if(savedName && !$('name').value.trim()) $('name').value=savedName;
           await refreshRecordPermissions();
-          await loadReminderConfig();
-          await loadReviewDismissed();
           await pullFirebase();
           startLiveSync();
           refreshPending();
           if(document.getElementById('adminPanel')?.classList.contains('open')) refreshDeveloperPanel();
         }else{
           stopLiveSync();
+          $('reqToast')?.classList.remove('show');
+          try{ navigator.clearAppBadge?.(); }catch(e){}
           canManageRecords=false;
           applyRecordPermissions();
           $('appContent').classList.add('auth-locked');
@@ -755,8 +800,6 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
           $('authUserInfo').textContent='';
           if($('appLogoutBtn')) $('appLogoutBtn').style.display='none';
           setFirebaseStatus('🔐 Login necessário para sincronizar');
-          if($('reminderConfig')) $('reminderConfig').style.display='none';
-          updateAppBadge(0);
         }
       });
     }catch(err){
@@ -835,59 +878,6 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     }catch(err){ console.warn('Não foi possível ver cadastros pendentes',err); }
     updateDevDot();
     renderAlerts();
-  }
-
-  // ===== BADGE DO APP (número no ícone, tipo WhatsApp) =====
-  // Mostra quantas férias estão pendentes de aprovação para quem pode aprovar.
-  function updateAppBadge(count){
-    if(!('setAppBadge' in navigator)) return;
-    try{
-      if(count>0) navigator.setAppBadge(count).catch(()=>{});
-      else if('clearAppBadge' in navigator) navigator.clearAppBadge().catch(()=>{});
-    }catch(e){}
-  }
-
-  // ===== LEMBRETE PERIÓDICO PARA OLHAR O APP =====
-  // Intervalo em dias é definido pelo administrador e guardado em ferias/config.
-  // Cada pessoa tem sua própria data da última vez que fechou o aviso,
-  // guardada em usuarios/{uid}, então funciona igual no celular e no computador.
-  let reminderDays=14;
-  let reminderDismissedAt=0;
-  async function loadReminderConfig(){
-    if(!firebaseDb || !firebaseFns) return;
-    try{
-      const snap=await firebaseFns.getDoc(firebaseFns.doc(firebaseDb,'ferias','config'));
-      reminderDays=Number(snap.exists() && snap.data()?.reminderDays)||14;
-    }catch(err){ console.warn('Configuração de lembrete indisponível',err); }
-    if($('reminderDaysInput')) $('reminderDaysInput').value=reminderDays;
-    if($('reminderConfig')) $('reminderConfig').style.display=canManageRecords?'flex':'none';
-  }
-  async function saveReminderDays(){
-    if(!canManageRecords){ alert('Só um administrador pode alterar esse prazo.'); return; }
-    const n=Math.round(Number($('reminderDaysInput')?.value));
-    if(!n || n<1 || n>90){ alert('Digite um número de dias entre 1 e 90.'); return; }
-    try{
-      await firebaseFns.setDoc(firebaseFns.doc(firebaseDb,'ferias','config'),{reminderDays:n,updatedAt:Date.now(),updatedBy:firebaseUser?.email||''},{merge:true});
-      reminderDays=n;
-      const note=$('reminderDaysNote');
-      if(note){ note.textContent='✅ Salvo!'; setTimeout(()=>{ if(note.textContent==='✅ Salvo!') note.textContent=''; },2500); }
-      renderAlerts();
-    }catch(err){ console.warn('Não foi possível salvar o prazo do lembrete',err); alert('Não foi possível salvar agora. Tente de novo em instantes.'); }
-  }
-  async function loadReviewDismissed(){
-    if(!firebaseDb || !firebaseFns || !firebaseUser?.uid) return;
-    try{
-      const snap=await firebaseFns.getDoc(firebaseFns.doc(firebaseDb,'usuarios',firebaseUser.uid));
-      reminderDismissedAt=Number(snap.exists() && snap.data()?.reviewDismissedAt)||0;
-    }catch(err){ console.warn('Última visualização do lembrete indisponível',err); }
-  }
-  async function dismissReviewReminder(){
-    reminderDismissedAt=Date.now();
-    renderAlerts();
-    if(!firebaseDb || !firebaseFns || !firebaseUser?.uid) return;
-    try{
-      await firebaseFns.setDoc(firebaseFns.doc(firebaseDb,'usuarios',firebaseUser.uid),{reviewDismissedAt:reminderDismissedAt},{merge:true});
-    }catch(err){ console.warn('Não foi possível salvar o lembrete',err); }
   }
 
   function setAuthStatus(message,type='info'){
@@ -1141,27 +1131,31 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   }
   // Quantos dias entre o fim de umas férias e o começo de outras contam como "perto".
   const NEAR_DAYS=7;
-  function conflictInfo(r){
-    const mine=vacationRanges(r), clash=[], near=[];
+  // Confere UM período contra as férias dos outros.
+  // Devolve só o período do colega que bate (não os dois).
+  function periodConflicts(a,selfId){
+    const clash=[], near=[];
     const byId=new Map(local().map(x=>[String(x.id),x]));
+    const txt=l=>l.map(p=>fmt(p.start)+' a '+fmt(p.end)).join(' e ');
     for(const o of agendaRecords){
-      if(!o || String(o.id)===String(r.id) || o.status==='recusada') continue;
-      let hit='';
-      for(const a of mine){
-        for(const b of vacationRanges(o)){
-          if(a.start<=b.end && a.end>=b.start){ hit='r'; break; }
-          const gap=Math.min(Math.abs(a.start-b.end),Math.abs(b.start-a.end))/86400000;
-          if(gap<=NEAR_DAYS && !hit) hit='o';
-        }
-        if(hit==='r') break;
+      if(!o || String(o.id)===String(selfId) || o.status==='recusada') continue;
+      const hitC=[], hitN=[];
+      for(const b of vacationRanges(o)){
+        if(a.start<=b.end && a.end>=b.start){ hitC.push(b); continue; }
+        const gap=Math.min(Math.abs(a.start-b.end),Math.abs(b.start-a.end))/86400000;
+        if(gap<=NEAR_DAYS) hitN.push(b);
       }
-      if(!hit) continue;
+      if(!hitC.length && !hitN.length) continue;
       const rec=byId.get(String(o.id));
       const who=canManageRecords && rec?.name ? rec.name : 'outro colega';
-      const ranges=vacationRanges(o).map(p=>fmt(p.start)+' a '+fmt(p.end)).join(' e ');
-      (hit==='r'?clash:near).push({who,ranges});
+      if(hitC.length) clash.push({who,ranges:txt(hitC)}); else near.push({who,ranges:txt(hitN)});
     }
     return {type:clash.length?'r':near.length?'o':'g',clash,near};
+  }
+  function conflictInfo(r){
+    const periods=vacationRanges(r).map(a=>periodConflicts(a,r.id));
+    const type=periods.some(p=>p.type==='r')?'r':periods.some(p=>p.type==='o')?'o':'g';
+    return {type,periods};
   }
   function conflictType(r){ return conflictInfo(r).type; }
   async function pullAgenda(){
@@ -1218,6 +1212,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     liveUnsubs.push(onSnapshot(collection(firebaseDb,'ferias_agenda'),snap=>{
       agendaRecords=filterDeleted(snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r.deleted!==true));
       renderRecords();
+      if($('start').value) calc();
     },err=>console.warn('Agenda em tempo real indisponível',err)));
   }
   document.addEventListener('visibilitychange',()=>{
@@ -1591,6 +1586,17 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     return {s,e,b,msg};
   }
 
+  function setPstat(id,iso,n,label){
+    const el=$(id); if(!el) return;
+    if(!iso){ el.className='pstat'; el.innerHTML=''; return; }
+    const s0=date(iso), pc=periodConflicts({start:s0,end:addDaysUTC(s0,n-1)},editId);
+    const list=l=>l.map(c=>`<b>${escapeHtml(c.who)}</b> (${c.ranges})`).join('; ');
+    el.className='pstat '+pc.type;
+    el.innerHTML = pc.type==='r' ? `🔴 ${label}: mesmos dias das férias de ${list(pc.clash)}. Escolha outra data.`
+      : pc.type==='o' ? `🟠 ${label}: perto das férias de ${list(pc.near)}. Se puder, escolha outra data.`
+      : `🟢 ${label}: sem conflito com outras férias.`;
+  }
+
   function calc(){
     updateSecondPeriod();
     const start=$('start').value, n=clamp($('days').value), d2=totalDays()-n, start2=$('start2').value;
@@ -1604,6 +1610,8 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     $('p1days').textContent=n; $('p2days').textContent=d2;
     let p2=null;
     if(d2>0){ if(start2) p2=fillPeriod(start2,d2,'2'); else clearPeriod('2'); }
+    setPstat('pstat1',start,n,d2>0?'1º período':'Suas férias');
+    setPstat('pstat2',d2>0?start2:'',d2,'2º período');
     if(!start){
       clearPeriod('');
       $('notice').textContent='Escolha uma data para calcular.';
@@ -1898,20 +1906,8 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       return;
     }
     $('records').innerHTML=filtered.map(x=>{
-      const s=date(x.start),e=new Date(s);e.setUTCDate(e.getUTCDate()+Number(x.days||1)-1);
-      const b=new Date(e);b.setUTCDate(b.getUTCDate()+1);
       const has2=!!(x.start2 && Number(x.days2)>0);
       const miss=missingDays(x);
-      let p2='';
-      if(has2){
-        const s2=date(x.start2), e2=addDaysUTC(s2,Number(x.days2)-1), b2=addDaysUTC(e2,1);
-        p2=`<div class="period-label">2º período · ${Number(x.days2)} dias</div>
-        <div class="info" style="margin-top:5px">
-          <div>🏖️ Início<b>${fmt(s2)}</b></div>
-          <div>☀️ Último dia<b>${fmt(e2)}</b></div>
-          <div>✈️ Retorno<b>${fmt(b2)}</b></div>
-        </div>`;
-      }
       const st=state(x);
       const actions = canManageRecords && st==='pendente'
         ? (miss>0
@@ -1924,19 +1920,25 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
         : '';
       const requestTs=Number(x.requestedAt||x.createdAt||x.updatedAt||Date.now());
       const requestDate=fmt(new Date(requestTs));
-      const ci=conflictInfo(x), ct=ci.type;
-      const ciLines=[...ci.clash.map(c=>`<div class="status clash">🔴 Mesmos dias das férias de <b>${escapeHtml(c.who)}</b> (${c.ranges}).</div>`),
-                     ...ci.near.map(c=>`<div class="status near">🟠 Perto das férias de <b>${escapeHtml(c.who)}</b> (${c.ranges}).</div>`)].join('');
+      // Cada período ganha a sua cor: 🟢 livre · 🟠 perto de outra férias · 🔴 mesmos dias.
+      const ci=conflictInfo(x), ct=ci.type, showC=st!=='encerrada';
+      const chip=t=>t==='r'?'🔴 Conflito':t==='o'?'🟠 Perto de outra férias':'🟢 Sem conflito';
+      const pLines=pc=>[...pc.clash.map(c=>`<div class="pline r">🔴 Mesmos dias das férias de <b>${escapeHtml(c.who)}</b> (${c.ranges}).</div>`),
+                        ...pc.near.map(c=>`<div class="pline o">🟠 Perto das férias de <b>${escapeHtml(c.who)}</b> (${c.ranges}).</div>`)].join('');
+      const pbox=(label,s0,n,pc)=>{
+        const e0=addDaysUTC(s0,n-1), b0=addDaysUTC(e0,1), t=(showC&&pc)?pc.type:'n';
+        const head=(label || (showC&&pc)) ? `<div class="pbox-head"><span>${label||''}</span>${(showC&&pc)?`<span class="pchip ${t}">${chip(t)}</span>`:''}</div>` : '';
+        return `<div class="pbox ${t}">${head}
+          <div class="info" style="margin-top:6px"><div>🏖️ Início<b>${fmt(s0)}</b></div><div>☀️ Último dia<b>${fmt(e0)}</b></div><div>✈️ Retorno<b>${fmt(b0)}</b></div></div>
+          ${(showC&&pc)?pLines(pc):''}
+        </div>`;
+      };
+      const two=has2||miss>0;
+      let periodsHtml=pbox(two?`1º período · ${Number(x.days||1)} dias`:'',date(x.start),Number(x.days||1),ci.periods[0]);
+      if(has2) periodsHtml+=pbox(`2º período · ${Number(x.days2)} dias`,date(x.start2),Number(x.days2),ci.periods[1]);
       return `<div class="record">
         <div class="top"><div><div class="name">👤 ${escapeHtml(x.name)}</div><div class="request-date">📅 Data da solicitação: ${requestDate}</div></div><span class="badge ${ct==='r'?'err':ct==='o'?'warn':''}">${ct==='r'?'🔴 Conflito':ct==='o'?'🟠 Período próximo':'🟢 Sem conflito'}</span></div>
-        ${(has2||miss>0)?`<div class="period-label">1º período · ${Number(x.days||1)} dias</div>`:''}
-        <div class="info"${(has2||miss>0)?' style="margin-top:5px"':''}>
-          <div>🏖️ Início<b>${fmt(s)}</b></div>
-          <div>☀️ Último dia<b>${fmt(e)}</b></div>
-          <div>✈️ Retorno<b>${fmt(b)}</b></div>
-        </div>
-        ${p2}
-        ${st!=='encerrada'?ciLines:''}
+        ${periodsHtml}
         ${miss>0 && st!=='encerrada'?`<div class="status warn">⚠️ Falta o 2º período (${miss} dias). Toque em ✏️ Editar e escolha a data.</div>`:''}
         ${Number(x.sold)>0?`<div class="sold-tag">🔒 ${Number(x.sold)} dias vendidos (abono)</div>`:''}
         <div class="ra"><button data-edit="${x.id}">✏️ Editar</button>${canManageRecords?`<button data-delete="${x.id}">🗑️ Apagar</button>`:''}</div>
@@ -1957,6 +1959,12 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   // ===== AVISOS =====
   // Funcionário: aviso de aprovada/recusada (uma vez) e das férias chegando.
   // Administradores: quem começa as férias nos próximos 7 dias, quem está de férias e pedidos pendentes.
+  // Quanto tempo a pessoa ficou sem abrir o app (guardado neste aparelho).
+  const LAST_OPEN_KEY='ferias_last_open';
+  const prevOpen=Number(localStorage.getItem(LAST_OPEN_KEY)||0);
+  const daysAway=prevOpen?Math.floor((Date.now()-prevOpen)/86400000):0;
+  localStorage.setItem(LAST_OPEN_KEY,String(Date.now()));
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') localStorage.setItem(LAST_OPEN_KEY,String(Date.now())); });
   const SEEN_KEY='ferias_seen_status';
   const DISMISS_KEY='ferias_alert_dismiss';
   function todayUTC(){ const n=new Date(); return new Date(Date.UTC(n.getFullYear(),n.getMonth(),n.getDate())); }
@@ -1975,6 +1983,9 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     const t=todayUTC(), seen=seenMap(), dismissed=dismissedList(), cards=[];
     const mine=visibleRecords().filter(recordBelongsToCurrentUser);
     let unseen=0;
+    if(daysAway>=14 && !dismissed.includes('gap')) cards.push({cls:'info',key:'gap',html:`👋 <b>Faz ${daysAway} dias que você não abria o app.</b><br>Veja abaixo se tem alguma novidade.`});
+    if(!localStorage.getItem('ferias_reminder_set') && !localStorage.getItem('ferias_reminder_offer_off'))
+      cards.push({cls:'info',key:'rem-offer',perm:true,html:`🔔 <b>Quer um lembrete?</b> O celular te avisa a cada 2 semanas para olhar o app, mesmo com ele fechado.<br><button type="button" class="alert-go" data-remind style="background:#075b8a">Criar lembrete</button>`});
     mine.forEach(r=>{
       const st=state(r);
       if(!['aprovada','recusada'].includes(st) || seen[String(r.id)]===st) return;
@@ -1993,7 +2004,6 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     if(canManageRecords){
       const all=visibleRecords(), lines=[];
       const pend=all.filter(r=>state(r)==='pendente').length;
-      updateAppBadge(pend);
       if(pend) lines.push(`🟡 <b>${pend} ${pend===1?'pedido aguardando':'pedidos aguardando'}</b> aprovação`);
       all.filter(r=>state(r)==='aprovada').forEach(r=>vacationRanges(r).forEach(p=>{
         const diff=Math.round((p.start-t)/86400000), back=addDaysUTC(p.end,1);
@@ -2003,9 +2013,6 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       const key='adm:'+lines.join('|');
       if(lines.length && !dismissed.includes(key)) cards.push({cls:'warn',key,html:`👨‍💼 <b>Avisos da equipe</b><br>${lines.join('<br>')}`});
     }
-    if(Date.now()-reminderDismissedAt >= reminderDays*86400000){
-      cards.push({cls:'info',reminder:true,html:`🔔 <b>Lembrete:</b> dê uma olhada geral no app de férias.`});
-    }
     if(isDeveloperLogged() && pendingCount>0){
       const key='pend:'+pendingCount;
       if(!dismissed.includes(key)) cards.unshift({cls:'warn',key,html:`👤 <b>${pendingCount} ${pendingCount===1?'cadastro aguardando':'cadastros aguardando'} sua liberação.</b><br><button type="button" class="alert-go" data-open-dev>Abrir e liberar</button>`});
@@ -2013,18 +2020,139 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     box.innerHTML=cards.map((c,i)=>`<div class="alert-card ${c.cls}"><div>${c.html}</div><button type="button" data-alert="${i}" aria-label="Fechar aviso">×</button></div>`).join('');
     box.querySelectorAll('[data-alert]').forEach(b=>b.onclick=()=>{
       const c=cards[Number(b.dataset.alert)]; if(!c) return;
-      if(c.reminder) dismissReviewReminder();
-      else if(c.seen) markSeen(c.seen[0],c.seen[1]);
+      if(c.seen) markSeen(c.seen[0],c.seen[1]);
+      else if(c.perm) localStorage.setItem('ferias_reminder_offer_off','1');
       else{ const d=dismissedList(); d.push(c.key); sessionStorage.setItem(DISMISS_KEY,JSON.stringify(d)); }
       renderAlerts();
     });
+    box.querySelectorAll('[data-remind]').forEach(b=>b.onclick=openRemind);
     box.querySelectorAll('[data-open-dev]').forEach(b=>b.onclick=()=>{
       $('adminPanel').classList.add('open');
       refreshDeveloperPanel();
       setTimeout(()=>$('userList')?.scrollIntoView({behavior:'smooth',block:'start'}),120);
     });
+    notifyNewRequests();
     // Bolinha vermelha em "Férias cadastradas" enquanto houver resposta não vista.
     if(filter!=='controles') $('listTitle').innerHTML='📋 Férias cadastradas'+(unseen?'<span class="dot" title="Novidade"></span>':'');
+  }
+
+  // ===== AVISO DE PEDIDO NOVO (Desenvolvedor e administradores) =====
+  // Guarda neste aparelho quais pedidos "aguardando" já foram vistos.
+  // Quando aparece um que ainda não foi visto, mostra o aviso embaixo da tela,
+  // vibra (Android) e coloca o número de pendentes no ícone do app.
+  function knownPendKey(){ return 'ferias_known_pend_'+(firebaseUser?.uid||''); }
+  function notifyNewRequests(){
+    if(!firebaseUser || !canManageRecords) return;
+    const pend=visibleRecords().filter(r=>state(r)==='pendente');
+    try{
+      if(navigator.setAppBadge){ pend.length ? navigator.setAppBadge(pend.length) : navigator.clearAppBadge?.(); }
+    }catch(e){}
+    const key=knownPendKey(), raw=localStorage.getItem(key);
+    const ids=pend.map(r=>String(r.id));
+    if(raw===null){ localStorage.setItem(key,JSON.stringify(ids)); return; } // primeira vez: só registra
+    let known; try{ known=new Set(JSON.parse(raw)||[]); }catch{ known=new Set(); }
+    const fresh=pend.filter(r=>!known.has(String(r.id)) && !recordBelongsToCurrentUser(r));
+    localStorage.setItem(key,JSON.stringify(ids));
+    if(!fresh.length) return;
+    const r=fresh[0];
+    $('reqToastText').textContent = fresh.length===1
+      ? '🆕 Novo pedido de férias: '+(r.name||'funcionário')+' · início '+fmt(date(r.start))
+      : '🆕 '+fresh.length+' novos pedidos de férias aguardando aprovação';
+    $('reqToast').classList.add('show');
+    try{ navigator.vibrate?.([120,80,120]); }catch(e){}
+  }
+  function goToPending(){
+    $('reqToast').classList.remove('show');
+    closeBoard();
+    document.querySelectorAll('.filter').forEach(x=>x.classList.toggle('active',x.dataset.filter==='pendente'));
+    filter='pendente'; renderRecords();
+    setTimeout(()=>$('vacationsCard')?.scrollIntoView({behavior:'smooth',block:'start'}),60);
+  }
+
+  // ===== LEMBRETE NO CALENDÁRIO (a cada 2 semanas, às 9h) =====
+  function openRemind(){ $('remModal').classList.add('open'); $('remModal').setAttribute('aria-hidden','false'); }
+  function closeRemind(){ $('remModal').classList.remove('open'); $('remModal').setAttribute('aria-hidden','true'); }
+  function reminderStart(){ const d=new Date(); d.setDate(d.getDate()+14); d.setHours(9,0,0,0); return d; }
+  const calStamp=d=>`${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
+  const appUrl=()=>location.origin+location.pathname;
+  function markReminderSet(){
+    localStorage.setItem('ferias_reminder_set','1');
+    closeRemind(); renderAlerts();
+  }
+  function createIcsReminder(){
+    const s=reminderStart(), e=new Date(s.getTime()+15*60000);
+    const utc=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');
+    const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Controle de Ferias//PT-BR','CALSCALE:GREGORIAN','METHOD:PUBLISH',
+      'BEGIN:VEVENT','UID:lembrete-ferias-'+Date.now()+'@controle-ferias','DTSTAMP:'+utc,
+      'DTSTART:'+calStamp(s),'DTEND:'+calStamp(e),'RRULE:FREQ=WEEKLY;INTERVAL=2',
+      'SUMMARY:🏖️ Olhar o Controle de Férias',
+      'DESCRIPTION:Veja se tem pedido de férias ou resposta nova.\\nAbrir: '+appUrl(),
+      'URL:'+appUrl(),
+      'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:Olhar o Controle de Férias','TRIGGER:PT0M','END:VALARM',
+      'END:VEVENT','END:VCALENDAR'];
+    const blob=new Blob([lines.join('\r\n')],{type:'text/calendar;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download='lembrete-controle-ferias.ics';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),60000);
+    markReminderSet();
+    setTimeout(()=>alert('📅 Toque em "Adicionar" no calendário para salvar o lembrete.\n\nSe o calendário não abrir, abra o app pelo Safari (iPhone) ou Chrome (Android) e tente de novo.'),600);
+  }
+  function openGoogleReminder(){
+    const s=reminderStart(), e=new Date(s.getTime()+15*60000);
+    const p=new URLSearchParams({action:'TEMPLATE',text:'🏖️ Olhar o Controle de Férias',dates:calStamp(s)+'/'+calStamp(e),
+      details:'Veja se tem pedido de férias ou resposta nova.\nAbrir: '+appUrl(),recur:'RRULE:FREQ=WEEKLY;INTERVAL=2'});
+    window.open('https://calendar.google.com/calendar/render?'+p.toString(),'_blank');
+    markReminderSet();
+  }
+
+  // ===== INSTALAR O APP =====
+  // Android (Chrome): usa a janela de instalação do próprio celular.
+  // iPhone: o Safari não deixa instalar por botão, então mostra o passo a passo.
+  let deferredInstall=null;
+  const isStandalone=()=>window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone===true;
+  const isIOS=()=>/iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+  function refreshInstallUI(){
+    const show=!isStandalone();
+    ['installBtn','installLink'].forEach(id=>{ if($(id)) $(id).style.display=show?'':'none'; });
+  }
+  window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); deferredInstall=e; refreshInstallUI(); });
+  window.addEventListener('appinstalled',()=>{
+    deferredInstall=null; refreshInstallUI();
+    const t=$('updateToast'); t.textContent='✅ App instalado! Procure o ícone na tela do celular.';
+    t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),4000);
+  });
+  function step(n,html){ return `<li><span class="inst-num">${n}</span><span>${html}</span></li>`; }
+  function openInstallHelp(){
+    const ua=navigator.userAgent, otherIOSBrowser=/CriOS|FxiOS|EdgiOS/i.test(ua);
+    let html='';
+    if(isIOS()){
+      if(otherIOSBrowser) html+=step(1,'Abra este link no <b>Safari</b> (o navegador da bússola azul).');
+      const k=otherIOSBrowser?1:0;
+      html+=step(1+k,'Toque no botão <b>Compartilhar</b> (o quadrado com a setinha pra cima), na barra do Safari.');
+      html+=step(2+k,'Role a lista e toque em <b>“Adicionar à Tela de Início”</b>.');
+      html+=step(3+k,'Toque em <b>Adicionar</b>, no canto de cima. Pronto, o ícone aparece na tela do celular.');
+    }else{
+      html+=step(1,'Abra este link no <b>Chrome</b>.');
+      html+=step(2,'Toque nos <b>três pontinhos ⋮</b>, no canto de cima.');
+      html+=step(3,'Toque em <b>“Instalar app”</b> ou <b>“Adicionar à tela inicial”</b>.');
+      html+=step(4,'Confirme em <b>Instalar</b>. O ícone aparece na tela do celular.');
+    }
+    $('installSteps').innerHTML=html;
+    $('installModal').classList.add('open'); $('installModal').setAttribute('aria-hidden','false');
+  }
+  function closeInstallHelp(){ $('installModal').classList.remove('open'); $('installModal').setAttribute('aria-hidden','true'); }
+  async function doInstall(){
+    if(isStandalone()){ alert('✅ O app já está instalado e aberto pelo ícone.'); return; }
+    if(deferredInstall){
+      try{
+        deferredInstall.prompt();
+        await deferredInstall.userChoice;
+      }catch(e){ openInstallHelp(); }
+      deferredInstall=null;
+      return;
+    }
+    openInstallHelp();
   }
 
   let rejectId = null;
@@ -2440,6 +2568,18 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   $('printBtn').onclick=openBoard;
   $('bmPrint').onclick=printBoard;
   $('bmClose').onclick=closeBoard;
+  $('reqToastGo').onclick=goToPending;
+  $('installBtn').onclick=doInstall;
+  $('installLink').onclick=doInstall;
+  $('installClose').onclick=closeInstallHelp;
+  $('installModal').onclick=e=>{if(e.target===$('installModal'))closeInstallHelp()};
+  refreshInstallUI();
+  $('remindLink').onclick=openRemind;
+  $('remIcs').onclick=createIcsReminder;
+  $('remGoogle').onclick=openGoogleReminder;
+  $('remCancel').onclick=closeRemind;
+  $('remModal').onclick=e=>{if(e.target===$('remModal'))closeRemind()};
+  $('reqToastClose').onclick=()=>$('reqToast').classList.remove('show');
   $('datePick').onclick=()=>{ $('calendarCard').classList.contains('open') ? closeCalendar() : openCalendar(); };
   $('calPrev').onclick=()=>{calendarMonth.setUTCMonth(calendarMonth.getUTCMonth()-1);renderCalendar()};
   $('calNext').onclick=()=>{calendarMonth.setUTCMonth(calendarMonth.getUTCMonth()+1);renderCalendar()};
@@ -2705,7 +2845,6 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     }
   }
   $('updateBtn').onclick=manualUpdate;
-  if($('reminderDaysSave')) $('reminderDaysSave').onclick=saveReminderDays;
   $('updateLink').onclick=manualUpdate;
 
   showUpdatedToast();
