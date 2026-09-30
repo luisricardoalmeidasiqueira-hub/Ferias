@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Férias">
 <title>Controle de Férias</title>
-<meta name="app-version" content="2026-09-30-v1.12-lista-sem-gestor">
+<meta name="app-version" content="2026-09-30-v1.14-desfazer-historico">
 <style>
 :root{
   --blue:#0797e6;--blue2:#1976df;--ink:#12375d;--line:#d8e9f3;
@@ -221,6 +221,19 @@ button,input{font:inherit}button{cursor:pointer}
 .edit-banner button{border:0;border-radius:10px;padding:8px 11px;background:#7a5700;color:#fff;font-weight:900;font-size:12px;white-space:nowrap}
 select.input{-webkit-appearance:none;appearance:none;font-weight:800;background-image:linear-gradient(45deg,transparent 50%,#60788b 50%),linear-gradient(135deg,#60788b 50%,transparent 50%);background-position:calc(100% - 18px) 50%,calc(100% - 13px) 50%;background-size:5px 5px;background-repeat:no-repeat;padding-right:32px}
 select.input:disabled{opacity:.7}
+.undo-toast{display:none;position:fixed;left:10px;right:10px;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);z-index:9600;max-width:560px;margin:0 auto;padding:11px 10px 11px 14px;border-radius:16px;background:#12375d;color:#fff;box-shadow:0 10px 28px #0005;align-items:center;gap:10px;font-weight:900;font-size:13px;line-height:1.35}
+.undo-toast.show{display:flex}
+.undo-toast span{flex:1}
+.undo-toast button{border:0;border-radius:11px;padding:9px 13px;background:#ffd32f;color:#12375d;font-weight:900;font-size:13px;white-space:nowrap}
+.hist-row{padding:8px 10px;background:#fff;border:1px solid #dcecf5;border-radius:10px;margin-top:6px;font-size:12px;color:#35566b;font-weight:700;line-height:1.4}
+.hist-row small{display:block;font-size:10px;color:#71879a;font-weight:800}
+.hist-row em{font-style:normal;color:#60788b}
+.trash-row{padding:10px;background:#fff;border:1px solid #dcecf5;border-radius:11px;margin-top:7px}
+.trash-row b{font-size:13px;color:#173d57}
+.trash-row small{display:block;font-size:11px;color:#60788b;font-weight:700;margin-top:3px;line-height:1.35}
+.trash-actions{display:flex;gap:6px;margin-top:8px}
+.trash-actions button{border:0;border-radius:9px;padding:7px 10px;font-weight:900;font-size:12px}
+.t-restore{background:#e7f8ee;color:#087446}.t-kill{background:#ffe8e8;color:#a52222}
 .rej-note{display:block;width:100%;margin-top:9px;border:1px dashed #f5b5b5;border-radius:12px;padding:9px 11px;background:#fff6f6;color:#a52222;font-weight:800;font-size:12px;text-align:left;line-height:1.35}
 .pbtns{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:7px}
 .pbtns button{border:0;border-radius:9px;padding:9px 6px;font-weight:900;font-size:12px;color:#fff;white-space:nowrap}
@@ -401,6 +414,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   <button type="button" class="ub-x" id="updateBannerClose" aria-label="Fechar aviso">×</button>
 </div>
 <div class="update-toast" id="updateToast"></div>
+<div class="undo-toast" id="undoToast" role="status"><span id="undoText">Feito</span><button type="button" id="undoBtn">↩️ Desfazer</button></div>
 <div class="req-toast" id="reqToast" role="status">
   <span id="reqToastText">🆕 Novo pedido de férias</span>
   <button type="button" class="rt-go" id="reqToastGo">Ver</button>
@@ -486,6 +500,16 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       <h3>👥 Usuários cadastrados (<span id="userCount">0</span>)</h3>
       <div id="userList"><div class="admin-note">Carregando...</div></div>
       <div class="admin-note">🗑️ Excluir bloqueia o acesso ao app na hora. Para apagar o e-mail de vez, use Authentication no console do Firebase.</div>
+    </div>
+    <div class="admin-manager dev-only">
+      <h3>📜 Histórico de alterações</h3>
+      <div id="histList"><div class="admin-note">Carregando...</div></div>
+      <div class="admin-note">Mostra as últimas 60 alterações: quem fez, o quê e quando.</div>
+    </div>
+    <div class="admin-manager dev-only">
+      <h3>🗑️ Lixeira (<span id="trashCount">0</span>)</h3>
+      <div id="trashList"><div class="admin-note">Carregando...</div></div>
+      <div class="admin-note">Pedidos apagados ficam aqui. ↩️ Restaurar devolve o pedido do jeito que estava, inclusive para o funcionário.</div>
     </div>
     <div class="admin-actions">
       <button class="admin-main" id="adminExportBtn">💾 Exportar dados</button>
@@ -689,7 +713,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
 </section>
 
 <button type="button" class="update-link" id="remindLink" style="margin:4px auto 0">🔔 Lembrete no calendário</button>
-<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 1.12</span></footer>
+<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 1.14</span></footer>
 </main>
 </div>
 
@@ -763,6 +787,14 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     localStorage.setItem(DELETED_KEY,JSON.stringify([...s]));
   }
   function isDeleted(id){ return deletedIds().has(String(id)); }
+  function unmarkDeleted(id){
+    const s=deletedIds(); s.delete(String(id));
+    localStorage.setItem(DELETED_KEY,JSON.stringify([...s]));
+  }
+  // Pedido restaurado da lixeira: volta a aparecer em todos os aparelhos.
+  function unmarkRestored(list){
+    (list||[]).forEach(r=>{ if(r && r.deleted!==true && r.restoredAt && isDeleted(r.id)) unmarkDeleted(r.id); });
+  }
   function filterDeleted(list){
     const s=deletedIds();
     return (Array.isArray(list)?list:[]).filter(x=>x && !s.has(String(x.id)));
@@ -1144,6 +1176,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
         const snap=await getDocs(q);
         cloudRaw=snap.docs.filter(d=>d.id!=='config').map(d=>({id:d.id,...d.data()}));
       }
+      unmarkRestored(cloudRaw);
       const cloudDeleted=new Set(cloudRaw.filter(r=>r.deleted===true).map(r=>String(r.id)));
       cloudDeleted.forEach(markDeleted);
       cloud=filterDeleted(cloudRaw.filter(r=>r.deleted!==true));
@@ -1271,6 +1304,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   let liveUnsubs=[];
   function stopLiveSync(){ liveUnsubs.forEach(u=>{try{u()}catch(e){}}); liveUnsubs=[]; }
   function applyCloudSnapshot(cloudRaw){
+    unmarkRestored(cloudRaw);
     cloudRaw.filter(r=>r.deleted===true).forEach(r=>markDeleted(r.id));
     const cloud=cloudRaw.filter(r=>r.deleted!==true);
     const merged=filterDeleted(mergeRecordSets(local(),cloud));
@@ -1297,7 +1331,9 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       },err=>console.warn('Cadastros em tempo real indisponível',err)));
     }
     liveUnsubs.push(onSnapshot(collection(firebaseDb,'ferias_agenda'),snap=>{
-      agendaRecords=filterDeleted(snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r.deleted!==true));
+      const raw=snap.docs.map(d=>({id:d.id,...d.data()}));
+      unmarkRestored(raw);
+      agendaRecords=filterDeleted(raw.filter(r=>r.deleted!==true));
       renderRecords();
       if($('start').value) calc();
     },err=>console.warn('Agenda em tempo real indisponível',err)));
@@ -2376,6 +2412,56 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     openInstallHelp();
   }
 
+  // ===== HISTÓRICO =====
+  function periodsText(r){ return vacationRanges(r).map((p,i,a)=>(a.length>1?(i+1)+'º ':'')+fmt(p.start)+' a '+fmt(p.end)).join(' · '); }
+  function logAction(text,r,detail){
+    if(!firebaseReady || !firebaseUser || !firebaseDb || !firebaseFns) return;
+    const entry={at:Date.now(),byUid:firebaseUser.uid,byEmail:firebaseUser.email||'',byName:myName(),text:String(text||''),
+      recordId:r?String(r.id):'',recordName:r?String(r.name||''):'',periods:r?periodsText(r):'',detail:String(detail||'')};
+    firebaseFns.addDoc(firebaseFns.collection(firebaseDb,'historico'),entry).catch(err=>console.warn('Histórico não gravado (regras?)',err));
+  }
+  async function renderHistory(){
+    const box=$('histList');
+    if(!box || !isDeveloperLogged() || !firebaseDb || !firebaseFns) return;
+    try{
+      const {collection,getDocs,query,orderBy,limit}=firebaseFns;
+      const snap=await getDocs(query(collection(firebaseDb,'historico'),orderBy('at','desc'),limit(60)));
+      const rows=snap.docs.map(d=>d.data());
+      if(!rows.length){ box.innerHTML='<div class="admin-note">Nenhuma alteração registrada ainda.</div>'; return; }
+      const when=ts=>new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}).format(new Date(Number(ts)));
+      box.innerHTML=rows.map(h=>`<div class="hist-row"><small>${when(h.at)}</small><b>${escapeHtml(h.byName||h.byEmail||'—')}</b> ${escapeHtml(h.text)}${h.periods?` <em>(${escapeHtml(h.periods)})</em>`:''}${h.detail?`<br><em>📝 ${escapeHtml(h.detail)}</em>`:''}</div>`).join('');
+    }catch(err){
+      console.warn('Histórico indisponível',err);
+      box.innerHTML='<div class="admin-note">⚠️ Histórico desligado: publique a regra <b>historico</b> no Firebase.</div>';
+    }
+  }
+
+  // ===== DESFAZER (10 segundos) =====
+  let undoInfo=null, undoTimer=null;
+  const snapshotOf=x=>JSON.parse(JSON.stringify(x));
+  function offerUndo(text,info){
+    undoInfo=info;
+    $('undoText').textContent=text;
+    $('undoToast').classList.add('show');
+    clearTimeout(undoTimer);
+    undoTimer=setTimeout(()=>{ $('undoToast').classList.remove('show'); undoInfo=null; },10000);
+  }
+  async function doUndo(){
+    const u=undoInfo; undoInfo=null; clearTimeout(undoTimer);
+    $('undoToast').classList.remove('show');
+    if(!u) return;
+    if(u.type==='delete'){ await restoreById(u.id,false); logAction('desfez: '+u.text,u.rec); return; }
+    const prev=snapshotOf(u.prev);
+    ['ps1','ps2','reason1','reason2','reason'].forEach(k=>{ if(prev[k]===undefined) prev[k]=''; });
+    if(prev.rejectedPeriod===undefined) prev.rejectedPeriod=0;
+    prev.updatedAt=Date.now();
+    const a=local(), i=a.findIndex(r=>String(r.id)===String(prev.id));
+    if(i>=0) a[i]=prev; else a.unshift(prev);
+    saveLocal(a); renderRecords();
+    await syncOne(prev,'O desfazer foi salvo');
+    logAction('desfez: '+u.text,prev);
+  }
+
   // Envia um registro alterado pelo administrador e avisa se falhar.
   async function syncOne(x,what){
     try{
@@ -2391,11 +2477,15 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   async function approvePeriod(id,idx){
     if(!canManageRecords){ alert('Somente o administrador pode aprovar férias.'); return; }
     const a=local(), x=a.find(r=>String(r.id)===String(id)); if(!x) return;
+    const prev=snapshotOf(x);
     materializePS(x);
     x['ps'+idx]='aprovada'; x['reason'+idx]='';
     applyPeriodStatus(x); x.updatedAt=Date.now();
     saveLocal(a); renderRecords();
+    const txt=`aprovou o ${idx}º período de ${x.name||'—'}`;
+    offerUndo(`✅ ${idx}º período de ${x.name||'—'} aprovado`,{prev,text:txt});
     await syncOne(x,'A aprovação foi salva');
+    logAction(txt,x);
   }
 
   let rejectId = null, rejectPeriod = 0;
@@ -2418,6 +2508,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     if(!canManageRecords){ closeReject(); alert('Somente o administrador pode recusar férias.'); return; }
     const a=local(), x=a.find(r=>String(r.id)===String(rejectId));
     if(!x){closeReject();return;}
+    const prev=snapshotOf(x), rpNow=rejectPeriod;
     materializePS(x);
     if(rejectPeriod){ x['ps'+rejectPeriod]='recusada'; x['reason'+rejectPeriod]=reason; }
     else{ (hasP2(x)?[1,2]:[1]).forEach(i=>{ x['ps'+i]='recusada'; x['reason'+i]=reason; }); }
@@ -2428,6 +2519,9 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     try{
       const failed=await pushLocalToFirebase([x]);
       if(failed.length){ setFirebaseStatus('Erro ao enviar'); alert(sendFailMessage(failed,'A recusa foi salva')); return; }
+      const txt=rpNow?`recusou o ${rpNow}º período de ${x.name||'—'}`:`recusou as férias de ${x.name||'—'}`;
+      offerUndo(rpNow?`✖️ ${rpNow}º período de ${x.name||'—'} recusado`:`✖️ Férias de ${x.name||'—'} recusadas`,{prev,text:txt});
+      logAction(txt,x,reason);
       await pushAgenda([x]);
       await pullAgenda();
       setFirebaseStatus('☁️ Firebase sincronizado');
@@ -2448,6 +2542,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       const last=vacationRanges(x).reduce((m,p)=>p.end>m?p.end:m,new Date(0));
       if(last>=todayUTC() && !confirm(`⚠️ Estas férias ainda não terminaram.\nÚltimo dia: ${fmt(last)}.\n\nMarcar como realizada mesmo assim?`)) return;
     }
+    const prev=snapshotOf(x), wasClosed=state(x)==='encerrada';
     if(status==='aprovada'){x.status='aprovada';x.reason='';x.rejectedPeriod=0;(hasP2(x)?[1,2]:[1]).forEach(i=>{x['ps'+i]='aprovada';x['reason'+i]='';});}
     else if(status==='encerrada'){x.status='encerrada';}
     else return;
@@ -2455,6 +2550,10 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     try{
       const failed=await pushLocalToFirebase([x]);
       if(failed.length){ setFirebaseStatus('Erro ao enviar'); alert(sendFailMessage(failed,'O status foi alterado')); return; }
+      const nm=x.name||'—';
+      const txt=status==='encerrada'?`marcou como realizadas as férias de ${nm}`:wasClosed?`voltou para aprovadas as férias de ${nm}`:`aprovou as férias de ${nm}`;
+      offerUndo(status==='encerrada'?`🏁 Férias de ${nm} marcadas como realizadas`:`✅ Férias de ${nm} aprovadas`,{prev,text:txt});
+      logAction(txt,x);
       await pushAgenda([x]);
       await pullAgenda();
       setFirebaseStatus('☁️ Firebase sincronizado');
@@ -2501,7 +2600,9 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   }
 
   async function removeRecord(id){
-    if(!confirm('Apagar este registro?'))return;
+    const rec=local().find(r=>String(r.id)===String(id));
+    const nm=rec?.name||'este pedido', per=rec?periodsText(rec):'';
+    if(!confirm(`🗑️ Apagar as férias de ${nm}?${per?'\n'+per:''}\n\nSe foi engano, dá para desfazer logo em seguida ou recuperar pela Lixeira.`))return;
     const idStr=String(id);
     markDeleted(idStr);
     const now=Date.now();
@@ -2525,6 +2626,9 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     agendaRecords=agendaRecords.filter(r=>String(r.id)!==idStr);
     if(String(editId)===idStr) reset();
     renderRecords();
+    const txt=`apagou as férias de ${nm}`;
+    offerUndo(`🗑️ Férias de ${nm} apagadas`,{type:'delete',id:idStr,rec,text:txt});
+    logAction(txt,rec);
   }
 
   function showSecondError(msg){
@@ -2579,6 +2683,9 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       alert('Estas férias já foram aprovadas. Para alterar a data, fale com o administrador.');
       return;
     }
+    if(old && canManageRecords && old.ownerUid && old.ownerUid!==firebaseUser?.uid){
+      if(!confirm(`✏️ Você vai alterar as férias de ${old.name||'outra pessoa'}.\n\nConfirma?`)) return;
+    }
     let nextStatus='pendente';
     if(old) nextStatus = old.status==='recusada' ? 'pendente' : (old.status || 'pendente');
     const now=Date.now();
@@ -2606,6 +2713,8 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       }
       try{ await pushAgenda([record]); await pullAgenda(); }catch(err){ console.warn('Agenda não atualizada',err); }
       setFirebaseStatus('☁️ Firebase sincronizado');
+      const own=record.ownerUid===firebaseUser?.uid;
+      logAction(old?(own?'alterou o próprio pedido de férias':`alterou as férias de ${record.name}`):(own?'fez um pedido de férias':`lançou férias para ${record.name}`),record);
       alert('✅ Salvo e enviado'+(record.status==='pendente'?' para aprovação.':'.'));
     }finally{
       btn.disabled=false; btn.textContent='💾 Salvar';
@@ -2722,13 +2831,69 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     }
   }
 
+  // ===== LIXEIRA (só o Desenvolvedor) =====
+  async function renderTrash(){
+    const box=$('trashList');
+    if(!box || !isDeveloperLogged() || !firebaseDb || !firebaseFns) return;
+    try{
+      const {collection,getDocs}=firebaseFns;
+      const snap=await getDocs(collection(firebaseDb,'ferias'));
+      const items=snap.docs.filter(d=>d.id!=='config').map(d=>({docId:d.id,...d.data()})).filter(r=>r.deleted===true)
+        .sort((a,b)=>Number(b.deletedAt||0)-Number(a.deletedAt||0));
+      $('trashCount').textContent=items.length;
+      if(!items.length){ box.innerHTML='<div class="admin-note">A lixeira está vazia.</div>'; return; }
+      const when=ts=>ts?new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}).format(new Date(Number(ts))):'—';
+      box.innerHTML=items.map(r=>{
+        const per=vacationRanges(r).map((p,i,a)=>(a.length>1?(i+1)+'º: ':'')+fmt(p.start)+' a '+fmt(p.end)).join(' · ')||'—';
+        return `<div class="trash-row"><b>👤 ${escapeHtml(r.name||'Sem nome')}</b>
+          <small>🏖️ ${per}</small>
+          <small>Situação quando foi apagado: ${label(state(r))}</small>
+          <small>🗑️ Apagado em ${when(r.deletedAt)}</small>
+          <div class="trash-actions"><button type="button" class="t-restore" data-restore="${escapeHtml(r.docId)}">↩️ Restaurar</button><button type="button" class="t-kill" data-kill="${escapeHtml(r.docId)}">Apagar de vez</button></div></div>`;
+      }).join('');
+      box.querySelectorAll('[data-restore]').forEach(b=>b.onclick=()=>restoreRecord(b.dataset.restore));
+      box.querySelectorAll('[data-kill]').forEach(b=>b.onclick=()=>killRecord(b.dataset.kill,items.find(x=>x.docId===b.dataset.kill)?.name));
+    }catch(err){
+      console.warn('Lixeira indisponível',err);
+      box.innerHTML='<div class="admin-note">Não foi possível abrir a lixeira agora.</div>';
+    }
+  }
+  function restoreRecord(docId){ return restoreById(docId,true); }
+  async function restoreById(docId,ask){
+    const {doc,getDoc,setDoc}=firebaseFns;
+    try{
+      const ref=doc(firebaseDb,'ferias',docId), snap=await getDoc(ref);
+      if(!snap.exists()){ alert('Esse pedido não existe mais.'); renderTrash(); return; }
+      const data=snap.data(), now=Date.now();
+      if(ask && !confirm(`Restaurar o pedido de ${data.name||'—'}?\n\nEle volta do jeito que estava quando foi apagado.`)) return;
+      await setDoc(ref,{deleted:false,deletedAt:0,restoredAt:now,updatedAt:now},{merge:true});
+      const rec={...data,id:data.id??docId,deleted:false,deletedAt:0,restoredAt:now,updatedAt:now};
+      unmarkDeleted(rec.id); unmarkDeleted(docId);
+      saveLocal(mergeRecordSets(local(),[rec]));
+      try{ await pushAgenda([rec]); await pullAgenda(); }catch(e){}
+      renderRecords(); renderTrash();
+      if($('adminPanel')?.classList.contains('open')) adminRefresh();
+      if(ask){ logAction(`restaurou da lixeira as férias de ${data.name||'—'}`,rec); alert('✅ Pedido de '+(data.name||'—')+' restaurado.'); }
+      else{ const t=$('updateToast'); t.textContent='↩️ Desfeito: pedido de '+(data.name||'—')+' voltou'; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3000); }
+    }catch(err){ console.error(err); alert('Não foi possível restaurar. Toque em 🔄 e tente de novo.'); }
+  }
+  async function killRecord(docId,name){
+    if(!confirm(`Apagar DE VEZ o pedido de ${name||'—'}?\n\nDepois disso não dá mais para restaurar.`)) return;
+    try{
+      await firebaseFns.deleteDoc(firebaseFns.doc(firebaseDb,'ferias',docId));
+      try{ await firebaseFns.deleteDoc(firebaseFns.doc(firebaseDb,'ferias_agenda',docId)); }catch(e){}
+      logAction(`apagou de vez (lixeira) as férias de ${name||'—'}`,null);
+      renderTrash();
+    }catch(err){ console.error(err); alert('Não foi possível apagar de vez.'); }
+  }
+
   function adminRefresh(){
     const a=local();
     $('adminVacations').textContent=a.length;
     $('adminApproved').textContent=a.filter(x=>state(x)==='aprovada').length;
     $('adminPending').textContent=a.filter(x=>state(x)==='pendente').length;
     $('adminClosed').textContent=a.filter(x=>state(x)==='encerrada').length;
-    if(isDeveloperLogged()){ renderAdminList(); renderUserList(); }
+    if(isDeveloperLogged()){ renderAdminList(); renderUserList(); renderTrash(); renderHistory(); }
   }
 
   function exportBackup(){
@@ -3015,6 +3180,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   $('calc').onclick=calc;
   $('save').onclick=saveRecord;
   $('edit').onclick=()=>reset();
+  $('undoBtn').onclick=doUndo;
   $('cancelEdit').onclick=()=>{ reset(); setTimeout(()=>$('formCard')?.scrollIntoView({behavior:'smooth',block:'start'}),60); };
   $('forWho').onchange=applyForWho;
   $('del').onclick=()=>{if(!canManageRecords){alert('Somente o Desenvolvedor ou um administrador pode apagar registros.');return;} if(editId)removeRecord(editId);else alert('Selecione um registro para apagar.')};
