@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Férias">
 <title>Controle de Férias</title>
-<meta name="app-version" content="2026-09-30-v1.15-botao-dev-icone">
+<meta name="app-version" content="2026-10-01-v1.16-proximo-nao-bate">
 <style>
 :root{
   --blue:#0797e6;--blue2:#1976df;--ink:#12375d;--line:#d8e9f3;
@@ -715,7 +715,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
 </section>
 
 <button type="button" class="update-link" id="remindLink" style="margin:4px auto 0">🔔 Lembrete no calendário</button>
-<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 1.15</span></footer>
+<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 1.16</span></footer>
 </main>
 </div>
 
@@ -1265,19 +1265,20 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     const txt=l=>l.map(p=>fmt(p.start)+' a '+fmt(p.end)).join(' e ');
     for(const o of agendaRecords){
       if(!o || String(o.id)===String(selfId) || o.status==='recusada') continue;
-      const hitC=[], hitN=[];
+      const hitC=[], hitN=[]; let minGap=99;
       for(const b of vacationRanges(o)){
         if(a.start<=b.end && a.end>=b.start){ hitC.push(b); continue; }
         const gap=Math.min(Math.abs(a.start-b.end),Math.abs(b.start-a.end))/86400000;
-        if(gap<=NEAR_DAYS) hitN.push(b);
+        if(gap<=NEAR_DAYS){ hitN.push(b); minGap=Math.min(minGap,Math.max(0,Math.round(gap)-1)); }
       }
       if(!hitC.length && !hitN.length) continue;
       const rec=byId.get(String(o.id));
       const who=canManageRecords && rec?.name ? rec.name : 'outro colega';
-      if(hitC.length) clash.push({who,ranges:txt(hitC)}); else near.push({who,ranges:txt(hitN)});
+      if(hitC.length) clash.push({who,ranges:txt(hitC)}); else near.push({who,ranges:txt(hitN),gap:minGap});
     }
     return {type:clash.length?'r':near.length?'o':'g',clash,near};
   }
+  function gapText(g){ return g<=0?'um volta e o outro já sai, sem intervalo':g===1?'1 dia de intervalo':g+' dias de intervalo'; }
   function conflictInfo(r){
     const periods=vacationRanges(r).map(a=>periodConflicts(a,r.id));
     const type=periods.some(p=>p.type==='r')?'r':periods.some(p=>p.type==='o')?'o':'g';
@@ -1738,7 +1739,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     const list=l=>l.map(c=>`<b>${escapeHtml(c.who)}</b> (${c.ranges})`).join('; ');
     el.className='pstat '+pc.type;
     el.innerHTML = pc.type==='r' ? `🔴 ${label}: mesmos dias das férias de ${list(pc.clash)}. Escolha outra data.`
-      : pc.type==='o' ? `🟠 ${label}: perto das férias de ${list(pc.near)}. Se puder, escolha outra data.`
+      : pc.type==='o' ? `🟠 ${label}: próximo das férias de ${list(pc.near)}, mas não bate (${gapText(pc.near[0].gap)}). Pode pedir assim mesmo.`
       : `🟢 ${label}: sem conflito com outras férias.`;
   }
 
@@ -2150,9 +2151,9 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       const requestDate=fmt(new Date(requestTs));
       // Cada período ganha a sua cor: 🟢 livre · 🟠 perto de outra férias · 🔴 mesmos dias.
       const ci=conflictInfo(x), ct=ci.type, showC=st!=='encerrada';
-      const chip=t=>t==='r'?'🔴 Conflito':t==='o'?'🟠 Perto de outra férias':'🟢 Sem conflito';
+      const chip=t=>t==='r'?'🔴 Conflito':t==='o'?'🟠 Próximo, não bate':'🟢 Sem conflito';
       const pLines=pc=>[...pc.clash.map(c=>`<div class="pline r">🔴 Mesmos dias das férias de <b>${escapeHtml(c.who)}</b> (${c.ranges}).</div>`),
-                        ...pc.near.map(c=>`<div class="pline o">🟠 Perto das férias de <b>${escapeHtml(c.who)}</b> (${c.ranges}).</div>`)].join('');
+                        ...pc.near.map(c=>`<div class="pline o">🟠 Próximo das férias de <b>${escapeHtml(c.who)}</b> (${c.ranges}), mas não bate: ${gapText(c.gap)}.</div>`)].join('');
       const canEdit=canManageRecords || ['pendente','recusada'].includes(st);
       const two=has2||miss>0;
       // Situação de cada período (aprovado / recusado / aguardando).
@@ -2182,7 +2183,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       let periodsHtml=pbox(two?`1º período · ${Number(x.days||1)} dias`:'',date(x.start),Number(x.days||1),ci.periods[0],1);
       if(has2) periodsHtml+=pbox(`2º período · ${Number(x.days2)} dias`,date(x.start2),Number(x.days2),ci.periods[1],2);
       return `<div class="record">
-        <div class="top"><div><div class="name">👤 ${escapeHtml(x.name)}</div><div class="request-date">📅 Data da solicitação: ${requestDate}</div></div><span class="badge ${ct==='r'?'err':ct==='o'?'warn':''}">${ct==='r'?'🔴 Conflito':ct==='o'?'🟠 Período próximo':'🟢 Sem conflito'}</span></div>
+        <div class="top"><div><div class="name">👤 ${escapeHtml(x.name)}</div><div class="request-date">📅 Data da solicitação: ${requestDate}</div></div><span class="badge ${ct==='r'?'err':ct==='o'?'warn':''}">${ct==='r'?'🔴 Conflito':ct==='o'?'🟠 Próximo, mas não bate':'🟢 Sem conflito'}</span></div>
         ${periodsHtml}
         ${miss>0 && st!=='encerrada'?`<div class="status warn">⚠️ Falta o 2º período (${miss} dias).${canEdit?`<button type="button" class="pedit" data-edit-p="${x.id}" data-p="2">➕ Escolher data do 2º período</button>`:''}</div>`:''}
         ${Number(x.sold)>0?`<div class="sold-tag">🔒 ${Number(x.sold)} dias vendidos (abono)</div>`:''}
