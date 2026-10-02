@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Férias">
 <title>Controle de Férias</title>
-<meta name="app-version" content="2026-10-02-v1.21-terca-apos-feriado">
+<meta name="app-version" content="2026-10-02-v1.23-sem-tela-branca">
 <style>
 :root{
   --blue:#0797e6;--blue2:#1976df;--ink:#12375d;--line:#d8e9f3;
@@ -738,7 +738,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
 </section>
 
 <button type="button" class="update-link" id="remindLink" style="margin:4px auto 0">🔔 Lembrete no calendário</button>
-<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 1.21</span></footer>
+<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 1.23</span></footer>
 </main>
 </div>
 
@@ -2903,7 +2903,9 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       const row=u=>{
         const isB=blocked.has(u.uid);
         const isOwner=String(u.email||'').toLowerCase()===OWNER_EMAIL;
-        const btn=isOwner?'<span class="user-tag">Você</span>'
+        const noMail=!String(u.email||'').trim();
+        const btn=noMail?`<button type="button" class="user-del" data-purge="${escapeHtml(u.uid)}">🗑️ Remover</button>`
+          :isOwner?'<span class="user-tag">Você</span>'
           :isB?`<button type="button" class="user-back" data-unblock="${escapeHtml(u.uid)}">↩️ Reativar</button>`
           :`<button type="button" class="user-del" data-block="${escapeHtml(u.uid)}">🗑️ Excluir</button>`;
         return `<div class="user-row${isB?' blocked':''}"><div class="user-info"><b>👤 ${escapeHtml(u.name||'Sem nome')}</b><span>${escapeHtml(u.email||('Código: '+String(u.uid).slice(0,8)+'…'))}</span><small>${isB?'🚫 Acesso excluído':'Último acesso: '+when(u.lastLoginAt||u.updatedAt)}</small></div>${btn}</div>`;
@@ -2912,7 +2914,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
         ? '<div class="admin-note" style="margin:0 0 10px">⚠️ Liberação de cadastro ainda desligada: publique as regras novas no Firebase.</div>'
         : (st.pending.length ? `<div class="pend-box"><h3>⏳ Aguardando liberação (${st.pending.length})</h3>${st.pending.map(u=>`<div class="user-row"><div class="user-info"><b>👤 ${escapeHtml(u.name||'Sem nome')}</b><span>${escapeHtml(u.email||'')}</span><small>Pediu em: ${when(u.requestedAt||u.updatedAt)}</small></div><div class="pend-actions"><button type="button" class="user-back" data-liberar="${escapeHtml(u.uid)}">✅ Liberar</button><button type="button" class="user-del" data-recusar-user="${escapeHtml(u.uid)}">✖️</button></div></div>`).join('')}</div>` : '');
       box.innerHTML=pendHtml+(withEmail.length?withEmail.map(row).join(''):'<div class="admin-note">Nenhuma pessoa com e-mail cadastrada ainda.</div>')
-        + (noEmail.length?`<details class="user-others"><summary>📁 Outros registros sem e-mail (${noEmail.length})</summary>${noEmail.map(row).join('')}</details>`:'');
+        + (noEmail.length?`<details class="user-others"><summary>📁 Outros registros sem e-mail (${noEmail.length})</summary><button type="button" class="user-del" data-purge-all style="width:100%;margin-top:8px;padding:10px">🗑️ Remover todos sem e-mail (${noEmail.length})</button>${noEmail.map(row).join('')}</details>`:'');
       box.querySelectorAll('[data-block]').forEach(b=>b.onclick=async()=>{
         const u=users.find(x=>x.uid===b.dataset.block); if(!u) return;
         if(!confirm(`Excluir o acesso de ${u.name||u.email}?\n\nA pessoa não vai mais conseguir entrar no app. As férias dela continuam registradas.`)) return;
@@ -2939,6 +2941,25 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
           await firebaseFns.setDoc(firebaseFns.doc(firebaseDb,'bloqueados',u.uid),{uid:u.uid,email:u.email||'',name:u.name||'',blockedAt:Date.now(),blockedBy:OWNER_EMAIL});
           await renderUserList(); renderAlerts();
         }catch(err){ console.error(err); alert('Não foi possível recusar o cadastro.'); }
+      });
+      // Registros sem e-mail (sobra de logins antigos): remove de vez.
+      const purge=async uid=>{
+        await firebaseFns.deleteDoc(firebaseFns.doc(firebaseDb,'usuarios',uid));
+        try{ await firebaseFns.deleteDoc(firebaseFns.doc(firebaseDb,'bloqueados',uid)); }catch(e){}
+        try{ await firebaseFns.deleteDoc(firebaseFns.doc(firebaseDb,'liberados',uid)); }catch(e){}
+      };
+      box.querySelectorAll('[data-purge]').forEach(b=>b.onclick=async()=>{
+        if(!confirm('Remover de vez este registro sem nome e sem e-mail?')) return;
+        try{ await purge(b.dataset.purge); logAction('removeu um registro sem e-mail da lista de usuários',null); await renderUserList(); }
+        catch(err){ console.error(err); alert('Não foi possível remover.'); }
+      });
+      box.querySelectorAll('[data-purge-all]').forEach(b=>b.onclick=async()=>{
+        if(!confirm(`Remover de vez os ${noEmail.length} registros sem nome e sem e-mail?`)) return;
+        b.disabled=true; b.textContent='⏳ Removendo...';
+        let ok=0; for(const u of noEmail){ try{ await purge(u.uid); ok++; }catch(e){ console.warn('Não removido',u.uid,e); } }
+        logAction(`removeu ${ok} registros sem e-mail da lista de usuários`,null);
+        await renderUserList();
+        alert(`✅ ${ok} ${ok===1?'registro removido':'registros removidos'}.`);
       });
       box.querySelectorAll('[data-unblock]').forEach(b=>b.onclick=async()=>{
         const u=users.find(x=>x.uid===b.dataset.unblock); if(!u) return;
@@ -3447,6 +3468,9 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   // Se a pessoa estiver preenchendo algo: mostra a faixa "Nova versão disponível"
   // e só atualiza quando ela tocar, para não perder nada.
   const currentVersion=()=>document.querySelector('meta[name="app-version"]')?.content||'';
+  // Fora do site publicado (ex.: abrindo o arquivo pelo Claude ou pelo Arquivos do iPhone)
+  // não tenta atualizar, para não recarregar uma página que não existe (tela branca).
+  const onPublishedSite=()=>/\.github\.io$/i.test(location.hostname);
   const versionLabel=v=>{ const m=String(v||'').match(/-v([\d.]+)/); return m?m[1]:''; };
   async function fetchLatestVersion(){
     const res=await fetch(location.pathname+'?check='+Date.now(),{cache:'no-store'});
@@ -3462,6 +3486,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   }
   let pendingVersion='';
   function goToVersion(latest){
+    if(!onPublishedSite()) return;
     sessionStorage.setItem('ferias_updated_from',currentVersion());
     location.replace(location.pathname+'?v='+encodeURIComponent(latest||Date.now()));
   }
@@ -3472,6 +3497,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     $('updateBanner').classList.add('show');
   }
   async function checkForUpdate(mode){
+    if(!onPublishedSite()) return;
     try{
       const cur=currentVersion(), latest=await fetchLatestVersion();
       if(!latest || latest===cur){ $('updateBanner').classList.remove('show'); return; }
@@ -3504,6 +3530,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   $('updateBannerClose').onclick=()=>$('updateBanner').classList.remove('show');
   // Botão manual: busca a versão nova; se já estiver atualizado, sincroniza os dados.
   async function manualUpdate(){
+    if(!onPublishedSite()){ alert('A atualização funciona no site do app (github.io).'); return; }
     const btn=$('updateBtn'); if(btn){ btn.disabled=true; btn.textContent='⏳'; }
     try{
       const cur=document.querySelector('meta[name="app-version"]')?.content||'';
