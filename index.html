@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Férias">
 <title>Controle de Férias</title>
-<meta name="app-version" content="2026-10-02-v1.19-voltar-aguardando">
+<meta name="app-version" content="2026-10-02-v1.21-terca-apos-feriado">
 <style>
 :root{
   --blue:#0797e6;--blue2:#1976df;--ink:#12375d;--line:#d8e9f3;
@@ -77,6 +77,12 @@ button,input{font:inherit}button{cursor:pointer}
 .cal-day.selected{background:var(--blue);color:#fff;box-shadow:none}
 .cal-day.first-period{background:#e7f8ee;color:#087446}
 .cal-day.empty{visibility:hidden}
+.cal-day.off{opacity:.28}
+.split-title{font-weight:900;font-size:13px;margin:12px 0 6px}
+.split-opts{display:flex;flex-wrap:wrap;gap:6px}
+.split-opts button{border:1.5px solid var(--line);border-radius:12px;padding:9px 12px;background:#fbfeff;color:var(--ink);font-weight:900;font-size:13px}
+.split-opts button.active{background:var(--blue);border-color:var(--blue);color:#fff}
+.split-info{margin-top:8px;font-size:11px;color:#45677f;font-weight:700;line-height:1.45;background:#f3f9fd;border-radius:10px;padding:8px 10px}
 .calendar-hint{text-align:center;margin-top:6px;font-size:11px;font-weight:800;color:#60788b;background:#eef8ff;border-radius:9px;padding:6px 8px}
 .calendar-hint.ok{background:#e7f8ee;color:#087446}
 .calendar-hint.err{background:#ffe8e8;color:#a52222}
@@ -630,22 +636,25 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     <div class="calendar-week"><span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div>
     <div class="calendar-grid" id="calendarGrid"></div>
   </div>
-  <div class="calendar-hint" id="calendarHint">Toque no campo acima para escolher o início das férias.</div>
+  <div class="calendar-hint" id="calendarHint">Toque no campo acima para escolher o início das férias (segunda-feira, ou terça se a segunda for feriado).</div>
 
-  <div class="days">
+  <div class="days" style="display:none">
     <label>🏖️ Dias de férias</label>
     <button class="round" id="minus">−</button>
     <input class="input num" id="days" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" value="12" aria-label="Quantidade de dias">
     <span style="font-weight:900">dias</span>
     <button class="round" id="plus">+</button>
   </div>
-  <input class="range" id="range" type="range" min="1" max="30" value="12">
-  <div class="scale"><span>1</span><span id="scaleMax">30</span></div>
+  <input class="range" id="range" type="range" min="1" max="30" value="12" style="display:none">
+  <div class="scale" style="display:none"><span>1</span><span id="scaleMax">30</span></div>
   <div class="sell-row">
     <label><input type="checkbox" id="sellDays"> 💰 Vender 10 dias</label>
     <button type="button" class="clt-btn" id="cltHelp">📘 Regras da CLT</button>
   </div>
   <div class="sell-note" id="sellNote">💰 Você tira 20 dias de descanso e recebe os outros 10 em dinheiro (abono).</div>
+  <div class="split-title">🏖️ Como vai tirar as férias?</div>
+  <div class="split-opts" id="splitOpts"></div>
+  <div class="split-info">📋 <b>Regras da empresa:</b> 30 dias direto, ou 12 + 18, ou 18 + 12. Vendendo 10 dias: 20 direto, 5 + 15, 15 + 5, 6 + 14 ou 14 + 6.<br>📅 As férias <b>sempre começam numa segunda-feira</b>. Se a segunda for feriado, começa na terça.</div>
   <div class="clt-warn" id="cltWarn"></div>
 
   <!-- 2º período: aparece sozinho quando os dias forem menos de 30 -->
@@ -729,7 +738,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
 </section>
 
 <button type="button" class="update-link" id="remindLink" style="margin:4px auto 0">🔔 Lembrete no calendário</button>
-<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 1.19</span></footer>
+<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 1.21</span></footer>
 </main>
 </div>
 
@@ -1377,12 +1386,34 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   const totalDays = () => (document.getElementById('sellDays')?.checked ? 20 : 30);
   const clamp = n => Math.max(1,Math.min(totalDays(),Number(n)||1));
   // CLT art. 134 §1º: um período com pelo menos 14 dias e os outros com pelo menos 5.
+  // Regra da empresa: só estas divisões.
+  const allowedFirst=()=>($('sellDays')?.checked ? [20,5,15,6,14] : [30,12,18]);
+  const splitLabel=n=>{ const t=totalDays(); return n>=t? n+' dias direto' : n+' + '+(t-n); };
   function splitRuleError(n,d2){
-    if(d2<=0) return '';
-    if(Math.max(n,d2)<14) return `⚠️ ${n} + ${d2} dias não pode: pela CLT, um dos períodos precisa ter pelo menos 14 dias.`;
-    if(Math.min(n,d2)<5) return `⚠️ ${n} + ${d2} dias não pode: pela CLT, cada período precisa ter pelo menos 5 dias.`;
-    return '';
+    if(allowedFirst().includes(n)) return '';
+    return `⚠️ ${n}${d2>0?' + '+d2:''} dias não pode pela regra da empresa. Escolha uma das opções: ${allowedFirst().map(splitLabel).join(' · ')}.`;
   }
+  function renderSplitOpts(){
+    const box=$('splitOpts'); if(!box) return;
+    const cur=clamp($('days').value);
+    box.innerHTML=allowedFirst().map(n=>`<button type="button" data-split="${n}" class="${n===cur?'active':''}">${splitLabel(n)}</button>`).join('');
+    box.querySelectorAll('[data-split]').forEach(b=>b.onclick=()=>{
+      syncDays(Number(b.dataset.split)); calc(); renderCalendar2();
+    });
+  }
+  // Regra da empresa: as férias sempre começam numa segunda-feira.
+  // Exceção: se a segunda for feriado, pode começar na terça logo depois.
+  function isMondayHoliday(iso){
+    const d=date(iso); if(d.getUTCDay()!==1) return false;
+    return !!holidays(d.getUTCFullYear())[iso];
+  }
+  function isMonday(iso){
+    const d=date(iso), wd=d.getUTCDay();
+    if(wd===1) return true;
+    if(wd===2){ const prev=addDaysUTC(d,-1).toISOString().slice(0,10); return isMondayHoliday(prev); }
+    return false;
+  }
+  const startAllowed=iso=>isMonday(iso) && !nearHoliday(iso,holidays(Number(iso.slice(0,4))));
   function setSellUI(){
     const t=totalDays();
     $('range').max=t;
@@ -1391,7 +1422,9 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   }
   function applySellMode(){
     setSellUI();
-    syncDays($('days').value);
+    // Ao marcar/desmarcar "vender", vai para a primeira opção válida.
+    if(!allowedFirst().includes(clamp($('days').value))) syncDays(allowedFirst()[0]);
+    else syncDays($('days').value);
     calc(); renderCalendar2();
   }
 
@@ -1622,13 +1655,18 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     for(let i=0;i<first;i++) html+='<div class="cal-day empty"></div>';
     for(let day=1;day<=total;day++){
       const iso=`${y}-${pad(m+1)}-${pad(day)}`;
-      const cls=($('start').value===iso?' selected':'')+(iso===todayIso?' today':'');
+      const cls=($('start').value===iso?' selected':'')+(iso===todayIso?' today':'')+(startAllowed(iso)?'':' off');
       html+=`<button type="button" class="cal-day${cls}" data-date="${iso}">${day}</button>`;
     }
     $('calendarGrid').innerHTML=html;
     $('calendarGrid').querySelectorAll('[data-date]').forEach(btn=>{
       btn.onclick=()=>{
         const v=btn.dataset.date, h2=holidays(Number(v.slice(0,4))), near=nearHoliday(v,h2);
+        if(!isMonday(v)){
+          $('calendarHint').textContent='⚠️ As férias começam numa segunda-feira (ou na terça, quando a segunda é feriado).';
+          $('calendarHint').className='calendar-hint err';
+          return;
+        }
         if(near){
           $('calendarHint').textContent='⚠️ Data não disponível: nos 2 dias antes do feriado '+h2[near]+'.';
           $('calendarHint').className='calendar-hint err';
@@ -1703,13 +1741,18 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     for(let i=0;i<first;i++) html+='<div class="cal-day empty"></div>';
     for(let day=1;day<=total;day++){
       const iso=`${y}-${pad(m+1)}-${pad(day)}`;
-      const cls=($('start2').value===iso?' selected':(inFirstPeriod(iso)?' first-period':''))+(iso===todayIso?' today':'');
+      const cls=($('start2').value===iso?' selected':(inFirstPeriod(iso)?' first-period':''))+(iso===todayIso?' today':'')+(startAllowed(iso)?'':' off');
       html+=`<button type="button" class="cal-day${cls}" data-date="${iso}">${day}</button>`;
     }
     $('calendarGrid2').innerHTML=html;
     $('calendarGrid2').querySelectorAll('[data-date]').forEach(btn=>{
       btn.onclick=()=>{
         const v=btn.dataset.date, h2=holidays(Number(v.slice(0,4))), near=nearHoliday(v,h2);
+        if(!isMonday(v)){
+          $('calendarHint2').textContent='⚠️ O 2º período também começa numa segunda-feira (ou na terça, quando a segunda é feriado).';
+          $('calendarHint2').className='calendar-hint err';
+          return;
+        }
         if(near){
           $('calendarHint2').textContent='⚠️ Data não disponível: nos 2 dias antes do feriado '+h2[near]+'.';
           $('calendarHint2').className='calendar-hint err';
@@ -1758,6 +1801,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   }
 
   function calc(){
+    renderSplitOpts();
     updateSecondPeriod();
     const start=$('start').value, n=clamp($('days').value), d2=totalDays()-n, start2=$('start2').value;
     // Resultado só aparece depois de escolher a data de início.
@@ -2715,9 +2759,19 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       alert('Data indisponível: '+h[near]+'. Escolha outra data.');
       return;
     }
+    if(!isMonday($('start').value)){
+      alert('📅 As férias começam numa segunda-feira.\nSó quando a segunda é feriado é que pode começar na terça.\n\nEscolha outra data para o início.');
+      $('datePick').scrollIntoView({behavior:'smooth',block:'center'});
+      return;
+    }
+    if(c.d2>0 && $('start2').value && !isMonday($('start2').value)){
+      showSecondError('⚠️ O 2º período também começa numa segunda-feira (ou na terça, quando a segunda é feriado).');
+      alert('📅 O 2º período também começa numa segunda-feira.\nSó quando a segunda é feriado é que pode começar na terça.');
+      return;
+    }
     const ruleErr=splitRuleError(c.n,c.d2);
     if(ruleErr){
-      alert(ruleErr.replace('⚠️ ','')+'\n\nToque em 📘 Regras da CLT para ver a explicação.');
+      alert(ruleErr.replace('⚠️ ',''));
       $('cltWarn').scrollIntoView({behavior:'smooth',block:'center'});
       return;
     }
@@ -2793,7 +2847,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     $('name').readOnly=false;$('controlSaved').classList.remove('show');$('name').value='';$('start').value='';$('start2').value='';setRequestDateDisplay();$('admission').value='';loadHistory([]);$('sellDays').checked=false;setSellUI();syncDays(12);
     ['rs','re','rb','ws','we','wb'].forEach(id=>$(id).textContent='—');
     $('notice').textContent='Escolha uma data para calcular.';
-    $('calendarHint').textContent='Toque no campo acima para escolher o início das férias.';
+    $('calendarHint').textContent='Toque no campo acima para escolher o início das férias (segunda-feira, ou terça se a segunda for feriado).';
     $('calendarHint').className='calendar-hint';
     $('calendarHint2').textContent='Os dias em verde são do 1º período.';
     $('calendarHint2').className='calendar-hint';
@@ -3218,7 +3272,8 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   $('saveControl').onclick=saveVacationControl;
   $('sellDays').onchange=applySellMode;
   $('cltHelp').onclick=()=>{
-    alert('📘 REGRAS DA CLT SOBRE FÉRIAS\n\n'
+    alert('📘 REGRAS DAS FÉRIAS\n\n'
+      +'🏢 REGRA DA EMPRESA (vale neste app)\n• Sem vender: 30 dias direto, 12 + 18 ou 18 + 12.\n• Vendendo 10 dias: 20 dias direto, 5 + 15, 15 + 5, 6 + 14 ou 14 + 6.\n• As férias sempre começam numa segunda-feira. Se a segunda for feriado, pode começar na terça.\n\n— O que diz a CLT —\n\n'
       +'🏖️ DIREITO\nA cada 12 meses de trabalho, o funcionário tem direito a 30 dias de férias.\n\n'
       +'✂️ DIVIDIR AS FÉRIAS (art. 134, §1º)\nCom a concordância do funcionário, as férias podem ser divididas em até 3 períodos:\n• um deles precisa ter pelo menos 14 dias;\n• os outros, pelo menos 5 dias cada.\nExemplos que podem: 30 · 18 + 12 · 15 + 15 · 14 + 16.\nExemplos que não podem: 4 + 26 · 10 + 10 (vendendo 10 dias).\nNeste aplicativo dá para lançar até 2 períodos.\n\n'
       +'💰 VENDER DIAS – ABONO (art. 143)\nO funcionário pode vender até 1/3 das férias: no máximo 10 dias de 30. Ele descansa 20 dias e recebe os outros 10 em dinheiro. O pedido deve ser feito até 15 dias antes de completar o período de 12 meses.\nVendendo 10, os 20 dias podem ser tirados direto ou divididos (ex.: 14 + 6 ou 15 + 5).\n\n'
