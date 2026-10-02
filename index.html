@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Férias">
 <title>Controle de Férias</title>
-<meta name="app-version" content="2026-10-02-v1.24-login-salvo-barra">
+<meta name="app-version" content="2026-10-02-v1.25-ver-ferias-ao-escolher">
 <style>
 :root{
   --blue:#0797e6;--blue2:#1976df;--ink:#12375d;--line:#d8e9f3;
@@ -583,8 +583,9 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
 <section class="card" id="formCard">
   <div class="edit-banner" id="editBanner"><span id="editBannerText">✏️ Editando</span><button type="button" id="cancelEdit">✖️ Cancelar</button></div>
   <div class="field" id="forWhoWrap" style="display:none;margin-bottom:12px">
-    <label>👥 Férias de quem?</label>
-    <select class="input" id="forWho" aria-label="Férias de quem"></select>
+    <label>👥 Lançar férias para:</label>
+    <select class="input" id="forWho" aria-label="Lançar férias para"></select>
+    <div id="forWhoInfo"></div>
   </div>
   <div class="grid">
     <div class="field"><label>👤 Nome</label><input class="input" id="name" placeholder="Digite o nome"></div>
@@ -738,7 +739,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
 </section>
 
 <button type="button" class="update-link" id="remindLink" style="margin:4px auto 0">🔔 Lembrete no calendário</button>
-<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 1.24</span></footer>
+<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 1.25</span></footer>
 </main>
 </div>
 
@@ -2051,6 +2052,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     sel.innerHTML=`<option value="me">🙋 Eu (${escapeHtml(myName())})</option>`+
       (people.length?'<optgroup label="Funcionários">'+people.map(p=>`<option value="${escapeHtml(p.uid)}">${escapeHtml(p.name)}</option>`).join('')+'</optgroup>':'');
     sel.value=[...sel.options].some(o=>o.value===cur)?cur:'me';
+    updateForWhoInfo();
   }
   function forWhoOwner(){
     const v=$('forWho')?.value||'me';
@@ -2061,6 +2063,19 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     const o=forWhoOwner();
     $('name').value=o?o.name:myName();
     $('name').readOnly=!!o;
+    updateForWhoInfo();
+  }
+  // Ao escolher uma pessoa, mostra as férias que ela já tem marcadas.
+  function updateForWhoInfo(){
+    const box=$('forWhoInfo'); if(!box) return;
+    const o=editId?null:forWhoOwner();
+    if(!o){ box.innerHTML=''; return; }
+    const t=todayUTC();
+    const list=visibleRecords().filter(r=>r.ownerUid===o.uid && vacationRanges(r).some(p=>p.end>=t))
+      .sort((a,b)=>date(a.start)-date(b.start));
+    box.innerHTML=`<div class="my-vac" style="margin:8px 0 0;box-shadow:none">${list.length
+      ? `<h3>📅 Férias já marcadas de ${escapeHtml(o.name)}</h3>${vacListHtml(list,false,t)}`
+      : `<div class="mv-empty">📅 ${escapeHtml(o.name)} ainda não tem férias marcadas. Preencha abaixo para lançar.</div>`}</div>`;
   }
   function updateEditUI(){
     const editing=!!editId;
@@ -2299,8 +2314,8 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       if(mvWho!=='me' && !people.has(mvWho)) mvWho='me';
       const opts=[...people.entries()].sort((x,y)=>x[1].localeCompare(y[1],'pt-BR'));
       sel=`<select class="input mv-sel" id="mvWho" aria-label="Consultar férias de"><option value="me">🙋 Minhas férias</option>${opts.length?'<optgroup label="Consultar funcionário">'+opts.map(([k,n])=>`<option value="${escapeHtml(k)}"${k===mvWho?' selected':''}>👤 ${escapeHtml(n)}</option>`).join('')+'</optgroup>':''}</select>`;
-      if(mvWho!=='me'){ list=all.filter(r=>personKey(r)===mvWho); title='🏖️ Férias de '+escapeHtml(people.get(mvWho)||''); }
-      else title='🏖️ Consultar férias';
+      if(mvWho!=='me'){ list=all.filter(r=>personKey(r)===mvWho); title='🔍 Férias de '+escapeHtml(people.get(mvWho)||''); }
+      else title='🔍 Consultar férias de:';
     }
     list=list.filter(r=>vacationRanges(r).some(p=>p.end>=t)).sort((x,y)=>date(x.start)-date(y.start));
     if(!list.length){
@@ -2308,7 +2323,11 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       return `<div class="my-vac"><h3>${title}</h3>${sel}<div class="mv-empty">${mvWho==='me'?'Você não tem férias marcadas pela frente.':'Nenhuma férias pela frente para essa pessoa.'}</div></div>`;
     }
     const self=mvWho==='me' || !canManageRecords;
-    const recHtml=list.map(r=>{
+    const recHtml=vacListHtml(list,self,t);
+    return `<div class="my-vac"><h3>${title}</h3>${sel}${recHtml}</div>`;
+  }
+  function vacListHtml(list,self,t){
+    return list.map(r=>{
       const st=state(r), two=hasP2(r);
       const head=['aprovada','encerrada'].includes(st)?'<span class="mv-st ok">✅ Aprovadas</span>'
         :st==='recusada'?`<span class="mv-st err">❌ Recusadas${self?' · altere e reenvie':''}</span>`
@@ -2323,7 +2342,6 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       const note=st==='aprovada' && self?'<div class="mv-note">📌 Lembre de lançar no sistema da empresa.</div>':'';
       return `<div class="mv-rec">${head}${per}${note}</div>`;
     }).join('');
-    return `<div class="my-vac"><h3>${title}</h3>${sel}${recHtml}</div>`;
   }
   function renderAlerts(){
     const box=$('alerts'); if(!box) return;
