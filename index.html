@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Férias">
 <title>Controle de Férias</title>
-<meta name="app-version" content="2026-10-02-v1.23-sem-tela-branca">
+<meta name="app-version" content="2026-10-02-v1.24-login-salvo-barra">
 <style>
 :root{
   --blue:#0797e6;--blue2:#1976df;--ink:#12375d;--line:#d8e9f3;
@@ -465,7 +465,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       <button class="auth-btn" id="loginBtn" type="button">🔑 Entrar</button>
       <button class="auth-btn secondary" id="registerBtn" type="button">👤 Criar minha conta</button>
     </div>
-    <label class="remember-row" style="margin-top:12px"><input type="checkbox" id="rememberLogin"> <span>Manter meu login salvo neste dispositivo</span></label>
+    <label class="remember-row" style="margin-top:12px"><input type="checkbox" id="rememberLogin" checked> <span>Manter meu login salvo neste dispositivo</span></label>
     <div class="auth-note" style="margin-top:6px">🔒 O aplicativo mantém a sessão do Firebase; sua senha não é gravada pelo aplicativo.</div>
     <div class="auth-status" id="authStatus"></div>
     <div class="auth-user" id="authUserInfo"></div>
@@ -526,7 +526,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     <div class="admin-manager dev-only">
       <h3>📜 Histórico de alterações</h3>
       <div id="histList"><div class="admin-note">Carregando...</div></div>
-      <div class="admin-note">Mostra as últimas 60 alterações: quem fez, o quê e quando.</div>
+      <div class="admin-note">Mostra as últimas 10 alterações: quem fez, o quê e quando.</div>
     </div>
     <div class="admin-manager dev-only">
       <h3>🗑️ Lixeira (<span id="trashCount">0</span>)</h3>
@@ -638,21 +638,21 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   </div>
   <div class="calendar-hint" id="calendarHint">Toque no campo acima para escolher o início das férias (segunda-feira, ou terça se a segunda for feriado).</div>
 
-  <div class="days" style="display:none">
+  <div class="days">
     <label>🏖️ Dias de férias</label>
     <button class="round" id="minus">−</button>
     <input class="input num" id="days" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" value="12" aria-label="Quantidade de dias">
     <span style="font-weight:900">dias</span>
     <button class="round" id="plus">+</button>
   </div>
-  <input class="range" id="range" type="range" min="1" max="30" value="12" style="display:none">
-  <div class="scale" style="display:none"><span>1</span><span id="scaleMax">30</span></div>
+  <input class="range" id="range" type="range" min="1" max="30" value="12">
+  <div class="scale"><span>1</span><span id="scaleMax">30</span></div>
   <div class="sell-row">
     <label><input type="checkbox" id="sellDays"> 💰 Vender 10 dias</label>
     <button type="button" class="clt-btn" id="cltHelp">📘 Regras da CLT</button>
   </div>
   <div class="sell-note" id="sellNote">💰 Você tira 20 dias de descanso e recebe os outros 10 em dinheiro (abono).</div>
-  <div class="split-title">🏖️ Como vai tirar as férias?</div>
+  <div class="split-title">⚡ Atalhos · divisões permitidas</div>
   <div class="split-opts" id="splitOpts"></div>
   <div class="split-info">📋 <b>Regras da empresa:</b> 30 dias direto, ou 12 + 18, ou 18 + 12. Vendendo 10 dias: 20 direto, 5 + 15, 15 + 5, 6 + 14 ou 14 + 6.<br>📅 As férias <b>sempre começam numa segunda-feira</b>. Se a segunda for feriado, começa na terça.</div>
   <div class="clt-warn" id="cltWarn"></div>
@@ -738,7 +738,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
 </section>
 
 <button type="button" class="update-link" id="remindLink" style="margin:4px auto 0">🔔 Lembrete no calendário</button>
-<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 1.23</span></footer>
+<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 1.24</span></footer>
 </main>
 </div>
 
@@ -845,24 +845,8 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
           try{ await authMod.signOut(firebaseAuth); }catch(err){ console.warn('Não foi possível encerrar a sessão anônima antiga',err); }
           return;
         }
-        // Só entra automaticamente quando o usuário escolheu manter o login salvo.
-        // Entra se marcou "manter login" OU se acabou de entrar nesta sessão.
-        // Sem a caixa marcada, ao fechar o app o login é pedido de novo.
-        const rememberExplicit = localStorage.getItem('ferias_remember_login') === '1'
-          || sessionStorage.getItem('ferias_session_ok') === '1';
-        if(user && !rememberExplicit){
-          try{ await authMod.signOut(firebaseAuth); }catch(err){ console.warn('Não foi possível encerrar a sessão não lembrada',err); }
-          stopLiveSync();
-          firebaseUser=null;
-          canManageRecords=false;
-          applyRecordPermissions();
-          $('appContent').classList.add('auth-locked');
-          $('authGate').style.display='block';
-          $('authUserInfo').textContent='';
-          if($('appLogoutBtn')) $('appLogoutBtn').style.display='none';
-          setFirebaseStatus('🔐 Login necessário para continuar');
-          return;
-        }
+        // Quem mantém (ou não) o login salvo é o próprio Firebase:
+        // caixa marcada = fica salvo no aparelho; desmarcada = só até fechar o app.
         // Usuário excluído pelo desenvolvedor não entra.
         if(user){
           try{
@@ -1086,6 +1070,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       sessionStorage.setItem('ferias_session_ok','1');
       await applyLoginPersistence();
       const cred=await firebaseFns.signInWithEmailAndPassword(firebaseAuth,email,password);
+      localStorage.setItem('ferias_last_email',email);
       if(loginName) await applyUserNameToAccount(cred.user,loginName);
       $('loginPassword').value='';
     }catch(err){
@@ -1116,6 +1101,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       await applyLoginPersistence();
       registeringName=loginName;
       const cred=await firebaseFns.createUserWithEmailAndPassword(firebaseAuth,email,password);
+      localStorage.setItem('ferias_last_email',email);
       await applyUserNameToAccount(cred.user,loginName);
       $('name').value=loginName;
       $('loginPassword').value='';
@@ -2535,7 +2521,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     if(!box || !isDeveloperLogged() || !firebaseDb || !firebaseFns) return;
     try{
       const {collection,getDocs,query,orderBy,limit}=firebaseFns;
-      const snap=await getDocs(query(collection(firebaseDb,'historico'),orderBy('at','desc'),limit(60)));
+      const snap=await getDocs(query(collection(firebaseDb,'historico'),orderBy('at','desc'),limit(10)));
       const rows=snap.docs.map(d=>d.data());
       if(!rows.length){ box.innerHTML='<div class="admin-note">Nenhuma alteração registrada ainda.</div>'; return; }
       const when=ts=>new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}).format(new Date(Number(ts)));
@@ -3355,8 +3341,13 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   $('rememberLogin').onchange=()=>{
     localStorage.setItem('ferias_remember_login', $('rememberLogin').checked ? '1' : '0');
   };
+  // "Manter meu login salvo" já vem marcado; só desmarca se a pessoa desmarcar.
+  if(!localStorage.getItem('ferias_login_fix_124')){ localStorage.removeItem('ferias_remember_login'); localStorage.setItem('ferias_login_fix_124','1'); }
   const rememberLoginSaved=localStorage.getItem('ferias_remember_login');
-  if(rememberLoginSaved!==null) $('rememberLogin').checked=rememberLoginSaved==='1';
+  $('rememberLogin').checked = rememberLoginSaved!=='0';
+  // E-mail do último login já vem preenchido.
+  const lastEmail=localStorage.getItem('ferias_last_email');
+  if(lastEmail && !$('loginEmail').value) $('loginEmail').value=lastEmail;
   $('loginName').onkeydown=e=>{if(e.key==='Enter')doLogin()};
   $('loginPassword').onkeydown=e=>{if(e.key==='Enter')doLogin()};
   $('loginEmail').onkeydown=e=>{if(e.key==='Enter')doLogin()};
@@ -3437,9 +3428,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   $('appLogoutBtn').onclick=async()=>{
     if(!firebaseAuth || !firebaseFns?.signOut){setAuthStatus('Firebase ainda está iniciando. Aguarde alguns segundos.','error');return;}
     try{
-      localStorage.setItem('ferias_remember_login','0');
       sessionStorage.removeItem('ferias_session_ok');
-      $('rememberLogin').checked=false;
       await firebaseFns.signOut(firebaseAuth);
       $('adminPanel').classList.remove('open');
     }catch(err){
@@ -3450,9 +3439,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   $('adminLogoutBtn').onclick=async()=>{
     if(!firebaseAuth || !firebaseFns?.signOut){ alert('Firebase ainda está iniciando. Aguarde alguns segundos e tente novamente.'); return; }
     try{
-      localStorage.setItem('ferias_remember_login','0');
       sessionStorage.removeItem('ferias_session_ok');
-      $('rememberLogin').checked=false;
       await firebaseFns.signOut(firebaseAuth);
       $('adminPanel').classList.remove('open');
       refreshDeveloperPanel();
