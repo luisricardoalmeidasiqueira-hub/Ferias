@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Férias">
 <title>Controle de Férias</title>
-<meta name="app-version" content="2026-10-01-v1.16-proximo-nao-bate">
+<meta name="app-version" content="2026-10-02-v1.19-voltar-aguardando">
 <style>
 :root{
   --blue:#0797e6;--blue2:#1976df;--ink:#12375d;--line:#d8e9f3;
@@ -106,7 +106,21 @@ button,input{font:inherit}button{cursor:pointer}
 .alert-card small{font-weight:700;opacity:.85}
 .alert-card.ok{background:#e7f8ee;color:#087446;border:1px solid #bfe6cf}
 .alert-card.err{background:#ffe8e8;color:#a52222;border:1px solid #f5c2c2}
-.alert-card.info{background:#e7f5ff;color:#075b8a;border:1px solid #cfe4ef}
+.alert-card.ainfo{background:#e7f5ff;color:#075b8a;border:1px solid #cfe4ef}
+/* Quadro fixo "Minhas férias" */
+.my-vac{background:#fff;border:2px solid #cfe4ef;border-radius:16px;padding:12px 14px;margin-bottom:10px;box-shadow:0 6px 18px #07508014}
+.my-vac h3{margin:0 0 8px;font-size:15px;color:var(--ink)}
+.mv-rec{padding:8px 0;border-top:1px dashed #e1edf4}
+.mv-rec:first-of-type{border-top:0;padding-top:0}
+.mv-st{display:inline-block;font-size:11px;font-weight:900;border-radius:999px;padding:3px 9px;margin-bottom:6px}
+.mv-st.ok{background:#e7f8ee;color:#087446}.mv-st.pend{background:#fff4d8;color:#8a6500}.mv-st.err{background:#ffe8e8;color:#a52222}
+.mv-p{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 9px;border-radius:10px;background:#f3f9fd;margin-top:5px;font-size:12px;font-weight:800;color:#35566b;line-height:1.35}
+.mv-p b{color:var(--ink);font-size:13px}
+.mv-p.ok{background:#eefaf3}.mv-p.err{background:#fff3f3}
+.mv-tag{font-size:10px;font-weight:900;white-space:nowrap;border-radius:999px;padding:3px 8px;background:#fff;color:#075b8a}
+.mv-sel{height:42px;margin:0 0 10px;font-size:14px}
+.mv-empty{font-size:12px;color:#71879a;font-weight:800;padding:4px 0}
+.mv-note{font-size:11px;color:#7a5700;font-weight:800;margin-top:7px}
 .alert-card.warn{background:#fff6dc;color:#7a5700;border:1px solid #f1d58a}
 .alert-card > button{margin-left:auto;border:0;background:transparent;color:inherit;font-size:20px;font-weight:900;line-height:1;padding:0 2px}
 .alert-go{display:inline-block;margin-top:8px;border:0;border-radius:9px;padding:7px 12px;background:#7a5700;color:#fff;font-weight:900;font-size:12px}
@@ -715,7 +729,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
 </section>
 
 <button type="button" class="update-link" id="remindLink" style="margin:4px auto 0">🔔 Lembrete no calendário</button>
-<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 1.16</span></footer>
+<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 1.19</span></footer>
 </main>
 </div>
 
@@ -2139,7 +2153,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
           ? `<div class="approval"><button class="approve" disabled>🔒 Falta 2º período</button><button class="reject" data-reject="${x.id}">✖️ Recusar</button></div>`
           : `<div class="approval"><button class="approve" data-approve="${x.id}">✅ Aprovar ${has2?'os dois':''}</button><button class="reject" data-reject="${x.id}">✖️ Recusar ${has2?'os dois':''}</button></div>`)
         : canManageRecords && st==='aprovada'
-        ? `<div class="approval"><button class="approve" data-realizada="${x.id}">🏁 Realizada</button></div>`
+        ? `<div class="approval"><button class="approve" data-realizada="${x.id}">🏁 Realizada</button></div><div class="approval"><button class="approve" style="background:#64748b" data-back-pend="${x.id}">↩️ Voltar p/ aguardando</button><button class="reject" data-reject="${x.id}">✖️ Recusar${has2?' os dois':''}</button></div>`
         : canManageRecords && st==='encerrada'
         ? `<div class="approval"><button class="approve" style="background:#64748b" data-back-approved="${x.id}">↩️ Voltar para aprovada</button></div>`
         : st==='recusada'
@@ -2170,7 +2184,8 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
         const head=(label || chipHtml) ? `<div class="pbox-head"><span>${label||''}</span>${chipHtml}</div>` : '';
         const motivo=x['reason'+idx]||x.reason;
         const why=refused && has2 && motivo ? `<div class="pline r">📝 Motivo: ${escapeHtml(motivo)}</div>` : '';
-        const rejBtn=perActive && pst==='pendente' ? `<div class="pbtns"><button type="button" class="pok" data-approve-p="${x.id}" data-p="${idx}">✅ Aprovar ${idx}º</button><button type="button" class="pno" data-reject-p="${x.id}" data-p="${idx}">✖️ Recusar ${idx}º</button></div>` : '';
+        const rejBtn=perActive && pst==='pendente' ? `<div class="pbtns"><button type="button" class="pok" data-approve-p="${x.id}" data-p="${idx}">✅ Aprovar ${idx}º</button><button type="button" class="pno" data-reject-p="${x.id}" data-p="${idx}">✖️ Recusar ${idx}º</button></div>`
+          : canManageRecords && st==='aprovada' && has2 ? `<button type="button" class="pedit prej" data-reject-p="${x.id}" data-p="${idx}">✖️ Recusar só o ${idx}º período</button>` : '';
         const editLabel=refused?`✏️ Alterar o ${idx}º período e reenviar`:`✏️ ${two?'Editar '+idx+'º período':'Editar data'}`;
         return `<div class="pbox ${t}">${head}
           <div class="info" style="margin-top:6px"><div>🏖️ Início<b>${fmt(s0)}</b></div><div>☀️ Último dia<b>${fmt(e0)}</b></div><div>✈️ Retorno<b>${fmt(b0)}</b></div></div>
@@ -2207,6 +2222,10 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       openReject(b.dataset.rejectP,Number(b.dataset.p));
     });
     $('records').querySelectorAll('[data-realizada]').forEach(b=>b.onclick=()=>setStatus(b.dataset.realizada,'encerrada'));
+    $('records').querySelectorAll('[data-back-pend]').forEach(b=>b.onclick=()=>{
+      if(!confirm('Voltar estas férias para "Aguardando aprovação"?\n\nDepois você pode aprovar ou recusar de novo.')) return;
+      setStatus(b.dataset.backPend,'pendente');
+    });
     $('records').querySelectorAll('[data-back-approved]').forEach(b=>b.onclick=()=>{
       if(!confirm('Voltar estas férias para "Aprovada"?\n\nUse quando alguém marcou "Realizada" por engano.')) return;
       setStatus(b.dataset.backApproved,'aprovada');
@@ -2237,15 +2256,54 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     if(diff===1) return 'amanhã, '+week(d)+' ('+fmt(d)+')';
     return week(d)+', '+fmt(d);
   }
+  // "Minhas férias": quadro fixo (sem ×).
+  // Funcionário: só as dele. Desenvolvedor e administradores: escolhem o nome para consultar.
+  let mvWho='me';
+  const personKey=r=>r.ownerUid || ('n:'+String(r.name||'').trim().toLowerCase());
+  function myVacationsHtml(mine,t){
+    let list=mine, title='🏖️ Minhas férias', sel='';
+    const me=firebaseUser?.uid||'';
+    if(canManageRecords){
+      const all=visibleRecords(), people=new Map();
+      all.forEach(r=>{ const k=personKey(r); if(k===me) return; if(!people.has(k)) people.set(k,String(r.name||'—').trim()); });
+      if(mvWho!=='me' && !people.has(mvWho)) mvWho='me';
+      const opts=[...people.entries()].sort((x,y)=>x[1].localeCompare(y[1],'pt-BR'));
+      sel=`<select class="input mv-sel" id="mvWho" aria-label="Consultar férias de"><option value="me">🙋 Minhas férias</option>${opts.length?'<optgroup label="Consultar funcionário">'+opts.map(([k,n])=>`<option value="${escapeHtml(k)}"${k===mvWho?' selected':''}>👤 ${escapeHtml(n)}</option>`).join('')+'</optgroup>':''}</select>`;
+      if(mvWho!=='me'){ list=all.filter(r=>personKey(r)===mvWho); title='🏖️ Férias de '+escapeHtml(people.get(mvWho)||''); }
+      else title='🏖️ Consultar férias';
+    }
+    list=list.filter(r=>vacationRanges(r).some(p=>p.end>=t)).sort((x,y)=>date(x.start)-date(y.start));
+    if(!list.length){
+      if(!canManageRecords) return '';
+      return `<div class="my-vac"><h3>${title}</h3>${sel}<div class="mv-empty">${mvWho==='me'?'Você não tem férias marcadas pela frente.':'Nenhuma férias pela frente para essa pessoa.'}</div></div>`;
+    }
+    const self=mvWho==='me' || !canManageRecords;
+    const recHtml=list.map(r=>{
+      const st=state(r), two=hasP2(r);
+      const head=['aprovada','encerrada'].includes(st)?'<span class="mv-st ok">✅ Aprovadas</span>'
+        :st==='recusada'?`<span class="mv-st err">❌ Recusadas${self?' · altere e reenvie':''}</span>`
+        :'<span class="mv-st pend">🟡 Aguardando aprovação</span>';
+      const per=vacationRanges(r).map((p,i)=>{
+        const ps=getPS(r,i+1), back=addDaysUTC(p.end,1);
+        const diff=Math.round((p.start-t)/86400000);
+        const tag=p.end<t?'Já passou':t>=p.start?'🌴 De férias':diff===0?'Começa hoje':diff===1?'Começa amanhã':'Faltam '+diff+' dias';
+        const mark=two?(ps==='aprovada'?'✅ ':ps==='recusada'?'❌ ':'🟡 '):'';
+        return `<div class="mv-p ${ps==='aprovada'?'ok':ps==='recusada'?'err':''}"><span>${mark}${two?(i+1)+'º período: ':''}<b>${fmt(p.start)} a ${fmt(p.end)}</b><br>Retorno: ${week(back)}, ${fmt(back)}</span><span class="mv-tag">${tag}</span></div>`;
+      }).join('');
+      const note=st==='aprovada' && self?'<div class="mv-note">📌 Lembre de lançar no sistema da empresa.</div>':'';
+      return `<div class="mv-rec">${head}${per}${note}</div>`;
+    }).join('');
+    return `<div class="my-vac"><h3>${title}</h3>${sel}${recHtml}</div>`;
+  }
   function renderAlerts(){
     const box=$('alerts'); if(!box) return;
     if(!firebaseUser){ box.innerHTML=''; return; }
     const t=todayUTC(), seen=seenMap(), dismissed=dismissedList(), cards=[];
     const mine=visibleRecords().filter(recordBelongsToCurrentUser);
     let unseen=0;
-    if(daysAway>=14 && !dismissed.includes('gap')) cards.push({cls:'info',key:'gap',html:`👋 <b>Faz ${daysAway} dias que você não abria o app.</b><br>Veja abaixo se tem alguma novidade.`});
+    if(daysAway>=14 && !dismissed.includes('gap')) cards.push({cls:'ainfo',key:'gap',html:`👋 <b>Faz ${daysAway} dias que você não abria o app.</b><br>Veja abaixo se tem alguma novidade.`});
     if(!localStorage.getItem('ferias_reminder_set') && !localStorage.getItem('ferias_reminder_offer_off'))
-      cards.push({cls:'info',key:'rem-offer',perm:true,html:`🔔 <b>Quer um lembrete?</b> O celular te avisa a cada 2 semanas para olhar o app, mesmo com ele fechado.<br><button type="button" class="alert-go" data-remind style="background:#075b8a">Criar lembrete</button>`});
+      cards.push({cls:'ainfo',key:'rem-offer',perm:true,html:`🔔 <b>Quer um lembrete?</b> O celular te avisa a cada 2 semanas para olhar o app, mesmo com ele fechado.<br><button type="button" class="alert-go" data-remind style="background:#075b8a">Criar lembrete</button>`});
     mine.forEach(r=>{
       const st=state(r);
       if(!['aprovada','recusada'].includes(st) || seen[String(r.id)]===st) return;
@@ -2262,8 +2320,8 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     mine.filter(r=>state(r)==='aprovada').forEach(r=>vacationRanges(r).forEach((p,i)=>{
       const key='up:'+r.id+':'+i; if(dismissed.includes(key)) return;
       const diff=Math.round((p.start-t)/86400000), back=addDaysUTC(p.end,1);
-      if(diff>=0 && diff<=7) cards.push({cls:'info',key,html:`🏖️ <b>Suas férias começam ${whenText(p.start)}.</b><br>Retorno: ${week(back)}, ${fmt(back)}.`});
-      else if(t>=p.start && t<=p.end) cards.push({cls:'info',key,html:`🌴 <b>Você está de férias!</b> Retorno: ${week(back)}, ${fmt(back)}.`});
+      if(diff>=0 && diff<=7) cards.push({cls:'ainfo',key,html:`🏖️ <b>Suas férias começam ${whenText(p.start)}.</b><br>Retorno: ${week(back)}, ${fmt(back)}.`});
+      else if(t>=p.start && t<=p.end) cards.push({cls:'ainfo',key,html:`🌴 <b>Você está de férias!</b> Retorno: ${week(back)}, ${fmt(back)}.`});
     }));
     if(canManageRecords){
       const all=visibleRecords(), lines=[];
@@ -2281,7 +2339,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       const key='pend:'+pendingCount;
       if(!dismissed.includes(key)) cards.unshift({cls:'warn',key,html:`👤 <b>${pendingCount} ${pendingCount===1?'cadastro aguardando':'cadastros aguardando'} sua liberação.</b><br><button type="button" class="alert-go" data-open-dev>Abrir e liberar</button>`});
     }
-    box.innerHTML=cards.map((c,i)=>`<div class="alert-card ${c.cls}"><div>${c.html}</div><button type="button" data-alert="${i}" aria-label="Fechar aviso">×</button></div>`).join('');
+    box.innerHTML=myVacationsHtml(mine,t)+cards.map((c,i)=>`<div class="alert-card ${c.cls}"><div>${c.html}</div><button type="button" data-alert="${i}" aria-label="Fechar aviso">×</button></div>`).join('');
     box.querySelectorAll('[data-alert]').forEach(b=>b.onclick=()=>{
       const c=cards[Number(b.dataset.alert)]; if(!c) return;
       if(c.seen) markSeen(c.seen[0],c.seen[1]);
@@ -2290,6 +2348,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       renderAlerts();
     });
     box.querySelectorAll('[data-remind]').forEach(b=>b.onclick=openRemind);
+    const mvSel=$('mvWho'); if(mvSel) mvSel.onchange=()=>{ mvWho=mvSel.value; renderAlerts(); };
     box.querySelectorAll('[data-open-dev]').forEach(b=>b.onclick=()=>{
       $('adminPanel').classList.add('open');
       refreshDeveloperPanel();
@@ -2551,6 +2610,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     }
     const prev=snapshotOf(x), wasClosed=state(x)==='encerrada';
     if(status==='aprovada'){x.status='aprovada';x.reason='';x.rejectedPeriod=0;(hasP2(x)?[1,2]:[1]).forEach(i=>{x['ps'+i]='aprovada';x['reason'+i]='';});}
+    else if(status==='pendente'){x.status='pendente';x.reason='';x.rejectedPeriod=0;(hasP2(x)?[1,2]:[1]).forEach(i=>{x['ps'+i]='pendente';x['reason'+i]='';});}
     else if(status==='encerrada'){x.status='encerrada';}
     else return;
     x.updatedAt=Date.now(); saveLocal(a); renderRecords();
@@ -2558,8 +2618,8 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       const failed=await pushLocalToFirebase([x]);
       if(failed.length){ setFirebaseStatus('Erro ao enviar'); alert(sendFailMessage(failed,'O status foi alterado')); return; }
       const nm=x.name||'—';
-      const txt=status==='encerrada'?`marcou como realizadas as férias de ${nm}`:wasClosed?`voltou para aprovadas as férias de ${nm}`:`aprovou as férias de ${nm}`;
-      offerUndo(status==='encerrada'?`🏁 Férias de ${nm} marcadas como realizadas`:`✅ Férias de ${nm} aprovadas`,{prev,text:txt});
+      const txt=status==='pendente'?`voltou para aguardando as férias de ${nm}`:status==='encerrada'?`marcou como realizadas as férias de ${nm}`:wasClosed?`voltou para aprovadas as férias de ${nm}`:`aprovou as férias de ${nm}`;
+      offerUndo(status==='pendente'?`↩️ Férias de ${nm} voltaram para aguardando`:status==='encerrada'?`🏁 Férias de ${nm} marcadas como realizadas`:`✅ Férias de ${nm} aprovadas`,{prev,text:txt});
       logAction(txt,x);
       await pushAgenda([x]);
       await pullAgenda();
