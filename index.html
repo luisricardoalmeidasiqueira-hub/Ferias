@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Férias">
 <title>Controle de Férias</title>
-<meta name="app-version" content="2026-10-04-v1.27-confirmacao-sistema">
+<meta name="app-version" content="2026-10-05-v1.28-confirmacao-sistema-fix">
 <style>
 :root{
   --blue:#0797e6;--blue2:#1976df;--ink:#12375d;--line:#d8e9f3;
@@ -740,7 +740,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
 </section>
 
 <button type="button" class="update-link" id="remindLink" style="margin:4px auto 0">🔔 Lembrete no calendário</button>
-<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 1.25</span></footer>
+<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 1.28</span></footer>
 </main>
 </div>
 
@@ -2375,7 +2375,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
         const mark=two?(ps==='aprovada'?'✅ ':ps==='recusada'?'❌ ':'🟡 '):'';
         return `<div class="mv-p ${ps==='aprovada'?'ok':ps==='recusada'?'err':''}"><span>${mark}${two?(i+1)+'º período: ':''}<b>${fmt(p.start)} a ${fmt(p.end)}</b><br>Retorno: ${week(back)}, ${fmt(back)}</span><span class="mv-tag">${tag}</span></div>`;
       }).join('');
-      const note=st==='aprovada' && self?'<div class="mv-note">📌 Lembre de lançar no sistema da empresa.</div>':'';
+      const note=st==='aprovada'?sysStatusHtml(r):'';
       return `<div class="mv-rec">${head}${per}${note}</div>`;
     }).join('');
   }
@@ -2435,6 +2435,8 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     });
     box.querySelectorAll('[data-remind]').forEach(b=>b.onclick=openRemind);
     const mvSel=$('mvWho'); if(mvSel) mvSel.onchange=()=>{ mvWho=mvSel.value; renderAlerts(); };
+    box.querySelectorAll('[data-sys-launch]').forEach(b=>b.onclick=()=>markSystemLaunched(b.dataset.sysLaunch));
+    box.querySelectorAll('[data-sys-confirm]').forEach(b=>b.onclick=()=>confirmSystemApproval(b.dataset.sysConfirm));
     box.querySelectorAll('[data-open-dev]').forEach(b=>b.onclick=()=>{
       $('adminPanel').classList.add('open');
       refreshDeveloperPanel();
