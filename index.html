@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Férias">
 <title>Controle de Férias</title>
-<meta name="app-version" content="2026-10-06-v1.30-admin-marca-lancamento">
+<meta name="app-version" content="2026-10-06-v1.31-lancado-sistema-aviso">
 <style>
 :root{
   --blue:#0797e6;--blue2:#1976df;--ink:#12375d;--line:#d8e9f3;
@@ -740,7 +740,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
 </section>
 
 <button type="button" class="update-link" id="remindLink" style="margin:4px auto 0">🔔 Lembrete no calendário</button>
-<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 1.30</span></footer>
+<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 1.31</span></footer>
 </main>
 </div>
 
@@ -2116,8 +2116,12 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
   // ===== LANÇAMENTO NO SISTEMA DA EMPRESA =====
   // Depois de aprovadas aqui, o funcionário marca que já lançou no sistema;
   // depois disso, o gestor (administrador) marca quando aprovar lá também.
+  // Quem lançou o pedido no app para outra pessoa (ex.: administrador lançou para o Lucas).
+  function iLaunchedFor(x){ return !!(x && x.createdByUid && firebaseUser && x.createdByUid===firebaseUser.uid && !recordBelongsToCurrentUser(x)); }
+  const isSysDone=x=>!!(x && (x.systemLaunched || x.systemConfirmed));
   function sysStatusHtml(x){
     const mine=recordBelongsToCurrentUser(x);
+    const creator=iLaunchedFor(x);
     if(x.systemConfirmed){
       const when=x.systemConfirmedAt?fmt(new Date(Number(x.systemConfirmedAt))):'';
       return `<div class="status ok">✅ <b>Aprovada também no sistema da empresa</b>${when?' em '+when:''}.</div>`;
@@ -2128,12 +2132,13 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       return `<div class="status warn">🔵 <b>Lançada no sistema</b>, aguardando aprovação do gestor.${by}${btn}</div>`;
     }
     if(mine) return `<div class="status warn">📌 <b>Não esqueça:</b> lance estas férias no sistema da empresa.<button type="button" class="pedit" data-sys-launch="${x.id}">🔵 Já lancei no sistema</button></div>`;
+    if(creator) return `<div class="status warn">📌 Você lançou estas férias para <b>${escapeHtml(x.name||'—')}</b>. Falta lançar no sistema da empresa.<button type="button" class="pedit" data-sys-launch="${x.id}">🔵 Já lancei no sistema</button></div>`;
     if(canManageRecords) return `<div class="status warn">📌 Aguardando o funcionário lançar estas férias no sistema da empresa.<button type="button" class="pedit" data-sys-launch="${x.id}">🔵 Marcar como lançada (no lugar do funcionário)</button></div>`;
     return `<div class="status warn">📌 Aguardando o funcionário lançar estas férias no sistema da empresa.</div>`;
   }
   async function markSystemLaunched(id){
     const a=local(), x=a.find(r=>String(r.id)===String(id)); if(!x) return;
-    const mine=recordBelongsToCurrentUser(x);
+    const mine=recordBelongsToCurrentUser(x)||iLaunchedFor(x);
     if(!mine && !canManageRecords){ alert('Só quem pediu estas férias (ou um administrador) pode marcar que lançou no sistema.'); return; }
     if(!mine && !confirm(`Marcar as férias de ${x.name||'—'} como lançadas no sistema, no lugar do funcionário?`)) return;
     x.systemLaunched=true; x.systemLaunchedAt=Date.now(); x.systemLaunchedBy=mine?'':(firebaseUser?.email||''); x.updatedAt=Date.now();
@@ -2399,12 +2404,18 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       if(Date.now()-Number(r.updatedAt||0)>30*86400000) return;
       unseen++;
       const p2=(r.start2 && Number(r.days2)>0)?' · 2º período: '+fmt(date(r.start2)):'';
+      if(st==='aprovada' && isSysDone(r)){ unseen--; return; }
       if(st==='aprovada') cards.push({cls:'ok',seen:[r.id,st],html:`🟢 <b>Suas férias foram aprovadas!</b><br>Início: ${fmt(date(r.start))}${p2}.<br>📌 <b>Agora lance no sistema da empresa.</b> A aprovação aqui não lança sozinha.`});
       else if(Number(r.rejectedPeriod||0)>0){
         const rp=Number(r.rejectedPeriod);
         cards.push({cls:'err',seen:[r.id,st],html:`🔴 <b>O ${rp}º período das suas férias foi recusado.</b>${r.reason?'<br>Motivo: '+escapeHtml(r.reason):''}<br><small>O outro período fica mantido. Toque em ✏️ Alterar o ${rp}º período e reenviar.</small>`});
       }
       else cards.push({cls:'err',seen:[r.id,st],html:`🔴 <b>Suas férias foram recusadas.</b>${r.reason?'<br>Motivo: '+escapeHtml(r.reason):''}<br><small>Toque em ✏️ Alterar e reenviar no seu pedido.</small>`});
+    });
+    visibleRecords().filter(r=>iLaunchedFor(r) && state(r)==='aprovada' && !isSysDone(r)).forEach(r=>{
+      const key='c:'+r.id; if(seen[key]==='aprovada') return;
+      const p2=hasP2(r)?' · 2º período: '+fmt(date(r.start2)):'';
+      cards.push({cls:'ok',seen:[key,'aprovada'],html:`🟢 <b>As férias de ${escapeHtml(r.name||'—')} foram aprovadas</b> (você lançou pelo app).<br>Início: ${fmt(date(r.start))}${p2}.<br>📌 Falta lançar no sistema da empresa.<br><button type="button" class="alert-go" data-sys-launch="${r.id}" style="background:#075b8a">🔵 Já lancei no sistema</button>`});
     });
     mine.filter(r=>state(r)==='aprovada').forEach(r=>vacationRanges(r).forEach((p,i)=>{
       const key='up:'+r.id+':'+i; if(dismissed.includes(key)) return;
@@ -2418,6 +2429,8 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
       if(pend) lines.push(`🟡 <b>${pend} ${pend===1?'pedido aguardando':'pedidos aguardando'}</b> aprovação`);
       const sysPend=all.filter(r=>state(r)==='aprovada' && r.systemLaunched && !r.systemConfirmed).length;
       if(sysPend) lines.push(`🔵 <b>${sysPend} ${sysPend===1?'lançada':'lançadas'} no sistema</b>, aguardando sua confirmação`);
+      const notLaunched=all.filter(r=>state(r)==='aprovada' && !isSysDone(r)).length;
+      if(notLaunched) lines.push(`📌 <b>${notLaunched} ${notLaunched===1?'aprovada ainda não lançada':'aprovadas ainda não lançadas'}</b> no sistema da empresa`);
       all.filter(r=>state(r)==='aprovada').forEach(r=>vacationRanges(r).forEach(p=>{
         const diff=Math.round((p.start-t)/86400000), back=addDaysUTC(p.end,1);
         if(diff>=0 && diff<=7) lines.push(`🏖️ <b>${escapeHtml(r.name)}</b> começa as férias ${whenText(p.start)} · retorno ${fmt(back)}`);
@@ -2898,7 +2911,8 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     let nextStatus='pendente';
     if(old) nextStatus = old.status==='recusada' ? 'pendente' : (old.status || 'pendente');
     const now=Date.now();
-    const record={id,name,start:$('start').value,days:c.n,start2,days2:d2>0?d2:0,sold:$('sellDays').checked?10:0,status:nextStatus,reason:nextStatus==='recusada'?'':(old?.reason||''),rejectedPeriod:0,requestedAt:old?.requestedAt||now,updatedAt:now,ownerUid:old?.ownerUid||forWhoOwner()?.uid||firebaseUser?.uid||'',ownerEmail:old?.ownerEmail||(forWhoOwner()?forWhoOwner().email:(firebaseUser?.email||''))};
+    const record={id,name,start:$('start').value,days:c.n,start2,days2:d2>0?d2:0,sold:$('sellDays').checked?10:0,status:nextStatus,reason:nextStatus==='recusada'?'':(old?.reason||''),rejectedPeriod:0,requestedAt:old?.requestedAt||now,updatedAt:now,ownerUid:old?.ownerUid||forWhoOwner()?.uid||firebaseUser?.uid||'',ownerEmail:old?.ownerEmail||(forWhoOwner()?forWhoOwner().email:(firebaseUser?.email||'')),
+      createdByUid:old?.createdByUid||firebaseUser?.uid||'',createdByName:old?.createdByName||myName()};
     // Período já aprovado e sem mudança de data continua aprovado; o resto volta para aguardando.
     const has2n=hasP2(record);
     if(record.status==='aprovada'){ record.ps1='aprovada'; record.ps2=has2n?'aprovada':''; }
