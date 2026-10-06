@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Férias">
 <title>Controle de Férias</title>
-<meta name="app-version" content="2026-10-05-v1.29-realizada-automatica">
+<meta name="app-version" content="2026-10-06-v1.30-admin-marca-lancamento">
 <style>
 :root{
   --blue:#0797e6;--blue2:#1976df;--ink:#12375d;--line:#d8e9f3;
@@ -740,7 +740,7 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
 </section>
 
 <button type="button" class="update-link" id="remindLink" style="margin:4px auto 0">🔔 Lembrete no calendário</button>
-<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 1.29</span></footer>
+<footer class="footer">© 2026 Luís Ricardo de Almeida Siqueira — Todos os direitos reservados.<br><span style="opacity:.6">Versão 1.30</span></footer>
 </main>
 </div>
 
@@ -2124,18 +2124,22 @@ body:has(#appContent.auth-locked) .developer-area{display:none}
     }
     if(x.systemLaunched){
       const btn=canManageRecords?`<button type="button" class="pedit" data-sys-confirm="${x.id}">✅ Confirmar aprovação no sistema</button>`:'';
-      return `<div class="status warn">🔵 <b>Lançada no sistema</b>, aguardando aprovação do gestor.${btn}</div>`;
+      const by=x.systemLaunchedBy?` <small>(marcado pelo administrador)</small>`:'';
+      return `<div class="status warn">🔵 <b>Lançada no sistema</b>, aguardando aprovação do gestor.${by}${btn}</div>`;
     }
     if(mine) return `<div class="status warn">📌 <b>Não esqueça:</b> lance estas férias no sistema da empresa.<button type="button" class="pedit" data-sys-launch="${x.id}">🔵 Já lancei no sistema</button></div>`;
+    if(canManageRecords) return `<div class="status warn">📌 Aguardando o funcionário lançar estas férias no sistema da empresa.<button type="button" class="pedit" data-sys-launch="${x.id}">🔵 Marcar como lançada (no lugar do funcionário)</button></div>`;
     return `<div class="status warn">📌 Aguardando o funcionário lançar estas férias no sistema da empresa.</div>`;
   }
   async function markSystemLaunched(id){
     const a=local(), x=a.find(r=>String(r.id)===String(id)); if(!x) return;
-    if(!recordBelongsToCurrentUser(x)){ alert('Só quem pediu estas férias pode marcar que lançou no sistema.'); return; }
-    x.systemLaunched=true; x.systemLaunchedAt=Date.now(); x.updatedAt=Date.now();
+    const mine=recordBelongsToCurrentUser(x);
+    if(!mine && !canManageRecords){ alert('Só quem pediu estas férias (ou um administrador) pode marcar que lançou no sistema.'); return; }
+    if(!mine && !confirm(`Marcar as férias de ${x.name||'—'} como lançadas no sistema, no lugar do funcionário?`)) return;
+    x.systemLaunched=true; x.systemLaunchedAt=Date.now(); x.systemLaunchedBy=mine?'':(firebaseUser?.email||''); x.updatedAt=Date.now();
     saveLocal(a); renderRecords();
     await syncOne(x,'Marcado como lançado no sistema');
-    logAction(`marcou como lançadas no sistema as férias de ${x.name||'—'}`,x);
+    logAction(mine?`marcou como lançadas no sistema as férias de ${x.name||'—'}`:`marcou (como administrador) as férias de ${x.name||'—'} como lançadas no sistema`,x);
   }
   async function confirmSystemApproval(id){
     if(!canManageRecords){ alert('Somente o administrador pode confirmar a aprovação no sistema.'); return; }
